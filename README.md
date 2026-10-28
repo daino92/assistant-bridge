@@ -117,7 +117,8 @@ include the host SPA, assistant UI or BFF. Existing examples that refer to those
 applications describe the original integration workspace.
 
 The package name is `@daino92/assistant-bridge`. It is not published yet.
-The `private: true` safeguard remains until release preparation is complete.
+It is configured for public distribution on npmjs.org under the MIT license.
+Publishing requires an explicit release step.
 
 `pnpm build` emits JavaScript and declarations, rewrites internal aliases and
 extensionless imports, and generates the protocol schemas. `pnpm pack` creates
@@ -703,3 +704,7 @@ or stopped assistant message; only completed turns and the pending user prompt a
 The lower-level run controller, AG-UI client and bridge remain independently usable; adopting this
 session does not require changing the host or the backend. UI input, labels and history rendering
 remain application responsibilities.
+
+## License
+
+[MIT](LICENSE) © 2026 daino92.
