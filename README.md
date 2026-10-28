@@ -1,4 +1,4 @@
-# @assistant/host-sdk
+# @daino92/assistant-bridge
 
 Start with the [React host quick start and responsibility cheat sheet](docs/quick-start.md) for a minimal integration with iframe or Module Federation.
 
@@ -28,12 +28,12 @@ The SDK does not provide a chat interface, model provider, backend, conversation
 
 ## High-level integration APIs
 
-Install one workspace package, `@assistant/host-sdk`. Its root entry stays framework agnostic. Optional subpath exports provide [React context and hooks](docs/react.md) (`@assistant/host-sdk/react`) and [Module Federation loading](docs/federation.md) (`@assistant/host-sdk/federation`). Neither adapter is imported by the core or the chat.
+Use the single package, `@daino92/assistant-bridge`. Its root entry stays framework agnostic. Optional subpath exports provide [React context and hooks](docs/react.md) (`@daino92/assistant-bridge/react`) and [Module Federation loading](docs/federation.md) (`@daino92/assistant-bridge/federation`). Neither adapter is imported by the core or the chat.
 
 ```ts
-import { createHostIntegration } from '@assistant/host-sdk';
-import { IntegrationProvider, useIntegration } from '@assistant/host-sdk/react';
-import { connectFederatedAssistant } from '@assistant/host-sdk/federation';
+import { createHostIntegration } from '@daino92/assistant-bridge';
+import { IntegrationProvider, useIntegration } from '@daino92/assistant-bridge/react';
+import { connectFederatedAssistant } from '@daino92/assistant-bridge/federation';
 ```
 
 `react` and `@module-federation/runtime` are optional peer dependencies: consumers supply React for `/react`, and the federation runtime for `/federation`. A React federation host uses both. Zod remains a required peer dependency. Optional peers do not mean all functions can be imported from the root; use the matching entry point. The SDK's development dependencies support building/testing all adapters inside this workspace.
@@ -116,9 +116,8 @@ This repository contains only the SDK, its tests and documentation. It does not
 include the host SPA, assistant UI or BFF. Existing examples that refer to those
 applications describe the original integration workspace.
 
-The package is not published yet. Its original `@assistant/host-sdk` name and
-`private: true` safeguard remain until the npm scope and release settings are selected.
-The GitHub repository name does not determine the npm package name.
+The package name is `@daino92/assistant-bridge`. It is not published yet.
+The `private: true` safeguard remains until release preparation is complete.
 
 `pnpm build` emits JavaScript and declarations, rewrites internal aliases and
 extensionless imports, and generates the protocol schemas. `pnpm pack` creates
@@ -129,7 +128,7 @@ a local installation archive without publishing to a registry.
 Create one integration for the lifetime of the host application. Register only the actions that application intends to expose.
 
 ```ts
-import { createHostIntegration, navigateAction } from '@assistant/host-sdk';
+import { createHostIntegration, navigateAction } from '@daino92/assistant-bridge';
 
 const integration = createHostIntegration({
   appId: 'my-host',
@@ -154,7 +153,7 @@ The returned integration exposes `bridge`, `contextManager`, `actionRegistry`, `
 Use `defineAction` for application-specific behavior. Its Zod schema validates incoming payloads before the handler runs; `available` can restrict execution to an appropriate host context.
 
 ```ts
-import { defineAction, recordsFilterPayloadSchema } from '@assistant/host-sdk';
+import { defineAction, recordsFilterPayloadSchema } from '@daino92/assistant-bridge';
 
 // Include this action in createHostIntegration({ actions: [...] }).
 // applyFilters is supplied by the host and updates its own state.
@@ -181,7 +180,7 @@ An action name or exported schema does not register a handler automatically. The
 Built-in action factories are `navigateAction`, `highlightAction`, `scrollToAction`, `focusAction`, `selectAction`, and `openDetailsAction`. UI-target actions operate on targets registered by the host. The action factory callback provides the shared registry:
 
 ```ts
-import { createHostIntegration, focusAction, highlightAction } from '@assistant/host-sdk';
+import { createHostIntegration, focusAction, highlightAction } from '@daino92/assistant-bridge';
 
 const integration = createHostIntegration({
   appId: 'my-host',
@@ -212,7 +211,7 @@ If actions are registered or removed after initialization, call `integration.bri
 ## 4. Use the client inside the assistant
 
 ```ts
-import type { AssistantBridgeClient, HostContext } from '@assistant/host-sdk';
+import type { AssistantBridgeClient, HostContext } from '@daino92/assistant-bridge';
 
 const connectAssistant = (
   client: AssistantBridgeClient,
@@ -335,10 +334,11 @@ Common host-side failures include `UNKNOWN_ACTION`, `INVALID_PAYLOAD`, `ACTION_N
 Run from the repository root:
 
 ```sh
-pnpm --filter @assistant/host-sdk build  # Compile the SDK and declarations
-pnpm typecheck                         # Check the host, SDK, and chat
-pnpm test                              # Host, SDK, and chat unit tests
-pnpm test:e2e                          # Verify standalone and embedded flows
+pnpm build          # Compile the SDK, declarations and schemas
+pnpm typecheck      # Check SDK source and tests
+pnpm test           # Run SDK unit tests
+pnpm lint           # Check coding conventions
+pnpm format:check   # Check formatting
 ```
 
 The `/react` entry also provides `useUiTarget` for DOM target registration and `useAssistantPanel` for panel visibility, command subscriptions, connection status and reconnect attempts. Hosts retain their styling, availability controls and transport components. See [React integration examples](docs/react.md).
@@ -352,7 +352,7 @@ React hosts can create their stable instance with `useHostIntegration` from `/re
 ## Compose common UI actions
 
 ```ts
-import { createUiActions, defineAction } from '@assistant/host-sdk';
+import { createUiActions, defineAction } from '@daino92/assistant-bridge';
 
 const actions = [
   ...createUiActions({
@@ -370,7 +370,7 @@ const actions = [
 
 ## AG-UI agent client
 
-The optional `@assistant/host-sdk/ag-ui` entry exports `WebSocketAgent` (extends the official `@ag-ui/client` AbstractAgent), the existing `runWebSocketAgent` facade, `createHostAgentOptions` and official AG-UI types/schemas. It connects the independent chat to an agent BFF; it is separate from the iframe/federation bridge connecting the chat to the host.
+The optional `@daino92/assistant-bridge/ag-ui` entry exports `WebSocketAgent` (extends the official `@ag-ui/client` AbstractAgent), the existing `runWebSocketAgent` facade, `createHostAgentOptions` and official AG-UI types/schemas. It connects the independent chat to an agent BFF; it is separate from the iframe/federation bridge connecting the chat to the host.
 
 `createHostAgentOptions(bridge)` advertises the current non-confirmation host tools and page/selection context, and delegates approved tool calls back through `requestHostAction`. The client validates run/message/tool correlation, preserves text deltas exactly, forwards tool results and disposes the socket on completion, error, cancellation or timeout. The SDK root remains free of agent/provider imports.
 
@@ -411,7 +411,7 @@ See the [language-independent AG-UI transport contract and JSON fixtures](docs/a
 Any trusted chat can use the core SDK action executor without importing AG-UI, React, STOMP or a model SDK:
 
 ```ts
-import { createAssistantActionExecutor } from '@assistant/host-sdk';
+import { createAssistantActionExecutor } from '@daino92/assistant-bridge';
 
 const { executeAction } = createAssistantActionExecutor(bridge, {
   signal: controller.signal,
@@ -577,7 +577,7 @@ Repeated identical `updatePage` calls preserve current selection/highlights. Sel
 `createChatRunController` lives only in `/ag-ui`, independently of React and message storage:
 
 ```ts
-import { createChatRunController } from '@assistant/host-sdk/ag-ui';
+import { createChatRunController } from '@daino92/assistant-bridge/ag-ui';
 
 const runs = createChatRunController({
   url: 'ws://localhost:3001/agent',
@@ -680,7 +680,7 @@ integration.updatePage({ route, page, entities });
 
 ### Optional headless chat session
 
-`createChatSession()` from `@assistant/host-sdk/ag-ui` coordinates conversation messages,
+`createChatSession()` from `@daino92/assistant-bridge/ag-ui` coordinates conversation messages,
 streaming updates, stop, retry and action progress on top of `createChatRunController()`.
 Supply a synchronous `ChatSessionStorage` adapter (`getActiveId`, `createConversation`,
 `getMessages`, `append`, `update`) and optionally `describeAction` for application labels.

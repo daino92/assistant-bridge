@@ -1,5 +1,5 @@
 {
-  "name": "@assistant/host-sdk",
+  "name": "@daino92/assistant-bridge",
   "private": true,
   "version": "0.1.0",
   "type": "module",

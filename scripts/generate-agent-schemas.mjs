@@ -37,7 +37,7 @@ for (const [name, schema] of Object.entries({
 
   if (check) {
     if (readFileSync(target, 'utf8') !== content) {
-      throw new Error(`Stale schema: ${target}. Run pnpm --filter @assistant/host-sdk build.`);
+      throw new Error(`Stale schema: ${target}. Run pnpm build.`);
     }
   } else {
     writeFileSync(target, content);

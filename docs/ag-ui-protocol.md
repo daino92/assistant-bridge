@@ -8,7 +8,7 @@ Server-to-client payloads are AG-UI events, validated using the installed `@ag-u
 
 The client-to-server `run`, `stop`, `tool_result` envelopes, the optional `hostState` property and the WebSocket/STOMP binding are application-specific. They are not a standard AG-UI WebSocket protocol. `ToolMessage.error`, when supplied, carries our host-failure convention; other implementations must preserve it. There is currently no wire version negotiation. Breaking changes require coordinated deployment.
 
-TypeScript implementations import `agentControlSchema`, `AgentControl` and `AGENT_STOMP_DESTINATIONS` from `@assistant/host-sdk/ag-ui`. Client sends and BFF receives use the same envelope schema. Runtime limits and session state are enforced separately by the BFF.
+TypeScript implementations import `agentControlSchema`, `AgentControl` and `AGENT_STOMP_DESTINATIONS` from `@daino92/assistant-bridge/ag-ui`. Client sends and BFF receives use the same envelope schema. Runtime limits and session state are enforced separately by the BFF.
 
 ## Client controls
 
@@ -65,7 +65,7 @@ For another language, substitute generated IDs while preserving their correlatio
 
 Download [agent-control.schema.json](../schemas/agent-control.schema.json) and [host-agent-state.schema.json](../schemas/host-agent-state.schema.json). Both use JSON Schema draft-07. They are also available through the package's `schemas/*` export. A Java BFF can validate parsed JSON using a draft-07-compatible validator, then map the accepted object into its own DTOs. It does not import TypeScript or run Node. Server events still follow AG-UI; these files describe our incoming controls and host-state extension, not all server events.
 
-Generate with `pnpm --filter @assistant/host-sdk build`; verify committed artifacts with `pnpm --filter @assistant/host-sdk schemas:check`. The generator uses Zod's input representation, so transforms/defaults are not applied by JSON Schema validation. Unknown object fields are tolerated, matching Zod's input acceptance (Zod strips them afterward). Two AG-UI custom guards for metadata/activity content are represented as JSON objects. Runtime correlation, limits, authorization and cancellation remain server responsibilities; schema acceptance alone does not make a request executable.
+Generate with `pnpm build`; verify committed artifacts with `pnpm schemas:check`. The generator uses Zod's input representation, so transforms/defaults are not applied by JSON Schema validation. Unknown object fields are tolerated, matching Zod's input acceptance (Zod strips them afterward). Two AG-UI custom guards for metadata/activity content are represented as JSON objects. Runtime correlation, limits, authorization and cancellation remain server responsibilities; schema acceptance alone does not make a request executable.
 
 ### Client-side run error normalization
 

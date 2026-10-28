@@ -4,9 +4,16 @@ A minimal host integration using the current SDK API. This example uses React Ro
 
 ## 1. Dependencies
 
-Inside this pnpm workspace, add `"@assistant/host-sdk": "workspace:*"` to the consumer's dependencies. The host also supplies React, React DOM, React Router and Zod. Run `pnpm install` from the repository root.
+The package name is `@daino92/assistant-bridge`. It is not published to npm yet.
+For local development, run `pnpm install` and `pnpm pack` in the SDK repository,
+then install the generated archive in your consumer:
 
-The SDK is currently a private workspace package; its source aliases and TypeScript references still need the workspace configuration. It is not yet a standalone npm distribution. See [workspace setup](../README.md#workspace-setup).
+```bash
+pnpm add /path/to/daino92-assistant-bridge-0.1.0.tgz zod
+```
+
+The host also supplies React and React DOM. This example uses React Router.
+See [standalone development](../README.md#standalone-development).
 
 ## 2. Create the provider and declare allowed actions
 
@@ -14,8 +21,8 @@ The SDK is currently a private workspace package; its source aliases and TypeScr
 
 ```tsx
 import { useEffect, type ReactNode } from 'react';
-import { createUiActions } from '@assistant/host-sdk';
-import { IntegrationProvider, useHostIntegration } from '@assistant/host-sdk/react';
+import { createUiActions } from '@daino92/assistant-bridge';
+import { IntegrationProvider, useHostIntegration } from '@daino92/assistant-bridge/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface HostIntegrationProviderProps {
@@ -61,7 +68,7 @@ Only the declared actions are enabled. Add business actions with `defineAction()
 
 ```tsx
 import { useCallback } from 'react';
-import { useIntegration, useUiTarget } from '@assistant/host-sdk/react';
+import { useIntegration, useUiTarget } from '@daino92/assistant-bridge/react';
 
 const CatalogPage = () => {
   const { bridge } = useIntegration();
@@ -94,7 +101,7 @@ The assistant can request `ui.focus` or `ui.highlight` with `{ targetId: 'catalo
 `AssistantPanel.tsx`:
 
 ```tsx
-import { AssistantEmbed, useAssistantPanel } from '@assistant/host-sdk/react';
+import { AssistantEmbed, useAssistantPanel } from '@daino92/assistant-bridge/react';
 
 const AssistantPanel = () => {
   const { open, openPanel, closePanel, status, onStatus, attempt, reconnect } = useAssistantPanel();
