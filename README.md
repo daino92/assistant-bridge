@@ -708,3 +708,18 @@ remain application responsibilities.
 ## License
 
 [MIT](LICENSE) © 2026 daino92.
+
+## Continuous integration
+
+GitHub Actions validates pushes and pull requests targeting `develop` and `main`
+on Node.js 22 and 24. It runs formatting, lint, typecheck, tests, build and schema
+checks. The workflow has read-only repository access and does not publish packages.
+
+Run `pnpm package:check` to pack the SDK, inspect the archive and install it in
+two temporary consumers. The core consumer has no React or federation runtime;
+the adapter consumer imports every optional entry point with the required peers.
+This check needs registry access and the `tar` command. Temporary files are removed
+when the check finishes.
+
+Generated schemas and the pnpm lockfile are excluded from Prettier. CI checks
+that the build does not change committed schemas.

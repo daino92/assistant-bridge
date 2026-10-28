@@ -33,7 +33,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepack": "pnpm run build"
+    "prepack": "pnpm run build",
+    "package:check": "node scripts/check-package.mjs"
   },
   "peerDependencies": {
     "@module-federation/runtime": "2.9.2",

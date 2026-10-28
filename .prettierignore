@@ -1,0 +1,5 @@
+# Generated files are formatted by pnpm and the schema generator.
+pnpm-lock.yaml
+schemas/
+dist/
+coverage/
