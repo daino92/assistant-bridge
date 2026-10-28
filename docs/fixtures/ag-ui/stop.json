@@ -1,0 +1,49 @@
+{
+  "scenario": "stop",
+  "steps": [
+    {
+      "direction": "client",
+      "value": {
+        "type": "run",
+        "input": {
+          "threadId": "thread-1",
+          "runId": "run-1",
+          "messages": [
+            {
+              "id": "user-1",
+              "role": "user",
+              "content": "Hello"
+            }
+          ],
+          "tools": [],
+          "context": [],
+          "state": {},
+          "forwardedProps": {}
+        }
+      }
+    },
+    {
+      "direction": "server",
+      "value": {
+        "type": "RUN_STARTED",
+        "threadId": "thread-1",
+        "runId": "run-1"
+      }
+    },
+    {
+      "direction": "client",
+      "value": {
+        "type": "stop",
+        "runId": "run-1"
+      }
+    },
+    {
+      "direction": "server",
+      "value": {
+        "type": "RUN_ERROR",
+        "code": "STOPPED",
+        "message": "Agent run stopped."
+      }
+    }
+  ]
+}

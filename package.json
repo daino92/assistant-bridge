@@ -1,0 +1,97 @@
+{
+  "name": "@assistant/host-sdk",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "default": "./dist/react/index.js"
+    },
+    "./federation": {
+      "types": "./dist/federation/index.d.ts",
+      "default": "./dist/federation/index.js"
+    },
+    "./react/federation": {
+      "types": "./dist/react/federation/index.d.ts",
+      "default": "./dist/react/federation/index.js"
+    },
+    "./ag-ui": {
+      "types": "./dist/ag-ui/index.d.ts",
+      "default": "./dist/ag-ui/index.js"
+    },
+    "./schemas/*": "./schemas/*"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/resolve-build-aliases.mjs && node scripts/generate-agent-schemas.mjs",
+    "schemas:check": "node scripts/generate-agent-schemas.mjs --check",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.tests.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepack": "pnpm run build"
+  },
+  "peerDependencies": {
+    "@module-federation/runtime": "2.9.2",
+    "react": "^19.3.0",
+    "zod": "^4.6.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@module-federation/runtime": "2.9.2",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "ajv": "6.15.0",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
+    "jsdom": "^30.1.2",
+    "prettier": "^3.9.10",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript-eslint": "^8.71.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.4",
+    "zod": "^4.6.7"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "@module-federation/runtime": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@ag-ui/client": "^1.0.3",
+    "@ag-ui/core": "^1.0.3",
+    "@stomp/stompjs": "7.5.0",
+    "rxjs": "7.8.1"
+  },
+  "description": "Framework-agnostic host integration for AI assistants, with optional React, federation and AG-UI adapters.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/daino92/assistant-bridge.git"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "docs"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "packageManager": "pnpm@9.12.3"
+}

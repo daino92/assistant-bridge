@@ -1,0 +1,129 @@
+{
+  "scenario": "tool-rejected",
+  "steps": [
+    {
+      "direction": "client",
+      "value": {
+        "type": "run",
+        "input": {
+          "threadId": "thread-1",
+          "runId": "run-1",
+          "messages": [
+            {
+              "id": "user-1",
+              "role": "user",
+              "content": "Hello"
+            }
+          ],
+          "tools": [
+            {
+              "name": "records.updateStatus",
+              "description": "Change record status; requires user approval.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "recordId": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["active", "pending", "archived"]
+                  }
+                },
+                "required": ["recordId", "status"]
+              }
+            }
+          ],
+          "context": [],
+          "state": {},
+          "forwardedProps": {}
+        }
+      }
+    },
+    {
+      "direction": "server",
+      "value": {
+        "type": "RUN_STARTED",
+        "threadId": "thread-1",
+        "runId": "run-1"
+      }
+    },
+    {
+      "direction": "server",
+      "value": {
+        "type": "TOOL_CALL_START",
+        "toolCallId": "call-1",
+        "toolCallName": "records.updateStatus"
+      }
+    },
+    {
+      "direction": "server",
+      "value": {
+        "type": "TOOL_CALL_ARGS",
+        "toolCallId": "call-1",
+        "delta": "{\"recordId\": \"record-012\", \"status\": \"pending\"}"
+      }
+    },
+    {
+      "direction": "server",
+      "value": {
+        "type": "TOOL_CALL_END",
+        "toolCallId": "call-1"
+      }
+    },
+    {
+      "direction": "client",
+      "value": {
+        "type": "tool_result",
+        "runId": "run-1",
+        "message": {
+          "id": "result-1",
+          "role": "tool",
+          "toolCallId": "call-1",
+          "content": "The user rejected this action. No changes were made.",
+          "error": "The user rejected this action. No changes were made."
+        },
+        "hostState": {
+          "tools": [
+            {
+              "name": "records.updateStatus",
+              "description": "Change record status; requires user approval.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "recordId": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["active", "pending", "archived"]
+                  }
+                },
+                "required": ["recordId", "status"]
+              }
+            }
+          ],
+          "context": []
+        }
+      }
+    },
+    {
+      "direction": "server",
+      "value": {
+        "type": "TOOL_CALL_RESULT",
+        "messageId": "result-1",
+        "toolCallId": "call-1",
+        "content": "The user rejected this action. No changes were made.",
+        "role": "tool"
+      }
+    },
+    {
+      "direction": "server",
+      "value": {
+        "type": "RUN_FINISHED",
+        "threadId": "thread-1",
+        "runId": "run-1"
+      }
+    }
+  ]
+}

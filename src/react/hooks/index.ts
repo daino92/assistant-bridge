@@ -1,0 +1,16 @@
+export { useUiTarget, type UiTargetOptions } from './useUiTarget';
+export { useAssistantPanel } from './useAssistantPanel';
+
+export {
+  useAssistantIframeConnection,
+  type UseAssistantIframeConnectionOptions,
+} from './useAssistantIframeConnection';
+
+export { useAssistantContext } from './useAssistantContext';
+export { useAssistantCommandHandler } from './useAssistantCommandHandler';
+export { useHostIntegration } from './useHostIntegration';
+
+export { useHostPageContext, type HostPageContextOptions } from './useHostPageContext';
+export { useAskAi } from './useAskAi';
+
+export { useActionConfirmation } from './useActionConfirmation';
