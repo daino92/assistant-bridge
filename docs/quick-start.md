@@ -4,13 +4,22 @@ A minimal host integration using the current SDK API. This example uses React Ro
 
 ## 1. Dependencies
 
-The package name is `@daino92/assistant-bridge`. It is not published to npm yet.
-For local development, run `pnpm install` and `pnpm pack` in the SDK repository,
-then install the generated archive in your consumer:
+The initial release is `0.1.0-beta.1`. After it is published, install the beta
+and its required peer dependency:
 
 ```bash
-pnpm add /path/to/daino92-assistant-bridge-0.1.0.tgz zod
+pnpm add @daino92/assistant-bridge@beta 'zod@^4.6.0'
 ```
+
+Before publication, run `pnpm install` and `pnpm pack` in the SDK repository,
+then install the generated archive instead:
+
+```bash
+pnpm add /path/to/daino92-assistant-bridge-0.1.0-beta.1.tgz 'zod@^4.6.0'
+```
+
+React adapters require `react@^19.3.0`. Federation adapters additionally require
+`@module-federation/runtime@2.9.2`.
 
 The host also supplies React and React DOM. This example uses React Router.
 See [standalone development](../README.md#standalone-development).

@@ -42,19 +42,20 @@ try {
   const published = JSON.parse(readEntry('package/package.json'));
 
   assert.equal(published.name, MANIFEST.name);
+  assert.equal(published.version, MANIFEST.version);
   assert.equal(published.license, 'MIT');
   assert.equal(published.private, undefined);
   assert.equal(published.publishConfig.access, 'public');
   assert.equal(published.publishConfig.registry, 'https://registry.npmjs.org/');
 
-  for (const entry of ['package/LICENSE', 'package/README.md']) {
+  for (const entry of ['package/LICENSE', 'package/README.md', 'package/CHANGELOG.md']) {
     assert.ok(entries.includes(entry), `Missing ${entry}`);
   }
 
   for (const entry of entries) {
     assert.match(
       entry,
-      /^package\/(?:dist\/|schemas\/|docs\/|package\.json$|README\.md$|LICENSE$)/,
+      /^package\/(?:dist\/|schemas\/|docs\/|package\.json$|README\.md$|CHANGELOG\.md$|LICENSE$)/,
     );
     assert.doesNotMatch(entry, /(?:^|\/)(?:node_modules|src|scripts|\.env)(?:\/|$)|\.test\./);
 

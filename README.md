@@ -8,6 +8,50 @@ A framework-agnostic integration layer between a host application and an assista
 
 The root SDK entry contains no React or federation runtime imports. Optional adapters are isolated behind `/react`, `/federation` and `/ag-ui` subpath exports. The host owns its routes, state, UI, and action handlers; the chat owns conversations and message rendering; the BFF owns model calls and agent execution. This package supplies the communication contracts and execution boundary between them.
 
+## Beta installation
+
+Version `0.1.0-beta.1` is a prerelease. The public API may change before the first
+stable release. After this version is published, install it with the `beta` tag:
+
+```bash
+pnpm add @daino92/assistant-bridge@beta 'zod@^4.6.0'
+```
+
+| Entry point         | Additional peer dependencies          |
+| ------------------- | ------------------------------------- |
+| Core                | None beyond Zod                       |
+| `/react`            | `react@^19.3.0`                       |
+| `/federation`       | `@module-federation/runtime@2.9.2`    |
+| `/react/federation` | Both React and the federation runtime |
+| `/ag-ui`            | None beyond Zod                       |
+
+React applications also supply their renderer, such as React DOM. This package
+does not include an assistant UI or backend.
+
+## Minimal core example
+
+```ts
+import { createHostIntegration } from '@daino92/assistant-bridge';
+
+const integration = createHostIntegration({
+  appId: 'my-app',
+  actions: [],
+});
+
+integration.updatePage({
+  route: '/dashboard',
+  page: { title: 'Dashboard', type: 'dashboard' },
+});
+
+// Give the assistant only integration.assistantClient.
+// Register host actions explicitly before allowing assistant-driven changes.
+
+// When the host integration is no longer needed:
+integration.dispose();
+```
+
+For embedding and allowed actions, see the [React quick start](docs/quick-start.md).
+
 ## What it provides
 
 | API                                            | Responsibility                                                                                      |
