@@ -78,7 +78,9 @@ const createPortChannel = (port: MessagePort, onMessage: (message: PortMessage) 
       if (message.value.success) {
         waiter.resolve(message.value.data);
       } else {
-        waiter.reject(createIntegrationError(normalizeIntegrationError(message.value.error).code));
+        const detail = normalizeIntegrationError(message.value.error);
+
+        waiter.reject(createIntegrationError(detail.code, detail.reason));
       }
 
       return;

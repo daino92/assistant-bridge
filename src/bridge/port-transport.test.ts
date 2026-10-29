@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { attachHostPort, createPortAssistantClient } from '@/bridge';
 import { createHostIntegration } from '@/create-host-integration';
-import { normalizeIntegrationError } from '@/errors';
+import { normalizeIntegrationError, createIntegrationError } from '@/errors';
 import { createAssistantActionExecutor } from '@/assistant-client';
 import type { ActionLifecycleEvent } from '@/contracts';
 
@@ -199,4 +199,27 @@ it('isolates iframe context snapshots and each subscriber notification', async (
   await vi.waitFor(() => expect(listener).toHaveBeenCalledOnce());
   expect(listener.mock.calls[0][0].page.title).toBe('Records');
   expect(remote.client.getInitialContext().page.title).toBe('Records');
+});
+
+it('preserves public business guidance through direct and iframe action results', async () => {
+  const { actionRegistry, assistantClient, remote } = connect();
+  const reason = { code: 'OFFER_REQUIRED', message: 'Select an offer before checkout.' };
+
+  actionRegistry.register({
+    name: 'test.blocked',
+    description: 'Blocked',
+    parametersSchema: z.object({}),
+    requiresConfirmation: false,
+    handler: () => {
+      throw createIntegrationError('ACTION_NOT_AVAILABLE', reason);
+    },
+  });
+
+  for (const client of [assistantClient, remote.client]) {
+    await expect(client.requestHostAction('test.blocked', {})).rejects.toMatchObject({
+      code: 'ACTION_NOT_AVAILABLE',
+      message: reason.message,
+      reason,
+    });
+  }
 });

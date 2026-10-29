@@ -1,4 +1,10 @@
-import { ERROR_CODES, type ErrorCode, type StructuredError } from '@/contracts';
+import {
+  ERROR_CODES,
+  businessReasonSchema,
+  type BusinessReason,
+  type ErrorCode,
+  type StructuredError,
+} from '@/contracts';
 
 const ERROR_MESSAGES: Record<ErrorCode, string> = {
   ACTION_REJECTED: 'The user rejected this action. No changes were made.',
@@ -24,11 +30,21 @@ export const normalizeIntegrationError = (error: unknown): StructuredError => {
   const supplied = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
   const code = isIntegrationErrorCode(supplied) ? supplied : ERROR_CODES.EXECUTION_FAILED;
 
-  return { code, message: ERROR_MESSAGES[code] };
+  const parsed = businessReasonSchema.safeParse(
+    error && typeof error === 'object' && 'reason' in error ? error.reason : undefined,
+  );
+
+  const reason =
+    code === ERROR_CODES.ACTION_NOT_AVAILABLE && parsed.success ? parsed.data : undefined;
+
+  return { code, message: reason?.message ?? ERROR_MESSAGES[code], ...(reason ? { reason } : {}) };
 };
 
-export const createIntegrationError = (code: ErrorCode): Error & StructuredError => {
-  const detail = normalizeIntegrationError({ code });
+export const createIntegrationError = (
+  code: ErrorCode,
+  reason?: BusinessReason,
+): Error & StructuredError => {
+  const detail = normalizeIntegrationError({ code, reason });
 
-  return Object.assign(new Error(detail.message), { code: detail.code });
+  return Object.assign(new Error(detail.message), detail);
 };

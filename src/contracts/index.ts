@@ -45,6 +45,8 @@ export {
   PROTOCOL_VERSION,
   type ErrorCode,
   type StructuredError,
+  type BusinessReason,
+  businessReasonSchema,
 } from './protocol';
 
 export {

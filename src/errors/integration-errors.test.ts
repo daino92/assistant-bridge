@@ -41,3 +41,26 @@ it('does not infer a code from arbitrary message text or inherited object keys',
   expect(isIntegrationErrorCode('toString')).toBe(false);
   expect(isIntegrationErrorCode('TIMEOUT')).toBe(true);
 });
+
+it('preserves only explicit bounded public reasons for unavailable actions across normalization', () => {
+  const reason = { code: 'OFFER_REQUIRED', message: 'Select an offer first.' };
+  const error = createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE, reason);
+  const expected = { code: ERROR_CODES.ACTION_NOT_AVAILABLE, message: reason.message, reason };
+
+  expect(normalizeIntegrationError(error)).toEqual(expected);
+  expect(normalizeIntegrationError(JSON.parse(JSON.stringify(expected)))).toEqual(expected);
+  expect(normalizeIntegrationError({ code: 'PRIVATE', reason }).reason).toBeUndefined();
+  expect(
+    normalizeIntegrationError({ code: ERROR_CODES.EXECUTION_FAILED, reason }).reason,
+  ).toBeUndefined();
+
+  for (const invalid of [
+    { code: 'bad code', message: 'text' },
+    { code: 'OFFER_REQUIRED', message: '' },
+    { code: 'OFFER_REQUIRED', message: 'x'.repeat(301) },
+  ]) {
+    expect(
+      normalizeIntegrationError({ code: ERROR_CODES.ACTION_NOT_AVAILABLE, reason: invalid }),
+    ).toEqual(normalizeIntegrationError({ code: ERROR_CODES.ACTION_NOT_AVAILABLE }));
+  }
+});

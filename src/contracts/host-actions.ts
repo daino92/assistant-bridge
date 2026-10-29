@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PROTOCOL_VERSION } from './protocol';
+import { PROTOCOL_VERSION, businessReasonSchema } from './protocol';
 
 export const hostActionRequestSchema = z.object({
   protocolVersion: z.literal(PROTOCOL_VERSION),
@@ -22,6 +22,7 @@ export const hostActionResultSchema = z.object({
     .object({
       code: z.string(),
       message: z.string(),
+      reason: businessReasonSchema.optional(),
     })
     .optional(),
 });

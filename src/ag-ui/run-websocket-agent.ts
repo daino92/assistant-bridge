@@ -91,7 +91,7 @@ export const runWebSocketAgent = async (options: AgentOptions): Promise<void> =>
 
       rejected = detail.code === ERROR_CODES.ACTION_REJECTED;
       error = detail.message;
-      content = error;
+      content = detail.reason ? JSON.stringify(detail) : error;
     }
 
     if (failure || options.signal.aborted) {

@@ -767,3 +767,20 @@ when the check finishes.
 
 Generated schemas and the pnpm lockfile are excluded from Prettier. CI checks
 that the build does not change committed schemas.
+
+### Public business rejection reasons
+
+Hosts can attach an optional public reason to `ACTION_NOT_AVAILABLE`:
+
+```ts
+throw createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE, {
+  code: 'OFFER_REQUIRED',
+  message: 'Select a renewal offer before opening checkout.',
+});
+```
+
+The reason code is host-owned (uppercase letters, digits and underscores, up to 64 characters).
+Its message is explicitly public text, limited to 300 characters: never include secrets, raw API
+responses or exception details. Valid reasons survive direct/iframe errors and become structured
+AG-UI tool result content for the model. Other errors and invalid reasons retain safe catalog messages.
+The SDK does not interpret business codes or navigate automatically. No reason is required.

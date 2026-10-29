@@ -66,6 +66,8 @@ export {
   type IntegrationTimelineEntry,
   type IntegrationDiagnostic,
   type StructuredError,
+  type BusinessReason,
+  businessReasonSchema,
 } from './contracts';
 
 export {

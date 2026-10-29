@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export const PROTOCOL_VERSION = '1.0.0';
 
 /** Shared iframe handshake names, independent of a host application's branding. */
@@ -25,7 +27,16 @@ export const ERROR_CODES = {
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
 
+/** Explicit host-authored public guidance, never raw exception details. */
+export const businessReasonSchema = z.object({
+  code: z.string().regex(/^[A-Z][A-Z0-9_]{0,63}$/),
+  message: z.string().trim().min(1).max(300),
+});
+
+export type BusinessReason = z.infer<typeof businessReasonSchema>;
+
 export interface StructuredError {
   code: ErrorCode;
   message: string;
+  reason?: BusinessReason;
 }

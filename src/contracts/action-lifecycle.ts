@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { businessReasonSchema } from './protocol';
+
 export const actionLifecycleStatusSchema = z.enum([
   'requested',
   'awaiting-approval',
@@ -19,7 +21,9 @@ export const actionLifecycleEventSchema = z.object({
   status: actionLifecycleStatusSchema,
   timestamp: z.number().nonnegative(),
   dispatched: z.boolean(),
-  error: z.object({ code: z.string(), message: z.string() }).optional(),
+  error: z
+    .object({ code: z.string(), message: z.string(), reason: businessReasonSchema.optional() })
+    .optional(),
 });
 
 export type ActionLifecycleEvent = z.infer<typeof actionLifecycleEventSchema>;

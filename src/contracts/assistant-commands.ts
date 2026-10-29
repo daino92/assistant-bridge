@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PROTOCOL_VERSION } from './protocol';
+import { PROTOCOL_VERSION, businessReasonSchema } from './protocol';
 
 export const assistantCommandRequestSchema = z.object({
   protocolVersion: z.literal(PROTOCOL_VERSION),
@@ -19,6 +19,7 @@ export const assistantCommandResultSchema = z.object({
     .object({
       code: z.string(),
       message: z.string(),
+      reason: businessReasonSchema.optional(),
     })
     .optional(),
 });
