@@ -18,6 +18,7 @@ export interface ChatSessionMessage {
   text: string;
   status: 'complete' | 'streaming' | 'stopped' | 'error';
   activity?: string;
+  context?: ChatRunStartOptions['context'];
   actions?: (ActionProgressEntry & { label: string })[];
 }
 
@@ -107,6 +108,10 @@ export const createChatSession = (options: ChatSessionOptions) => {
     const getMessage = () =>
       storage.getMessages(conversationId).find((item) => item.id === messageId);
 
+    const context = structuredClone(
+      runOptions.context ?? (retryId ? getMessage()?.context : undefined),
+    );
+
     if (!retryId) {
       storage.append(conversationId, {
         id: crypto.randomUUID(),
@@ -119,6 +124,7 @@ export const createChatSession = (options: ChatSessionOptions) => {
         role: 'assistant',
         text: '',
         status: 'streaming',
+        ...(context ? { context } : {}),
       });
     } else {
       update({ text: '', activity: undefined, actions: [], status: 'streaming' });
@@ -127,6 +133,7 @@ export const createChatSession = (options: ChatSessionOptions) => {
     return controller
       .start({
         ...runOptions,
+        context,
         threadId: conversationId,
         messages: buildAgentMessages(storage.getMessages(conversationId), messageId),
         onText: (text) => update({ text, activity: undefined }),

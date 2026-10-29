@@ -113,3 +113,29 @@ it('stops and finalizes pending answers, ignores late text and refuses writes af
   expect(() => session.submit('another')).toThrow();
   expect(messages.first).toHaveLength(2);
 });
+
+it('keeps question context out of messages, snapshots it and preserves it for retry only', async () => {
+  const { session, messages } = setup();
+  const context = [{ description: 'Question context', value: 'model-only data' }];
+  const calls: AgentOptions[] = [];
+
+  runAgent.mockImplementation(async (options: AgentOptions) => {
+    calls.push(options);
+
+    if (calls.length === 1) {
+      throw new Error('Failure');
+    }
+  });
+  await session.submit('Visible question', { context });
+  context[0].value = 'MUTATED';
+  expect(messages.first[0].text).toBe('Visible question');
+  expect(calls[0].input.messages[0].content).toBe('Visible question');
+  expect(calls[0].input.context).toEqual([
+    { description: 'Question context', value: 'model-only data' },
+  ]);
+  await session.submit('Visible question', { retryId: messages.first[1].id });
+  expect(calls[1].input.context).toEqual(calls[0].input.context);
+  await session.submit('Next question');
+  expect(calls[2].input.context).toEqual([]);
+  session.dispose();
+});

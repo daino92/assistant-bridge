@@ -26,6 +26,7 @@ export interface ChatRunStartOptions
     Pick<AssistantActionExecutorOptions, 'requestConfirmation' | 'readiness' | 'contextWait'> {
   threadId: string;
   messages: RunAgentInput['messages'];
+  context?: RunAgentInput['context'];
   bridge?: AssistantBridgeClient;
   signal?: AbortSignal;
   state?: RunAgentInput['state'];
@@ -142,7 +143,7 @@ export const createChatRunController = (options: ChatRunControllerOptions): Chat
                 ...identity,
                 messages: structuredClone(startOptions.messages),
                 tools: host.tools,
-                context: host.context,
+                context: [...host.context, ...structuredClone(startOptions.context ?? [])],
                 state: structuredClone(startOptions.state ?? {}),
                 forwardedProps: structuredClone(startOptions.forwardedProps ?? {}),
               },

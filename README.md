@@ -784,3 +784,10 @@ Its message is explicitly public text, limited to 300 characters: never include 
 responses or exception details. Valid reasons survive direct/iframe errors and become structured
 AG-UI tool result content for the model. Other errors and invalid reasons retain safe catalog messages.
 The SDK does not interpret business codes or navigate automatically. No reason is required.
+
+Chat session submissions may supply `context: [{ description, value }]` separately from the
+visible prompt. It is merged with current host context in the AG-UI input, never appended to
+user message text. The session stores it on the answer for retries; subsequent new questions do
+not automatically inherit it. Storage adapters should preserve this optional message field if
+retry must survive reload. Context remains model-visible and may be persisted by the consumer;
+it is not a place for secrets.
