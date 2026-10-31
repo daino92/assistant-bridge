@@ -12,7 +12,6 @@ React adapters require `react@^19.3.0`. Federation adapters additionally require
 `@module-federation/runtime@2.9.2`.
 
 The host also supplies React and React DOM. This example uses React Router.
-See [standalone development](../README.md#standalone-development).
 
 ## 2. Create the provider and declare allowed actions
 
@@ -204,4 +203,4 @@ The host must also supply `@module-federation/runtime` and initialize federation
 | Panel layout, loading/error messages and retry button | Visibility command subscriptions and retry state     |
 | A compatible assistant application                    | Host/assistant communication contracts               |
 
-For host-to-assistant commands such as `askAbout()` and `prefillAndOpen()`, see the [SDK guide](../README.md#high-level-integration-apis). For lifecycle details and assistant-side hooks, see the [React reference](react.md).
+For host-to-assistant commands such as `askAbout()` and `prefillAndOpen()`, see the [Core API](core.md#send-commands-from-the-host). For lifecycle details and assistant-side hooks, see the [React reference](react.md).
