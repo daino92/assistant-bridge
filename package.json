@@ -1,5 +1,5 @@
 {
-  "name": "@daino92/assistant-bridge",
+  "name": "assistant-bridge",
   "version": "0.1.0-beta.1",
   "type": "module",
   "exports": {

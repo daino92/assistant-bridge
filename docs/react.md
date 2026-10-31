@@ -1,9 +1,9 @@
-# @daino92/assistant-bridge/react
+# assistant-bridge/react
 
-Optional React context from the single `@daino92/assistant-bridge` package. Import this entry point only in React consumers and supply the optional `react` peer dependency. The root entry remains framework agnostic.
+Optional React context from the single `assistant-bridge` package. Import this entry point only in React consumers and supply the optional `react` peer dependency. The root entry remains framework agnostic.
 
 ```tsx
-import { IntegrationProvider, useIntegration } from '@daino92/assistant-bridge/react';
+import { IntegrationProvider, useIntegration } from 'assistant-bridge/react';
 
 // integration is the host-owned, stable result of createHostIntegration().
 <IntegrationProvider integration={integration}>{children}</IntegrationProvider>;
@@ -17,7 +17,7 @@ The provider only shares the supplied integration; it does not create or destroy
 ## Managed host integration
 
 ```tsx
-import { IntegrationProvider, useHostIntegration } from '@daino92/assistant-bridge/react';
+import { IntegrationProvider, useHostIntegration } from 'assistant-bridge/react';
 
 const integration = useHostIntegration({
   appId: 'my-host',
@@ -38,7 +38,7 @@ On final unmount, the hook clears active highlights, marks the assistant unavail
 ## UI targets
 
 ```tsx
-import { useUiTarget } from '@daino92/assistant-bridge/react';
+import { useUiTarget } from 'assistant-bridge/react';
 
 const { ref, highlighted } = useUiTarget<HTMLInputElement>('catalog-search', {
   onSelect: (value) => setSearch(value ?? ''),
@@ -51,7 +51,7 @@ The hook registers the target with the current integration and unregisters it on
 ## Assistant panel behavior
 
 ```tsx
-import { useAssistantPanel } from '@daino92/assistant-bridge/react';
+import { useAssistantPanel } from 'assistant-bridge/react';
 
 const { open, openPanel, closePanel, status, onStatus, attempt, reconnect } = useAssistantPanel();
 ```
@@ -65,7 +65,7 @@ The host keeps the panel/launcher markup, styling, loading/error messages and UR
 ## Unified assistant embedding
 
 ```tsx
-import { AssistantEmbed, useAssistantPanel } from '@daino92/assistant-bridge/react';
+import { AssistantEmbed, useAssistantPanel } from 'assistant-bridge/react';
 
 const { onStatus, attempt } = useAssistantPanel();
 
@@ -102,7 +102,7 @@ Iframe mode does not execute or download the federation adapter. Bundlers still 
 ## Ready-made iframe component
 
 ```tsx
-import { AssistantIframe, useAssistantPanel } from '@daino92/assistant-bridge/react';
+import { AssistantIframe, useAssistantPanel } from 'assistant-bridge/react';
 
 const { onStatus, attempt } = useAssistantPanel();
 // Within your panel's content container:
@@ -120,7 +120,7 @@ Render inside `IntegrationProvider`. The SDK adds the embedding/host-origin quer
 ## Ready-made federated React component
 
 ```tsx
-import { FederatedAssistant } from '@daino92/assistant-bridge/react/federation';
+import { FederatedAssistant } from 'assistant-bridge/react/federation';
 
 <FederatedAssistant
   runtimeName="my-host"
@@ -149,7 +149,7 @@ import {
   useAssistantIframeConnection,
   useAssistantContext,
   useAssistantCommandHandler,
-} from '@daino92/assistant-bridge/react';
+} from 'assistant-bridge/react';
 
 // bridge and onReady are optional embedding props; onCommand belongs to the chat.
 const [iframeClient, setIframeClient] = useState<AssistantBridgeClient>();
@@ -190,8 +190,8 @@ Inside `IntegrationProvider`, `useAskAi()` exposes stable `askAbout(prompt, sele
 ## Action confirmation UI
 
 ```tsx
-import { useActionConfirmation } from '@daino92/assistant-bridge/react';
-import { createHostAgentOptions } from '@daino92/assistant-bridge/ag-ui';
+import { useActionConfirmation } from 'assistant-bridge/react';
+import { createHostAgentOptions } from 'assistant-bridge/ag-ui';
 
 const { confirmation, requestConfirmation, approve, reject } = useActionConfirmation();
 

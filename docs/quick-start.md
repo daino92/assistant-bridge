@@ -8,7 +8,7 @@ The initial release is `0.1.0-beta.1`. After it is published, install the beta
 and its required peer dependency:
 
 ```bash
-pnpm add @daino92/assistant-bridge@beta 'zod@^4.6.0'
+pnpm add assistant-bridge@beta 'zod@^4.6.0'
 ```
 
 Before publication, run `pnpm install` and `pnpm pack` in the SDK repository,
@@ -30,8 +30,8 @@ See [standalone development](../README.md#standalone-development).
 
 ```tsx
 import { useEffect, type ReactNode } from 'react';
-import { createUiActions } from '@daino92/assistant-bridge';
-import { IntegrationProvider, useHostIntegration } from '@daino92/assistant-bridge/react';
+import { createUiActions } from 'assistant-bridge';
+import { IntegrationProvider, useHostIntegration } from 'assistant-bridge/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface HostIntegrationProviderProps {
@@ -77,7 +77,7 @@ Only the declared actions are enabled. Add business actions with `defineAction()
 
 ```tsx
 import { useCallback } from 'react';
-import { useIntegration, useUiTarget } from '@daino92/assistant-bridge/react';
+import { useIntegration, useUiTarget } from 'assistant-bridge/react';
 
 const CatalogPage = () => {
   const { bridge } = useIntegration();
@@ -110,7 +110,7 @@ The assistant can request `ui.focus` or `ui.highlight` with `{ targetId: 'catalo
 `AssistantPanel.tsx`:
 
 ```tsx
-import { AssistantEmbed, useAssistantPanel } from '@daino92/assistant-bridge/react';
+import { AssistantEmbed, useAssistantPanel } from 'assistant-bridge/react';
 
 const AssistantPanel = () => {
   const { open, openPanel, closePanel, status, onStatus, attempt, reconnect } = useAssistantPanel();
