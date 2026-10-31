@@ -12,7 +12,7 @@ import { IntegrationProvider, useIntegration } from 'assistant-bridge/react';
 const { assistantCommands } = useIntegration();
 ```
 
-The provider only shares the supplied integration; it does not create or destroy it. Use `useHostIntegration` for SDK-managed instance lifecycle, or manage a core `createHostIntegration` instance yourself. The host owns routing and action handlers. This repository wraps it in `src/app/providers/HostIntegrationProvider.tsx` to publish route changes via `updatePage` with the host's selection policy.
+The provider only shares the supplied integration; it does not create or destroy it. Use `useHostIntegration` for SDK-managed instance lifecycle, or manage a core `createHostIntegration` instance yourself. The host owns routing and action handlers. Hosts typically wrap it to publish route changes via `updatePage` with their own selection policy.
 
 ## Managed host integration
 
@@ -46,7 +46,7 @@ const { ref, highlighted } = useUiTarget<HTMLInputElement>('catalog-search', {
 // <input ref={ref} className={highlighted ? 'my-highlight' : undefined} />
 ```
 
-The hook registers the target with the current integration and unregisters it on ID change or unmount. It provides highlighting state, focus, scrolling and selection callbacks. An optional `focusRef` directs focus and scrolling to a nested element. The host owns IDs, selection callbacks and highlight styles. This repository re-exports the hook through `src/hooks/useUiTarget.ts`, alongside its host-specific CSS helpers.
+The hook registers the target with the current integration and unregisters it on ID change or unmount. It provides highlighting state, focus, scrolling and selection callbacks. An optional `focusRef` directs focus and scrolling to a nested element. The host owns IDs, selection callbacks and highlight styles.
 
 ## Assistant panel behavior
 

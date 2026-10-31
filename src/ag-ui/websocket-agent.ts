@@ -69,44 +69,45 @@ export class WebSocketAgent extends AbstractAgent {
       this.cancel = abort;
       signal.addEventListener('abort', abort, { once: true });
 
-      const transport = (this.options.transport === 'stomp' ? connectStomp : connectWebSocket)(
-        this.options.url,
-        {
-          open: () => send({ type: 'run', input }),
-          error: (error) => subscriber.error(error),
-          closed: () => {
-            if (!terminal) {
-              subscriber.error(createRunError(RUN_ERROR_CODES.CONNECTION_CLOSED));
-            }
-          },
-          message: (body) => {
-            try {
-              const value = EventSchemas.parse(JSON.parse(body));
+      const connect: typeof connectWebSocket =
+        this.options.transport === 'stomp'
+          ? (url, callbacks) => connectStomp(url, callbacks, this.options.stompDestinations)
+          : connectWebSocket;
 
-              if (
-                (value.type === EventType.RUN_STARTED || value.type === EventType.RUN_FINISHED) &&
-                (value.runId !== input.runId || value.threadId !== input.threadId)
-              ) {
-                throw createRunError(RUN_ERROR_CODES.PROTOCOL_ERROR);
-              }
-
-              terminal =
-                value.type === EventType.RUN_FINISHED || value.type === EventType.RUN_ERROR;
-              subscriber.next(
-                value.type === EventType.RUN_ERROR
-                  ? { ...value, ...normalizeRunError(value) }
-                  : value,
-              );
-
-              if (terminal) {
-                subscriber.complete();
-              }
-            } catch {
-              subscriber.error(createRunError(RUN_ERROR_CODES.PROTOCOL_ERROR));
-            }
-          },
+      const transport = connect(this.options.url, {
+        open: () => send({ type: 'run', input }),
+        error: (error) => subscriber.error(error),
+        closed: () => {
+          if (!terminal) {
+            subscriber.error(createRunError(RUN_ERROR_CODES.CONNECTION_CLOSED));
+          }
         },
-      );
+        message: (body) => {
+          try {
+            const value = EventSchemas.parse(JSON.parse(body));
+
+            if (
+              (value.type === EventType.RUN_STARTED || value.type === EventType.RUN_FINISHED) &&
+              (value.runId !== input.runId || value.threadId !== input.threadId)
+            ) {
+              throw createRunError(RUN_ERROR_CODES.PROTOCOL_ERROR);
+            }
+
+            terminal = value.type === EventType.RUN_FINISHED || value.type === EventType.RUN_ERROR;
+            subscriber.next(
+              value.type === EventType.RUN_ERROR
+                ? { ...value, ...normalizeRunError(value) }
+                : value,
+            );
+
+            if (terminal) {
+              subscriber.complete();
+            }
+          } catch {
+            subscriber.error(createRunError(RUN_ERROR_CODES.PROTOCOL_ERROR));
+          }
+        },
+      });
 
       return () => {
         clearTimeout(timer);

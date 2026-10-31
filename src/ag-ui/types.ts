@@ -1,6 +1,6 @@
 import type { RunAgentInput } from '@ag-ui/core';
 
-import type { HostAgentState } from '@/ag-ui';
+import type { AgentStompDestinations, HostAgentState } from '@/ag-ui';
 import type { ActionExecutionOptions } from '@/assistant-client';
 import type { ActionLifecycleListener } from '@/contracts';
 
@@ -16,6 +16,8 @@ export type { ActionConfirmation } from '@/assistant-client';
 
 export interface AgentOptions {
   transport?: 'websocket' | 'stomp';
+  /** Overrides AGENT_STOMP_DESTINATIONS for backends using other paths. Ignored for raw WebSocket. */
+  stompDestinations?: AgentStompDestinations;
   url: string;
   input: RunAgentInput;
   signal: AbortSignal;
@@ -34,5 +36,5 @@ export interface AgentOptions {
 
 export type WebSocketAgentOptions = Pick<
   AgentOptions,
-  'url' | 'input' | 'signal' | 'timeoutMs' | 'transport'
+  'url' | 'input' | 'signal' | 'timeoutMs' | 'transport' | 'stompDestinations'
 >;

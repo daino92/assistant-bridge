@@ -76,7 +76,7 @@ try {
 
   checkConsumer(
     'core',
-    [`zod@${MANIFEST.peerDependencies.zod}`],
+    [],
     `
     import assert from 'node:assert/strict';
     import { createRequire } from 'node:module';

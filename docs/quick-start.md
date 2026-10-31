@@ -4,18 +4,8 @@ A minimal host integration using the current SDK API. This example uses React Ro
 
 ## 1. Dependencies
 
-The initial release is `0.1.0-beta.1`. After it is published, install the beta
-and its required peer dependency:
-
 ```bash
-pnpm add assistant-bridge@beta 'zod@^4.6.0'
-```
-
-Before publication, run `pnpm install` and `pnpm pack` in the SDK repository,
-then install the generated archive instead:
-
-```bash
-pnpm add /path/to/daino92-assistant-bridge-0.1.0-beta.1.tgz 'zod@^4.6.0'
+pnpm add assistant-bridge@beta
 ```
 
 React adapters require `react@^19.3.0`. Federation adapters additionally require
@@ -199,9 +189,9 @@ Keep the provider, routes, targets, panel hook and component import. Change only
 />
 ```
 
-The host must also supply `@module-federation/runtime` and initialize federation through its build plugin with compatible shared React dependencies. The `runtimeName` must match the host plugin name; the remote name/exposure must match the chat build. This repository already configures both: see host Vite config (`../../../vite.config.ts` in the original integration workspace) and chat integration/build configuration (`../../../apps/assistant-chat/INTEGRATION.md` in the original integration workspace). Replace local entry URLs for deployment.
+The host must also supply `@module-federation/runtime` and initialize federation through its build plugin with compatible shared React dependencies. The `runtimeName` must match the host plugin name, and the remote name and exposure must match the assistant build.
 
-`AssistantEmbed` downloads the federation adapter only when that mode is selected. Bundlers still resolve its dynamic import at build time, so the federation peer must be available when building this unified entry. The federation adapter expects a default React component accepting `EmbeddedAssistantOptions`; it supplies the restricted bridge client and command readiness callback. The remote must implement that contract. This is the contract used by this workspace's chat. See [unified embedding](react.md#unified-assistant-embedding) for retry and timeout behavior.
+`AssistantEmbed` downloads the federation adapter only when that mode is selected. Bundlers still resolve its dynamic import at build time, so the federation peer must be available when building this unified entry. The federation adapter expects a default React component accepting `EmbeddedAssistantOptions`; it supplies the restricted bridge client and command readiness callback. The remote must implement that contract. See [unified embedding](react.md#unified-assistant-embedding) for retry and timeout behavior.
 
 ## Responsibility cheat sheet
 

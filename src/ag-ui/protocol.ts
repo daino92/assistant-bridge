@@ -22,3 +22,8 @@ export const AGENT_STOMP_DESTINATIONS = {
   controls: '/app/agent',
   events: '/user/queue/agent',
 } as const;
+
+export interface AgentStompDestinations {
+  controls?: string;
+  events?: string;
+}

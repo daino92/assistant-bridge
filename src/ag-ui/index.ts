@@ -14,7 +14,12 @@ export type {
   ActionConfirmation,
 } from './types.js';
 
-export { agentControlSchema, AGENT_STOMP_DESTINATIONS, type AgentControl } from './protocol.js';
+export {
+  agentControlSchema,
+  AGENT_STOMP_DESTINATIONS,
+  type AgentControl,
+  type AgentStompDestinations,
+} from './protocol.js';
 
 export {
   createChatRunController,

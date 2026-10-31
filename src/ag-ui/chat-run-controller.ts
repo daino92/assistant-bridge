@@ -18,7 +18,10 @@ export type ChatRunState = Readonly<
   { status: 'idle' } | { status: 'running'; threadId: string; runId: string } | ChatRunResult
 >;
 
-export type ChatRunControllerOptions = Pick<AgentOptions, 'url' | 'transport' | 'timeoutMs'>;
+export type ChatRunControllerOptions = Pick<
+  AgentOptions,
+  'url' | 'transport' | 'stompDestinations' | 'timeoutMs'
+>;
 
 export interface ChatRunStartOptions
   extends

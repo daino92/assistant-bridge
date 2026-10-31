@@ -4,7 +4,7 @@ This document describes the current application contract shared by the chat SDK 
 
 ## Standard and application-specific parts
 
-Server-to-client payloads are AG-UI events, validated using the installed `@ag-ui/core` event schemas. `RunAgentInput` and `ToolMessage` also come from AG-UI. This contract describes the subset used by this POC, not every AG-UI event or transport.
+Server-to-client payloads are AG-UI events, validated using the installed `@ag-ui/core` event schemas. `RunAgentInput` and `ToolMessage` also come from AG-UI. This contract describes the subset used by this SDK, not every AG-UI event or transport.
 
 The client-to-server `run`, `stop`, `tool_result` envelopes, the optional `hostState` property and the WebSocket/STOMP binding are application-specific. They are not a standard AG-UI WebSocket protocol. `ToolMessage.error`, when supplied, carries our host-failure convention; other implementations must preserve it. There is currently no wire version negotiation. Breaking changes require coordinated deployment.
 
@@ -41,11 +41,11 @@ Default local endpoint: `ws://localhost:3001/agent`. Each text WebSocket message
 
 Default local endpoint: `ws://localhost:3001/agent/stomp`. Negotiate STOMP 1.2 with `host` and `accept-version:1.2`; heartbeat `0,0`. Subscribe once to `/user/queue/agent`, with a nonempty subscription ID, `ack:auto` and receipt. Wait for `RECEIPT` before sending the run.
 
-Send every control as a `SEND` body to `/app/agent` with `content-type:application/json`. Receive each AG-UI event as a `MESSAGE` body on the subscription. STOMP framing is not part of the JSON fixtures. Destinations are connection-local, not shared user queues. The POC server is a limited binding, not a general broker: no transactions, client acknowledgments, durable subscriptions, reconnect/replay or negotiated heartbeats. Other STOMP servers can implement this binding without using our Node parser.
+Send every control as a `SEND` body to `/app/agent` with `content-type:application/json`. Receive each AG-UI event as a `MESSAGE` body on the subscription. For a backend using other paths, pass `stompDestinations: { controls, events }`; an omitted value keeps its default. STOMP framing is not part of the JSON fixtures. Destinations are connection-local, not shared user queues. The expected server is a limited binding, not a general broker: no transactions, client acknowledgments, durable subscriptions, reconnect/replay or negotiated heartbeats. Other STOMP servers can implement this binding without using our Node parser.
 
 ## Limits and errors
 
-Current BFF limits: at most 200 input messages, 32 tools, 10 context entries; refreshed host state also caps tools/context at 32/10. WebSocket maximum payload is 256,000 bytes. STOMP additionally limits incomplete-frame buffering to 256,000 bytes, total inbound bytes per connection to 4,000,000, and setup to 10 seconds. Run deadline defaults to 120 seconds and is configurable. Client limits tool-argument buffers to 32,000 characters and assembled assistant text to 200,000 characters. These are POC policies, not universal AG-UI limits.
+Current BFF limits: at most 200 input messages, 32 tools, 10 context entries; refreshed host state also caps tools/context at 32/10. WebSocket maximum payload is 256,000 bytes. STOMP additionally limits incomplete-frame buffering to 256,000 bytes, total inbound bytes per connection to 4,000,000, and setup to 10 seconds. Run deadline defaults to 120 seconds and is configurable. Client limits tool-argument buffers to 32,000 characters and assembled assistant text to 200,000 characters. These are reference policies, not universal AG-UI limits.
 
 `RUN_ERROR` codes currently include `INVALID_REQUEST`, `STOPPED`, `TIMEOUT`, `CONFIGURATION_ERROR`, `PROVIDER_AUTH_ERROR`, `RATE_LIMITED`, `PROVIDER_UNAVAILABLE`, `AGENT_ERROR`. Invalid origin/path rejects the HTTP upgrade (403); invalid STOMP framing/destination emits STOMP `ERROR` and closes. A provider error must expose a safe message, never credentials or the raw provider response. Origin checks are not authentication; deployments own identity and authorization.
 

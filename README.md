@@ -10,20 +10,34 @@ The root SDK entry contains no React or federation runtime imports. Optional ada
 
 ## Beta installation
 
-Version `0.1.0-beta.1` is a prerelease. The public API may change before the first
+Version `0.1.0-beta.2` is a prerelease. The public API may change before the first
 stable release. After this version is published, install it with the `beta` tag:
 
 ```bash
-pnpm add assistant-bridge@beta 'zod@^4.6.0'
+pnpm add assistant-bridge@beta
 ```
+
+Zod is installed with the package. Add `zod` to your own dependencies only when your code defines action schemas.
+
+`@ag-ui/client@1.0.3` depends on `zod@^3.25.76`, which is affected by
+[GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) and has no
+patched 3.x release. Overrides in this package do not reach consumers, so applications
+must force the patched version in their root `package.json`:
+
+```json
+{ "pnpm": { "overrides": { "zod": "^4.6.6" } } }
+```
+
+With npm, use `{ "overrides": { "zod": "^4.6.6" } }`. Remove the override once
+`@ag-ui/client` accepts Zod 4.
 
 | Entry point         | Additional peer dependencies          |
 | ------------------- | ------------------------------------- |
-| Core                | None beyond Zod                       |
+| Core                | None                                  |
 | `/react`            | `react@^19.3.0`                       |
 | `/federation`       | `@module-federation/runtime@2.9.2`    |
 | `/react/federation` | Both React and the federation runtime |
-| `/ag-ui`            | None beyond Zod                       |
+| `/ag-ui`            | None                                  |
 
 React applications also supply their renderer, such as React DOM. This package
 does not include an assistant UI or backend.
@@ -80,7 +94,7 @@ import { IntegrationProvider, useIntegration } from 'assistant-bridge/react';
 import { connectFederatedAssistant } from 'assistant-bridge/federation';
 ```
 
-`react` and `@module-federation/runtime` are optional peer dependencies: consumers supply React for `/react`, and the federation runtime for `/federation`. A React federation host uses both. Zod remains a required peer dependency. Optional peers do not mean all functions can be imported from the root; use the matching entry point. The SDK's development dependencies support building/testing all adapters inside this workspace.
+`react` and `@module-federation/runtime` are optional peer dependencies: consumers supply React for `/react`, and the federation runtime for `/federation`. A React federation host uses both. Zod is a regular dependency. Optional peers do not mean all functions can be imported from the root; use the matching entry point. The SDK's development dependencies support building/testing all adapters inside this repository.
 
 Update the current page through one coordinated call:
 
@@ -157,8 +171,7 @@ pnpm lint
 ```
 
 This repository contains only the SDK, its tests and documentation. It does not
-include the host SPA, assistant UI or BFF. Existing examples that refer to those
-applications describe the original integration workspace.
+include a host application, assistant UI or backend.
 
 The package name is `assistant-bridge`.
 It is configured for public distribution on npmjs.org under the MIT license.
@@ -189,7 +202,7 @@ const integration = createHostIntegration({
 });
 ```
 
-The navigation callback is illustrative. In a routed application, supply its router's navigation function so route rendering and context updates stay coordinated. This repo does that in HostIntegrationProvider (`../../src/app/providers/HostIntegrationProvider.tsx` in the original integration workspace).
+The navigation callback is illustrative. In a routed application, supply its router's navigation function so route rendering and context updates stay coordinated.
 
 The returned integration exposes `bridge`, `contextManager`, `actionRegistry`, `targetRegistry`, `assistantCommands`, and `assistantClient`. Keep those host services on the host side; give assistant application logic only `AssistantBridgeClient`.
 
@@ -220,7 +233,7 @@ const createRecordsFilterAction = (
   });
 ```
 
-An action name or exported schema does not register a handler automatically. The host must supply the action explicitly. See the host action list (`../../src/host/actions.ts` in the original integration workspace) for navigation, catalog filtering, records filtering, and sorting examples.
+An action name or exported schema does not register a handler automatically. The host must supply the action explicitly.
 
 Built-in action factories are `navigateAction`, `highlightAction`, `scrollToAction`, `focusAction`, `selectAction`, and `openDetailsAction`. UI-target actions operate on targets registered by the host. The action factory callback provides the shared registry:
 
@@ -233,7 +246,7 @@ const integration = createHostIntegration({
 });
 ```
 
-Register and unregister UI targets as their elements mount and unmount. This repo's useUiTarget (`../../src/hooks/useUiTarget.ts` in the original integration workspace) demonstrates the React adapter; React is not part of the SDK.
+Register and unregister UI targets as their elements mount and unmount. For React, use `useUiTarget` from `assistant-bridge/react`; the core SDK does not depend on React.
 
 ## 3. Publish context from the host
 
@@ -309,7 +322,7 @@ Keeping the chat in a separate workspace project does not require an iframe. The
 
 For a same-window integration, attach the command handler before announcing readiness with `integration.bridge.notifyAssistantReady('my-assistant')`.
 
-The chat now exposes a working Module Federation remote, assistant_chat/EmbeddedAssistant. It accepts EmbeddedAssistantOptions: a bridge client and an onReady(handler) callback that returns cleanup. The SDK connection adapter registers the command handler and marks the assistant ready; the chat invokes cleanup on unmount. No MessagePort is used in this mode. See integration modes and examples (`../../apps/assistant-chat/INTEGRATION.md` in the original integration workspace).
+A Module Federation remote must expose a component that accepts EmbeddedAssistantOptions: a bridge client and an onReady(handler) callback that returns cleanup. The SDK connection adapter registers the command handler and marks the assistant ready; the assistant invokes cleanup on unmount. No MessagePort is used in this mode.
 
 For the iframe integration:
 
@@ -323,11 +336,7 @@ Both applications import `ASSISTANT_IFRAME_MESSAGES` from the SDK for the brand-
 
 The port adapters validate envelopes, correlate requests, forward context and commands, enforce a fixed 10-second port request timeout, and reject pending requests when disposed. The port layer currently converts remote failures into `Error` messages; structured error codes are not preserved end-to-end through that adapter.
 
-The high-level iframe connection APIs own the window handshake and exact origin/source checks. The host owns iframe rendering, visibility and the reconnect button. Low-level `attachHostPort` remains available, but callers using it directly must perform their own window checks. See the working implementations:
-
-- Host: AssistantPanel (`../../src/components/AssistantPanel.tsx` in the original integration workspace)
-- Chat connection hooks: [assistant-side React hooks](docs/react.md#assistant-side-hooks); chat composition: useChatApp (`../../apps/assistant-chat/src/hooks/useChatApp.ts` in the original integration workspace)
-- Command handling and action requests: useChatController (`../../apps/assistant-chat/src/hooks/useChatController.ts` in the original integration workspace)
+The high-level iframe connection APIs own the window handshake and exact origin/source checks. The host owns iframe rendering, visibility and the reconnect button. Low-level `attachHostPort` remains available, but callers using it directly must perform their own window checks. See [assistant-side React hooks](docs/react.md#assistant-side-hooks) for the assistant connection.
 
 ## Lifecycle, errors, and cleanup
 
@@ -419,7 +428,7 @@ The optional `assistant-bridge/ag-ui` entry exports `WebSocketAgent` (extends th
 
 `createHostAgentOptions(bridge)` advertises the current non-confirmation host tools and page/selection context, and delegates approved tool calls back through `requestHostAction`. The client validates run/message/tool correlation, preserves text deltas exactly, forwards tool results and disposes the socket on completion, error, cancellation or timeout. The SDK root remains free of agent/provider imports.
 
-See the wire contract (`../../apps/assistant-chat/WEBSOCKET.md` in the original integration workspace) and Node BFF setup (`../../apps/assistant-bff/README.md` in the original integration workspace). The POC currently uses raw WebSocket; STOMP is deferred. Provider credentials and model selection (OpenAI or LiteLLM/Gemma) belong only to the BFF.
+See the [wire contract](docs/ag-ui-protocol.md). Provider credentials and model selection belong only to the BFF.
 
 The official client owns event-order verification, message assembly and AG-UI state reduction. `websocket-agent.ts` only binds the existing BFF control envelopes to an Observable; `run-websocket-agent.ts` adapts client subscribers to the chat callbacks and forwards host tool results; `host-tools.ts` owns capability mapping and permission checks. The existing `runWebSocketAgent({ url, input, signal, onText, executeTool })` call is unchanged, so chat and BFF contracts remain compatible.
 
@@ -429,9 +438,9 @@ Raw `WebSocketAgent` consumers can use `runAgent`, subscribers, `messages` and `
 
 Hosts can pass `destinations: [{ path: '/records', label: 'Records' }]` to `createHostIntegration` / `useHostIntegration`. Register readable target metadata with `useUiTarget('dashboard.kpi.revenue', { label: 'Revenue pipeline', description: 'Projected revenue' })`. The SDK publishes mounted target IDs, descriptions and supported interactions in `HostContext.targets`; DOM nodes and callbacks stay in the host. Capability publication respects each action's `available` predicate for the current context.
 
-`createHostAgentOptions(bridge, { signal })` returns `tools`, `context`, `executeTool` and `getHostState`. Put `tools` and `context` in `input`, and pass `executeTool` and `getHostState` as callbacks to `runWebSocketAgent`. Successful navigation waits for the destination context with a bounded timeout; tool results carry fresh tools/context to the BFF for the next turn. The SDK rechecks current permissions on every execution and updates its run allowlist before returning the result. See the WebSocket binding (`../../apps/assistant-chat/WEBSOCKET.md` in the original integration workspace).
+`createHostAgentOptions(bridge, { signal })` returns `tools`, `context`, `executeTool` and `getHostState`. Put `tools` and `context` in `input`, and pass `executeTool` and `getHostState` as callbacks to `runWebSocketAgent`. Successful navigation waits for the destination context with a bounded timeout; tool results carry fresh tools/context to the BFF for the next turn. The SDK rechecks current permissions on every execution and updates its run allowlist before returning the result. See the [wire contract](docs/ag-ui-protocol.md).
 
-`runWebSocketAgent` also accepts `onToolActivity({ id, name, status, args, error })`. Status is `running`, `succeeded` or `failed`, based on the actual host callback result. Chat UIs can retain an action timeline independently of generated prose. Arguments are provided for presentation mapping; this POC stores only a derived label and outcome. Host error details are mapped to safe user messages. `onActivity` remains available for existing consumers.
+`runWebSocketAgent` also accepts `onToolActivity({ id, name, status, args, error })`. Status is `running`, `succeeded` or `failed`, based on the actual host callback result. Chat UIs can retain an action timeline independently of generated prose. Arguments are provided for presentation mapping; store only what the UI needs, such as a derived label and outcome. Host error details are mapped to safe user messages. `onActivity` remains available for existing consumers.
 
 ### Protected agent tools
 
@@ -447,7 +456,7 @@ Host handler errors may carry known protocol codes such as `RESOURCE_NOT_FOUND`,
 
 ### STOMP over WebSocket
 
-Pass `transport: 'stomp'` to `runWebSocketAgent`/`WebSocketAgent` and use the BFF STOMP URL (`ws://localhost:3001/agent/stomp`). Omit transport or pass `'websocket'` for the original binding. Event validation, tool handling, approval callbacks and cancellation stay shared. STOMP.js is dynamically loaded for a STOMP run; it is not exported through the SDK root. See configuration and wire contract (`../../apps/assistant-chat/STOMP.md` in the original integration workspace). This adapter uses the documented fixed destinations; connecting to another STOMP backend requires that backend to implement the same binding.
+Pass `transport: 'stomp'` to `runWebSocketAgent`/`WebSocketAgent` and use the BFF STOMP URL (`ws://localhost:3001/agent/stomp`). Omit transport or pass `'websocket'` for the original binding. Event validation, tool handling, approval callbacks and cancellation stay shared. STOMP.js is dynamically loaded for a STOMP run; it is not exported through the SDK root. See the [wire contract](docs/ag-ui-protocol.md). The default destinations are `/app/agent` and `/user/queue/agent`; override either with `stompDestinations: { controls, events }`. Another STOMP backend must otherwise implement the same binding.
 
 See the [language-independent AG-UI transport contract and JSON fixtures](docs/ag-ui-protocol.md) for implementing a compatible BFF. Shared control schemas/types are exported from `/ag-ui`; no server SDK is required.
 
@@ -597,7 +606,7 @@ await runWebSocketAgent({
 
 Events are generated once by the executor and forwarded through the direct/iframe bridge to the host. `AssistantBridgeClient.publishActionLifecycle` and `subscribeActionLifecycle` are optional for compatibility with custom clients; built-in clients implement both. Legacy custom clients still get executor-local callbacks but cannot forward them without implementing these methods. Unsubscribe when your observer ends; `integration.dispose()` clears host observers.
 
-The AG-UI adapter supplies optional execution metadata as the third `executeTool(name, args, execution)` argument: an execution ID, `toolCallId` and lifecycle listener. The SDK executor handles it. Existing custom execute functions may ignore it; they keep legacy `onToolActivity` behavior but must delegate/implement that metadata callback to produce the new lifecycle. The AG-UI adapter does not generate a second competing lifecycle. Existing callers may keep `onToolActivity`; the POC chat now consumes `onActionLifecycle`.
+The AG-UI adapter supplies optional execution metadata as the third `executeTool(name, args, execution)` argument: an execution ID, `toolCallId` and lifecycle listener. The SDK executor handles it. Existing custom execute functions may ignore it; they keep legacy `onToolActivity` behavior but must delegate/implement that metadata callback to produce the new lifecycle. The AG-UI adapter does not generate a second competing lifecycle. Existing callers may keep `onToolActivity`; chat UIs can consume `onActionLifecycle`.
 
 Confirmation requests include the same optional execution ID. Dispatch envelopes and integration timeline entries carry that ID, correlating approval, bridge request/result diagnostics and AG-UI tool calls. `succeeded` means host dispatch and configured context readiness completed. Rejection/failed validation before dispatch never invokes the handler. Abort produces one `cancelled` terminal event even when a legacy confirmation callback ignores the signal; late promise completion does not turn it into success.
 
@@ -651,7 +660,7 @@ runs.dispose();
 
 One run may be active per controller. `start()` throws synchronously for overlapping calls or after disposal; otherwise its promise resolves with a typed final outcome. The controller generates `runId`, preserves caller-owned `threadId`, snapshots outgoing messages/state, prepares current host tools/context and confirmation callbacks, and owns the run AbortController. Optional caller and host-client lifetime signals are combined; an already-aborted signal does not open a connection. Configuration URL/transport/timeout is fixed for the controller lifetime; the bridge and callbacks are supplied fresh per start.
 
-`getSnapshot()` has a stable frozen top-level snapshot until the state changes (`idle`, `running`, or the last final outcome). It is compatible with `useSyncExternalStore`. `stop()` is reusable and safe in React effect cleanup/Strict Mode replay; permanent `dispose()` is idempotent and refuses future starts. Disposing removes state observers and aborts current work. The POC chat uses stop on unmount, leaving the now-unobserved, inactive controller eligible for garbage collection.
+`getSnapshot()` has a stable frozen top-level snapshot until the state changes (`idle`, `running`, or the last final outcome). It is compatible with `useSyncExternalStore`. `stop()` is reusable and safe in React effect cleanup/Strict Mode replay; permanent `dispose()` is idempotent and refuses future starts. Disposing removes state observers and aborts current work. A chat UI can call stop on unmount, leaving the now-unobserved, inactive controller eligible for garbage collection.
 
 Text/activity callbacks from an aborted or previous run are ignored. A pending current action may still report its `cancelled` lifecycle during final cleanup, preserving post-dispatch uncertainty; callbacks after finalization or after a newer run starts are ignored. Failure/terminal completion also aborts pending host work before returning. A cleanup abort does not reclassify a provider failure as a user stop. Cancellation cannot roll back a host mutation or force an arbitrary custom handler promise to terminate.
 
@@ -702,7 +711,7 @@ if (result.status === 'failed') {
 
 Known codes select a fixed safe message. Raw server messages, stacks, URLs and provider bodies are not trusted, even when the code is known. Unknown codes and uncoded legacy exceptions become `AGENT_ERROR`; their wording is not parsed to infer timeout or connection categories. Low-level `runWebSocketAgent` rejects typed errors for transport/protocol/server failures, while explicit caller abort still propagates its cancellation reason. The run controller uses its cancellation signal or typed server `STOPPED` to return `status: 'stopped'`, not a failed UI result. Cleanup abort does not turn a timeout/provider failure into a user stop.
 
-STOMP setup (including the subscription receipt) has a typed 10-second timeout, independent of the overall run deadline. Local timeout/error cleanup closes transport resources. The Node POC BFF retains provider-specific classification but reuses the SDK code/message catalog; backends in other languages can emit the documented code strings without importing TypeScript. No wire-envelope or automatic-retry changes are introduced.
+STOMP setup (including the subscription receipt) has a typed 10-second timeout, independent of the overall run deadline. Local timeout/error cleanup closes transport resources. A BFF can retain provider-specific classification while reusing the SDK code/message catalog; backends in other languages can emit the documented code strings without importing TypeScript. No wire-envelope or automatic-retry changes are introduced.
 
 ### Host-owned entity mapping
 
@@ -721,7 +730,7 @@ const entities = mapHostEntities(records, {
 integration.updatePage({ route, page, entities });
 ```
 
-`HostEntityMapping<T>` requires a type and ID/label selectors. Reference, aliases and string-valued attributes are optional; undefined optional values are omitted. The helper accepts readonly source lists and clones returned aliases/attribute maps. It does not spread source records, infer fields, filter by route, convert attribute types, deduplicate entities or publish them automatically. The host decides what data is appropriate to expose. The POC host keeps its record/product selectors in `src/host/entities.ts`; its provider only chooses the relevant dataset and passes the resulting summaries to the SDK.
+`HostEntityMapping<T>` requires a type and ID/label selectors. Reference, aliases and string-valued attributes are optional; undefined optional values are omitted. The helper accepts readonly source lists and clones returned aliases/attribute maps. It does not spread source records, infer fields, filter by route, convert attribute types, deduplicate entities or publish them automatically. The host decides what data is appropriate to expose. Keep record/product selectors in host code; the host only chooses the relevant dataset and passes the resulting summaries to the SDK.
 
 ### Optional headless chat session
 

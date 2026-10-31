@@ -1,11 +1,22 @@
 import type { Client } from '@stomp/stompjs';
 
-import { AGENT_STOMP_DESTINATIONS, createRunError, RUN_ERROR_CODES } from '@/ag-ui';
+import {
+  AGENT_STOMP_DESTINATIONS,
+  createRunError,
+  RUN_ERROR_CODES,
+  type AgentStompDestinations,
+} from '@/ag-ui';
 
 import type { AgentTransport, TransportCallbacks } from './agent-transport.js';
 
 /** One STOMP session per run; no reconnect/replay of business actions. */
-export const connectStomp = (url: string, callbacks: TransportCallbacks): AgentTransport => {
+export const connectStomp = (
+  url: string,
+  callbacks: TransportCallbacks,
+  destinations?: AgentStompDestinations,
+): AgentTransport => {
+  const controls = destinations?.controls ?? AGENT_STOMP_DESTINATIONS.controls;
+  const events = destinations?.events ?? AGENT_STOMP_DESTINATIONS.events;
   let client: Client | undefined;
   let disposed = false;
   const setupTimer = setTimeout(() => fail(RUN_ERROR_CODES.TIMEOUT), 10_000);
@@ -46,7 +57,7 @@ export const connectStomp = (url: string, callbacks: TransportCallbacks): AgentT
             }
           });
           client!.subscribe(
-            AGENT_STOMP_DESTINATIONS.events,
+            events,
             (frame) => {
               if (!disposed) {
                 callbacks.message(frame.body);
@@ -80,7 +91,7 @@ export const connectStomp = (url: string, callbacks: TransportCallbacks): AgentT
 
         try {
           client.publish({
-            destination: AGENT_STOMP_DESTINATIONS.controls,
+            destination: controls,
             body,
             headers: { 'content-type': 'application/json' },
           });
