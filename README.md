@@ -791,3 +791,22 @@ user message text. The session stores it on the answer for retries; subsequent n
 not automatically inherit it. Storage adapters should preserve this optional message field if
 retry must survive reload. Context remains model-visible and may be persisted by the consumer;
 it is not a place for secrets.
+
+## Automated npm publishing
+
+`.github/workflows/publish.yml` runs only on pushes to `main`. It skips versions
+that already exist on npm. For a new release, update `version` in `package.json`
+and the changelog before merging to `main`. The workflow validates the code and
+package before publishing. It uses the tag in `publishConfig` (currently `beta`).
+
+Configure a GitHub Actions trusted publisher in the npm package settings:
+
+- Organization or user: `daino92`
+- Repository: `assistant-bridge`
+- Workflow filename: `publish.yml`
+- Environment name: leave empty
+- Allow direct publishing with `npm publish` if this option is shown.
+
+No npm token or GitHub secret is required. The workflow uses npm CLI 11 through
+`pnpm dlx` for OIDC authentication and provenance. Dependencies remain managed
+with pnpm.
