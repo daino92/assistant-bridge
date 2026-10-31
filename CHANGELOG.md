@@ -2,7 +2,7 @@
 
 ## 0.1.0-beta.1
 
-Initial standalone beta release of `@daino92/assistant-bridge`.
+Initial standalone beta release of `assistant-bridge`.
 
 - Framework-agnostic host integration, validated actions and context updates.
 - Host-to-assistant commands and iframe communication.

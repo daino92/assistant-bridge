@@ -8,7 +8,7 @@ Server-to-client payloads are AG-UI events, validated using the installed `@ag-u
 
 The client-to-server `run`, `stop`, `tool_result` envelopes, the optional `hostState` property and the WebSocket/STOMP binding are application-specific. They are not a standard AG-UI WebSocket protocol. `ToolMessage.error`, when supplied, carries our host-failure convention; other implementations must preserve it. There is currently no wire version negotiation. Breaking changes require coordinated deployment.
 
-TypeScript implementations import `agentControlSchema`, `AgentControl` and `AGENT_STOMP_DESTINATIONS` from `@daino92/assistant-bridge/ag-ui`. Client sends and BFF receives use the same envelope schema. Runtime limits and session state are enforced separately by the BFF.
+TypeScript implementations import `agentControlSchema`, `AgentControl` and `AGENT_STOMP_DESTINATIONS` from `assistant-bridge/ag-ui`. Client sends and BFF receives use the same envelope schema. Runtime limits and session state are enforced separately by the BFF.
 
 ## Client controls
 
