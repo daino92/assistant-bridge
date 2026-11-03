@@ -95,7 +95,6 @@ it.each(['stop', 'dispose'])(
     const dispatch = vi.fn();
 
     const integration = createHostIntegration({
-      appId: 'test',
       actions: [
         {
           name: REQUEST.name,

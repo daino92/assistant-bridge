@@ -5,7 +5,6 @@ import type { HostContext } from '@/contracts';
 
 it('requires explicit approval, snapshots arguments and rechecks permissions before dispatch', async () => {
   let context: HostContext = {
-    appId: 'host',
     route: '/records',
     page: { title: 'Records', type: 'records' },
     revision: 1,
@@ -77,7 +76,6 @@ it('requires explicit approval, snapshots arguments and rechecks permissions bef
 
 it('refuses approval if business entity context changes while the card is open', async () => {
   let context: HostContext = {
-    appId: 'host',
     route: '/records',
     page: { title: 'Records', type: 'records' },
     revision: 1,
@@ -126,7 +124,6 @@ it('does not dispatch when a run stops while approval is pending', async () => {
   const dispatch = vi.fn();
 
   const context: HostContext = {
-    appId: 'host',
     route: '/records',
     page: { title: 'Records', type: 'records' },
     revision: 1,

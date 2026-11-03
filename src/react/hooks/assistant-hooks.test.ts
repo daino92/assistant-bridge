@@ -18,7 +18,6 @@ vi.mock('@/connections', () => ({ connectAssistantIframe: connect }));
 const INITIAL_URL = window.location.href;
 
 const CONTEXT: HostContext = {
-  appId: 'test',
   route: '/',
   page: { title: 'Home', type: 'home' },
   capabilities: [],
@@ -166,7 +165,7 @@ describe('assistant-side React hooks', () => {
 
   it('subscribes to the active client only and clears context when it disconnects', () => {
     const first = createClient();
-    const second = createClient({ ...CONTEXT, appId: 'next-host' });
+    const second = createClient({ ...CONTEXT, route: '/renewals-host', revision: 0 });
 
     const { result, rerender, unmount } = renderHook(
       (client: AssistantBridgeClient | undefined) => useAssistantContext(client),
@@ -178,9 +177,9 @@ describe('assistant-side React hooks', () => {
     expect(result.current?.route).toBe('/catalog');
     rerender(second.client);
     expect(first.unsubscribe).toHaveBeenCalledOnce();
-    expect(result.current?.appId).toBe('next-host');
+    expect(result.current?.route).toBe('/renewals-host');
     act(() => first.publish({ ...CONTEXT, route: '/old-client', revision: 2 }));
-    expect(result.current?.appId).toBe('next-host');
+    expect(result.current?.route).toBe('/renewals-host');
     rerender(undefined);
     expect(second.unsubscribe).toHaveBeenCalledOnce();
     expect(result.current).toBeUndefined();

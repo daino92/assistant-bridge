@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createUiActions } from '@/actions';
 import { createHostIntegration } from '@/create-host-integration';
 import { ERROR_CODES, HOST_ACTION_NAMES } from '@/contracts';
+import { createIntegrationError } from '@/errors';
 
 const disposers: Array<() => void> = [];
 
@@ -18,7 +19,6 @@ describe('createUiActions', () => {
     const focus = vi.fn();
 
     const integration = createHostIntegration({
-      appId: 'test',
       actions: ({ targets }) =>
         createUiActions({ targets: { registry: targets, enable: ['focus', 'focus'] } }),
     });
@@ -61,7 +61,6 @@ describe('createUiActions', () => {
     const openDetails = vi.fn();
 
     const integration = createHostIntegration({
-      appId: 'test',
       actions: createUiActions({
         navigation: { navigate, allowedRoutes: ['/catalog'], detailPattern: /^\/catalog\/[^/]+$/ },
         details: { open: openDetails },
@@ -90,5 +89,45 @@ describe('createUiActions', () => {
     expect(
       integration.contextManager.getSnapshot().capabilities.map((capability) => capability.name),
     ).toEqual([HOST_ACTION_NAMES.UI_NAVIGATE, HOST_ACTION_NAMES.UI_OPEN_DETAILS]);
+  });
+
+  it('waits for async navigation and propagates host navigation failures', async () => {
+    let finishNavigation = () => {};
+
+    const navigate = vi.fn((path: string) => {
+      if (path === '/blocked') {
+        return Promise.reject(createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE));
+      }
+
+      return new Promise<void>((resolve) => {
+        finishNavigation = resolve;
+      });
+    });
+
+    const integration = createHostIntegration({
+      actions: createUiActions({
+        navigation: { navigate, allowedRoutes: ['/catalog', '/blocked'] },
+      }),
+    });
+
+    disposers.push(() => integration.bridge.destroy());
+
+    const settled = vi.fn();
+
+    const pending = integration.assistantClient
+      .requestHostAction(HOST_ACTION_NAMES.UI_NAVIGATE, { path: '/catalog' })
+      .then(settled);
+
+    await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith('/catalog'));
+    await Promise.resolve();
+    expect(settled).not.toHaveBeenCalled();
+    finishNavigation();
+    await pending;
+    expect(settled).toHaveBeenCalledWith({ path: '/catalog' });
+    await expect(
+      integration.assistantClient.requestHostAction(HOST_ACTION_NAMES.UI_NAVIGATE, {
+        path: '/blocked',
+      }),
+    ).rejects.toMatchObject({ code: ERROR_CODES.ACTION_NOT_AVAILABLE });
   });
 });

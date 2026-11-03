@@ -7,7 +7,6 @@ import { HostActionRegistry } from '@/action-registry';
 import { normalizeIntegrationError } from '@/errors';
 
 const baseContext: HostContext = {
-  appId: 'test',
   route: '/',
   page: { title: 'T', type: 'dashboard' },
   capabilities: [],

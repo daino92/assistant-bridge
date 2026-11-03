@@ -24,7 +24,7 @@ Zod is installed with the package. Add `zod` to your own dependencies only when 
 
 React applications also supply their renderer, such as React DOM.
 
-> **Security note:** `@ag-ui/client@1.0.3` depends on a Zod 3 release affected by [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5). Until it accepts Zod 4, force the patched version in your application's root `package.json`: `{ "pnpm": { "overrides": { "zod": "^4.6.6" } } }`. With npm, use `{ "overrides": { "zod": "^4.6.6" } }`.
+> **Security note:** `@ag-ui/client@1.0.3` depends on a Zod 3 release affected by [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5). Until it accepts Zod 4, force the patched version in your application root `.npmrc`: `overrides.zod=^4.6.6`. With npm, use `{ "overrides": { "zod": "^4.6.6" } }` in `package.json`.
 
 ## Minimal example
 
@@ -32,7 +32,6 @@ React applications also supply their renderer, such as React DOM.
 import { createHostIntegration } from 'assistant-bridge';
 
 const integration = createHostIntegration({
-  appId: 'my-app',
   actions: [],
 });
 

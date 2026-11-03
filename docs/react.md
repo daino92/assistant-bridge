@@ -20,7 +20,6 @@ The provider only shares the supplied integration; it does not create or destroy
 import { IntegrationProvider, useHostIntegration } from 'assistant-bridge/react';
 
 const integration = useHostIntegration({
-  appId: 'my-host',
   onTimeline,
   actions: ({ targets }) => createHostActions({ navigate, openDetails, targets }),
 });
@@ -31,7 +30,7 @@ const integration = useHostIntegration({
 
 New `actions` arrays/factories are applied after commit, so handlers and availability checks use current router/application callbacks. Treat action arrays as immutable. The hook replaces only actions it owns and preserves unrelated registrations. Published capabilities are refreshed only when their descriptions change; changing handler closures alone does not bump the context revision. An action name must be unique and cannot collide with an unrelated registration.
 
-`appId`, initial route/page and request timeout options are bootstrap settings for the instance. To change those settings, remount the component that owns the hook. Continue publishing current page changes with `integration.updatePage`; route metadata, allowed actions and selection policy remain host-owned.
+Initial route/page and request timeout options are bootstrap settings for the instance. To change those settings, remount the component that owns the hook. Continue publishing current page changes with `integration.updatePage`; route metadata, allowed actions and selection policy remain host-owned.
 
 On final unmount, the hook clears active highlights, marks the assistant unavailable, rejects pending requests and destroys the bridge. Disposal waits one microtask, allowing immediate React Strict Mode effect replay to reuse the live instance. Child target and transport components still perform their own cleanup. Do not manually destroy an integration owned by this hook. The context-only `IntegrationProvider` still accepts manually created instances for consumers that want to manage their own lifecycle.
 

@@ -10,7 +10,6 @@ export const hostCapabilitySchema = z.object({
 export type HostCapability = z.infer<typeof hostCapabilitySchema>;
 
 export const hostContextSchema = z.object({
-  appId: z.string(),
   route: z.string(),
   page: z.object({
     title: z.string(),

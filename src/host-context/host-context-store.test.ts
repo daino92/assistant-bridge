@@ -6,7 +6,6 @@ import { createHostIntegration } from '@/create-host-integration';
 import type { HostContext } from '@/contracts';
 
 const INITIAL: Omit<HostContext, 'revision'> = {
-  appId: 'test',
   route: '/',
   page: { title: 'Home', type: 'home' },
   capabilities: [
@@ -88,7 +87,6 @@ it('does not bump revisions or notify for equal values, including JSON key order
 
 it('publishes route, selection, entities and derived availability as one coherent revision', () => {
   const integration = createHostIntegration({
-    appId: 'test',
     actions: [
       {
         name: 'records.test',
@@ -129,7 +127,7 @@ it('publishes route, selection, entities and derived availability as one coheren
 });
 
 it('does not clear selection or highlights for an entity-only update outside React', () => {
-  const integration = createHostIntegration({ appId: 'test', actions: [] });
+  const integration = createHostIntegration({ actions: [] });
 
   integration.updatePage({ route: '/records', page: { title: 'Records', type: 'records' } });
   integration.contextManager.setSelection({ type: 'record', id: 'one' });
@@ -200,7 +198,7 @@ it('keeps page policy consistent when a subscriber synchronously navigates again
 });
 
 it('isolates context notifications between direct assistant clients', () => {
-  const integration = createHostIntegration({ appId: 'test', actions: [] });
+  const integration = createHostIntegration({ actions: [] });
   const listener = vi.fn();
 
   integration.assistantClient.subscribeContext((context) => {

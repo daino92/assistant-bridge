@@ -23,7 +23,7 @@ afterEach(async () => {
 describe('useHostIntegration', () => {
   it('survives Strict Mode replay and destroys its stable instance only on final unmount', async () => {
     const onTimeline = vi.fn();
-    const options: CreateHostIntegrationOptions = { appId: 'test', actions: [], onTimeline };
+    const options: CreateHostIntegrationOptions = { actions: [], onTimeline };
 
     const { result, rerender, unmount } = renderHook((props) => useHostIntegration(props), {
       initialProps: options,
@@ -60,7 +60,6 @@ describe('useHostIntegration', () => {
     const schema = z.object({});
 
     const options: CreateHostIntegrationOptions = {
-      appId: 'test',
       onTimeline: firstTimeline,
       actions: () => [{ name: 'test.action', description: 'Test', schema, handler: firstHandler }],
     };
@@ -113,7 +112,7 @@ describe('useHostIntegration', () => {
 
   it('clears active highlights and rejects pending commands on final unmount', async () => {
     const { result, unmount } = renderHook(
-      () => useHostIntegration({ appId: 'test', actions: [] }),
+      () => useHostIntegration({ actions: [] }),
       { wrapper: Wrapper },
     );
 

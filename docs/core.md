@@ -64,7 +64,6 @@ Create one integration for the lifetime of the host application. Register only t
 import { createHostIntegration, navigateAction } from 'assistant-bridge';
 
 const integration = createHostIntegration({
-  appId: 'my-host',
   initialRoute: '/',
   initialPage: { title: 'Dashboard', type: 'dashboard' },
   actions: [
@@ -77,7 +76,7 @@ const integration = createHostIntegration({
 });
 ```
 
-The navigation callback is illustrative. In a routed application, supply its router's navigation function so route rendering and context updates stay coordinated.
+The navigation callback is illustrative. In a routed application, supply its router's navigation function so route rendering and context updates stay coordinated. The callback may return a promise: the action result waits for it, and a rejection fails the action, so hosts can apply route preconditions or wait for page data.
 
 The returned integration exposes `bridge`, `contextManager`, `actionRegistry`, `targetRegistry`, `assistantCommands`, and `assistantClient`. Keep those host services on the host side; give assistant application logic only `AssistantBridgeClient`.
 
@@ -116,7 +115,6 @@ Built-in action factories are `navigateAction`, `highlightAction`, `scrollToActi
 import { createHostIntegration, focusAction, highlightAction } from 'assistant-bridge';
 
 const integration = createHostIntegration({
-  appId: 'my-host',
   actions: ({ targets }) => [highlightAction(targets), focusAction(targets)],
 });
 ```
@@ -170,7 +168,7 @@ integration.bridge.publishEntitySelected('catalog', 'product-001');
 integration.contextManager.clearSelection();
 ```
 
-Context includes `appId`, `route`, `page`, optional `selection`, registered `capabilities`, and an incrementing `revision`. Publish route and selection changes from the host; the SDK does not observe the router or DOM itself.
+Context includes `route`, `page`, optional `selection`, registered `capabilities`, and an incrementing `revision`. Publish route and selection changes from the host; the SDK does not observe the router or DOM itself.
 
 If actions are registered or removed after initialization, call `integration.bridge.syncCapabilities()` to refresh the published capabilities. The capability list describes registered actions; context-specific `available` checks still run during execution.
 
@@ -314,7 +312,7 @@ const disconnect = connectAssistantIframe({
 
 For the iframe integration:
 
-Both applications import `ASSISTANT_IFRAME_MESSAGES` from the SDK for the brand-neutral readiness, connection, and acknowledgement handshake names. Assistant instance IDs describe the adapter (`assistant-iframe` or `assistant-federation`); host application identity remains supplied through `appId`.
+Both applications import `ASSISTANT_IFRAME_MESSAGES` from the SDK for the brand-neutral readiness, connection, and acknowledgement handshake names. Assistant instance IDs describe the adapter (`assistant-iframe` or `assistant-federation`).
 
 1. The chat announces readiness to its configured host origin.
 2. The host checks the message's exact `origin` and `source` against the intended iframe.
@@ -549,7 +547,7 @@ Common host-side failures include `UNKNOWN_ACTION`, `INVALID_PAYLOAD`, `ACTION_N
 ## Dispose the integration
 
 ```ts
-const integration = createHostIntegration({ appId: 'host', actions });
+const integration = createHostIntegration({ actions });
 
 // When the host integration permanently ends:
 integration.dispose();

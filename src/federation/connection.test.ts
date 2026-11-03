@@ -32,7 +32,6 @@ const connect = (runtimeName = 'test-runtime', attempt = 0) => {
   const timeline: IntegrationTimelineEntry[] = [];
 
   const integration = createHostIntegration({
-    appId: 'test',
     actions: [],
     onTimeline: (entry) => timeline.push(entry),
   });

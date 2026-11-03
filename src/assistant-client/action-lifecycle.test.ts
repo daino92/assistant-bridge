@@ -10,7 +10,6 @@ import type { ActionLifecycleEvent } from '@/contracts';
 
 const createHost = (requiresConfirmation = false, handler: () => unknown = () => ({ ok: true })) =>
   createHostIntegration({
-    appId: 'test',
     actions: [
       {
         name: 'test.action',
@@ -26,7 +25,6 @@ it('shares one ID and ordered safe events between executor and host, including d
   const timeline = vi.fn();
 
   const host = createHostIntegration({
-    appId: 'test',
     onTimeline: timeline,
     actions: [
       {

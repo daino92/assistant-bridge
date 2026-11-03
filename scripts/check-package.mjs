@@ -85,7 +85,7 @@ try {
       assert.throws(() => require.resolve(peer), { code: 'MODULE_NOT_FOUND' });
     }
     const { createHostIntegration } = await import(${packageName});
-    const integration = createHostIntegration({ appId: 'package-check', actions: [] });
+    const integration = createHostIntegration({ actions: [] });
     assert.ok(integration.assistantClient);
     integration.dispose();
     console.log('Core works without optional peers');

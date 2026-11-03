@@ -25,7 +25,6 @@ export interface HostIntegrationApi {
 }
 
 export interface CreateHostIntegrationOptions {
-  appId: string;
   initialRoute?: string;
   initialPage?: HostContext['page'];
   destinations?: HostContext['destinations'];
@@ -50,7 +49,6 @@ export interface HostIntegration {
 
 export const createHostIntegration = (options: CreateHostIntegrationOptions): HostIntegration => {
   const contextManager = new HostContextManager({
-    appId: options.appId,
     route: options.initialRoute ?? '/',
     page: options.initialPage ?? { title: 'Dashboard', type: 'dashboard' },
     destinations: options.destinations,
@@ -64,7 +62,6 @@ export const createHostIntegration = (options: CreateHostIntegrationOptions): Ho
   );
 
   const bridge = new HostBridge({
-    appId: options.appId,
     contextManager,
     actionRegistry,
     onTimeline: options.onTimeline,

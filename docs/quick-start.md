@@ -31,7 +31,6 @@ const HostIntegrationProvider = ({ children }: HostIntegrationProviderProps) => 
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const integration = useHostIntegration({
-    appId: 'my-host',
     actions: ({ targets }) =>
       createUiActions({
         navigation: { navigate, allowedRoutes: ['/', '/catalog'] },

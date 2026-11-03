@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Breaking:** remove `appId` from `HostContext`, `createHostIntegration` / `useHostIntegration`, and the `host.ready` event payload. Host identity is no longer part of the integration contract.
+
 ## 0.1.0-beta.2
 
 - Install `zod@^4.6.6` as a regular dependency instead of a required peer, so one

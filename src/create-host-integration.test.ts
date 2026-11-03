@@ -8,7 +8,7 @@ import { createHostIntegration } from './create-host-integration';
 
 describe('createHostIntegration', () => {
   it('updates page context, clears highlights and applies the explicit selection policy', () => {
-    const integration = createHostIntegration({ appId: 'test', actions: [] });
+    const integration = createHostIntegration({ actions: [] });
     const clearHighlight = vi.fn();
 
     integration.targetRegistry.register({
@@ -47,7 +47,6 @@ describe('createHostIntegration', () => {
     const navigate = vi.fn();
 
     const integration = createHostIntegration({
-      appId: 'test-host',
       actions: [
         {
           name: 'ui.navigate',
@@ -87,7 +86,6 @@ describe('createHostIntegration', () => {
 
 it('publishes named targets and destinations while limiting capabilities to the current page', () => {
   const integration = createHostIntegration({
-    appId: 'test',
     destinations: [{ path: '/records', label: 'Records' }],
     actions: [
       {
@@ -126,7 +124,7 @@ it('publishes named targets and destinations while limiting capabilities to the 
 it('disposes once, clears target timers/listeners and refuses reuse', async () => {
   vi.useFakeTimers();
 
-  const integration = createHostIntegration({ appId: 'dispose', actions: [] });
+  const integration = createHostIntegration({ actions: [] });
   const clearHighlight = vi.fn();
   const listener = vi.fn();
 
@@ -174,7 +172,6 @@ it('disposes once, clears target timers/listeners and refuses reuse', async () =
 
 it('rejects pending actions, commands and readiness waits immediately on disposal', async () => {
   const integration = createHostIntegration({
-    appId: 'pending',
     actions: [
       {
         name: 'pending',
@@ -209,7 +206,7 @@ it('rejects pending actions, commands and readiness waits immediately on disposa
 it('closes owned embedded connections and cancels loading deadlines', async () => {
   vi.useFakeTimers();
 
-  const integration = createHostIntegration({ appId: 'connection', actions: [] });
+  const integration = createHostIntegration({ actions: [] });
   const onStatus = vi.fn();
   const connection = connectEmbeddedAssistant(integration, { onStatus, timeoutMs: 100 });
 

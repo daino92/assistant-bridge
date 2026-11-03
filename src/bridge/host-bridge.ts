@@ -22,7 +22,6 @@ import { RequestResponseChannel } from './request-response';
 import { TypedEventBus } from './typed-event-bus';
 
 export interface HostBridgeOptions {
-  appId: string;
   contextManager: HostContextManager;
   actionRegistry: HostActionRegistry;
   commandTimeoutMs?: number;
@@ -297,7 +296,7 @@ export class HostBridge {
   }
 
   initialize(): void {
-    this.bus.emit('host.ready', { appId: this.contextManager.getSnapshot().appId });
+    this.bus.emit('host.ready', {});
 
     const revision = this.contextManager.getSnapshot().revision;
 

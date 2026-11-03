@@ -7,7 +7,7 @@ import { useHostPageContext } from '@/react/hooks';
 afterEach(cleanup);
 
 it('syncs page and entities without clearing selection on data-only updates or equivalent renders', () => {
-  const integration = createHostIntegration({ appId: 'test', actions: [] });
+  const integration = createHostIntegration({ actions: [] });
   const published = vi.fn();
 
   integration.assistantClient.subscribeContext(published);

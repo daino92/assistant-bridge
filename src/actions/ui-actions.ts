@@ -21,7 +21,7 @@ const targetMiss = (error?: string): never => {
 };
 
 export const navigateAction = (deps: {
-  navigate: (path: string) => void;
+  navigate: (path: string) => void | Promise<void>;
   allowedRoutes: readonly string[];
   detailPattern?: RegExp;
 }): HostActionInput<{ path: string }> => {
@@ -29,7 +29,7 @@ export const navigateAction = (deps: {
     name: HOST_ACTION_NAMES.UI_NAVIGATE,
     description: 'Navigate to an allowed application route',
     schema: uiNavigatePayloadSchema,
-    handler({ path }) {
+    async handler({ path }) {
       const allowed =
         deps.allowedRoutes.includes(path) || (deps.detailPattern?.test(path) ?? false);
 
@@ -37,7 +37,7 @@ export const navigateAction = (deps: {
         throw createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE);
       }
 
-      deps.navigate(path);
+      await deps.navigate(path);
 
       return { path };
     },

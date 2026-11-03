@@ -37,7 +37,7 @@ afterEach(() => {
 
 describe('useUiTarget', () => {
   it('registers DOM behavior, clears highlights and removes obsolete targets on rerender/unmount', () => {
-    const integration = createHostIntegration({ appId: 'test', actions: [] });
+    const integration = createHostIntegration({ actions: [] });
 
     disposers.push(() => integration.bridge.destroy());
 
@@ -84,7 +84,7 @@ describe('useUiTarget', () => {
 });
 
 it('advertises only mounted target interactions without inventing focus or select support', () => {
-  const integration = createHostIntegration({ appId: 'test', actions: [] });
+  const integration = createHostIntegration({ actions: [] });
 
   disposers.push(() => integration.bridge.destroy());
 

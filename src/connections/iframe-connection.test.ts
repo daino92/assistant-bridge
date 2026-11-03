@@ -27,7 +27,7 @@ describe('host iframe handshake', () => {
     vi.spyOn(window, 'parent', 'get').mockReturnValue(parent);
 
     const postMessage = vi.spyOn(parent, 'postMessage').mockImplementation(() => {});
-    const integration = createHostIntegration({ appId: 'test', actions: [] });
+    const integration = createHostIntegration({ actions: [] });
     const onClient = vi.fn();
 
     const disconnect = connectAssistantIframe({
@@ -82,7 +82,7 @@ describe('host iframe handshake', () => {
   it('checks exact source and origin, waits for acknowledgement, and reconnects a reloaded frame', async () => {
     vi.stubGlobal('MessageChannel', MessageChannel);
 
-    const integration = createHostIntegration({ appId: 'test', actions: [] });
+    const integration = createHostIntegration({ actions: [] });
     const iframe = document.createElement('iframe');
 
     document.body.append(iframe);

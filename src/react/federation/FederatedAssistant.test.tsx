@@ -28,7 +28,7 @@ afterEach(() => {
 });
 
 const setup = () => {
-  const integration = createHostIntegration({ appId: 'test', actions: [] });
+  const integration = createHostIntegration({ actions: [] });
 
   cleanups.push(() => integration.bridge.destroy());
 

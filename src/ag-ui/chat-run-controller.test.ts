@@ -141,7 +141,6 @@ it('returns failures without classifying cleanup abort as a user stop', async ()
 
 it('automatically binds host tools and cancels a pending confirmation when the host disconnects', async () => {
   const host = createHostIntegration({
-    appId: 'test',
     actions: [
       {
         name: 'test.delete',
@@ -223,7 +222,6 @@ it('finishes a disposed run without notifying removed observers or accepting lat
 
 it('delivers post-dispatch cancellation before finalizing the run without claiming rollback', async () => {
   const host = createHostIntegration({
-    appId: 'test',
     actions: [
       {
         name: 'test.pending',

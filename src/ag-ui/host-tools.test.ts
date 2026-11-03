@@ -6,7 +6,6 @@ import type { HostContext } from '@/contracts';
 
 it('requires explicit approval, snapshots arguments and rechecks permissions before dispatch', async () => {
   let context: HostContext = {
-    appId: 'host',
     route: '/records',
     page: { title: 'Records', type: 'records' },
     revision: 1,
@@ -78,7 +77,6 @@ it('requires explicit approval, snapshots arguments and rechecks permissions bef
 
 it('refuses approval if business entity context changes while the card is open', async () => {
   let context: HostContext = {
-    appId: 'host',
     route: '/records',
     page: { title: 'Records', type: 'records' },
     revision: 1,
@@ -131,7 +129,6 @@ it('does not dispatch when a run stops while approval is pending', async () => {
   const dispatch = vi.fn();
 
   const context: HostContext = {
-    appId: 'host',
     route: '/records',
     page: { title: 'Records', type: 'records' },
     revision: 1,
@@ -166,7 +163,6 @@ it('does not dispatch when a run stops while approval is pending', async () => {
 
 it('advertises only non-confirmation tools and rechecks current permissions/revision before dispatch', async () => {
   let context: HostContext = {
-    appId: 'host',
     route: '/',
     page: { title: 'Dashboard', type: 'dashboard' },
     revision: 1,
@@ -226,7 +222,6 @@ it('keeps standalone agents free of host tools and rejects host dispatch', async
 
 it('waits for the destination context and publishes its targets, destinations and current tools', async () => {
   let context: HostContext = {
-    appId: 'host',
     route: '/',
     page: { title: 'Dashboard', type: 'dashboard' },
     revision: 1,
@@ -292,7 +287,6 @@ it('cleans up a pending navigation context subscription on cancellation', async 
 
   const bridge: AssistantBridgeClient = {
     getInitialContext: () => ({
-      appId: 'host',
       route: '/',
       page: { title: 'Dashboard', type: 'dashboard' },
       revision: 1,
@@ -329,7 +323,6 @@ it('fails with a bounded timeout when navigation does not publish the destinatio
 
   const bridge: AssistantBridgeClient = {
     getInitialContext: () => ({
-      appId: 'host',
       route: '/',
       page: { title: 'Dashboard', type: 'dashboard' },
       revision: 1,

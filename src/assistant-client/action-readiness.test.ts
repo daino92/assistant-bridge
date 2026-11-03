@@ -10,7 +10,6 @@ import type { HostContext } from '@/contracts';
 
 const createBridge = () => {
   let context: HostContext = {
-    appId: 'host',
     route: '/',
     page: { title: 'Home', type: 'home' },
     revision: 1,

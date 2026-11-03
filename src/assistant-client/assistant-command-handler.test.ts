@@ -15,7 +15,7 @@ afterEach(() => {
 
 describe('same-window assistant commands', () => {
   it('routes correlated commands to an async receiver without exposing host services', async () => {
-    const integration = createHostIntegration({ appId: 'direct-host', actions: [] });
+    const integration = createHostIntegration({ actions: [] });
 
     const handler = vi.fn(async (request) => ({
       accepted: request.command,
@@ -39,7 +39,7 @@ describe('same-window assistant commands', () => {
   });
 
   it('returns failures and rejects pending commands when the receiver unmounts', async () => {
-    const integration = createHostIntegration({ appId: 'direct-host', actions: [] });
+    const integration = createHostIntegration({ actions: [] });
 
     const detach = attachAssistantCommandHandler(integration.bridge, () => {
       throw new Error('Receiver failed');

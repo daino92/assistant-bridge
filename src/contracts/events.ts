@@ -10,7 +10,7 @@ import type {
 
 /** Fire-and-forget notifications */
 export type IntegrationEventMap = {
-  'host.ready': { appId: string };
+  'host.ready': Record<string, never>;
   'assistant.ready': { assistantId: string };
   'host.context.changed': { context: HostContext };
   'host.entity.selected': {

@@ -22,7 +22,6 @@ const connect = () => {
   const handler = vi.fn(({ path }: { path: string }) => ({ path }));
 
   const integration = createHostIntegration({
-    appId: 'test',
     actions: [
       {
         name: 'ui.navigate',

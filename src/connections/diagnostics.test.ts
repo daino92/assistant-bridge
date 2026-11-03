@@ -12,7 +12,6 @@ it('reports one structured timeout through the existing timeline and ignores lat
   const timeline: IntegrationTimelineEntry[] = [];
 
   const integration = createHostIntegration({
-    appId: 'test',
     actions: [],
     onTimeline: (entry) => timeline.push(entry),
   });
@@ -55,7 +54,6 @@ it('correlates action failures and unavailable commands without including their 
   const timeline: IntegrationTimelineEntry[] = [];
 
   const integration = createHostIntegration({
-    appId: 'test',
     actions: [],
     onTimeline: (entry) => timeline.push(entry),
   });
@@ -93,7 +91,7 @@ it('does not report an error for deliberate connection disposal', () => {
   vi.useFakeTimers();
 
   const onTimeline = vi.fn();
-  const integration = createHostIntegration({ appId: 'test', actions: [], onTimeline });
+  const integration = createHostIntegration({ actions: [], onTimeline });
 
   try {
     const connection = createAssistantConnection(integration.bridge, {

@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 const connect = (timeoutMs = 1000) => {
-  const integration = createHostIntegration({ appId: 'test', actions: [] });
+  const integration = createHostIntegration({ actions: [] });
   const onStatus = vi.fn();
   const connection = connectEmbeddedAssistant(integration, { onStatus, timeoutMs });
 
