@@ -10,7 +10,7 @@ export interface UiTargetOptions {
   onSetChecked?: (checked: boolean) => void;
   onSetExpanded?: (expanded: boolean) => void;
   onActivateTab?: () => void;
-  onSelect?: (value?: string) => void;
+  onSelect?: (value?: string) => void | Promise<void>;
 }
 
 /** Registers host-owned DOM behavior; the host chooses how highlights are styled. */

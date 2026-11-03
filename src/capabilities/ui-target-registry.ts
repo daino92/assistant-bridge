@@ -13,7 +13,7 @@ export interface UiTarget {
   setChecked?: (checked: boolean) => void;
   setExpanded?: (expanded: boolean) => void;
   activateTab?: () => void;
-  select?: (value?: string) => void;
+  select?: (value?: string) => void | Promise<void>;
 }
 
 export class UiTargetRegistry {
@@ -179,7 +179,10 @@ export class UiTargetRegistry {
     return { success: true };
   }
 
-  select(id: string, value?: string): { success: boolean; error?: string } {
+  select(
+    id: string,
+    value?: string,
+  ): { success: boolean; error?: string } | Promise<{ success: boolean; error?: string }> {
     const target = this.targets.get(id);
 
     if (!target) {
@@ -190,7 +193,11 @@ export class UiTargetRegistry {
       return { success: false, error: ERROR_CODES.ACTION_NOT_AVAILABLE };
     }
 
-    target.select(value);
+    const completion = target.select(value);
+
+    if (completion) {
+      return completion.then(() => ({ success: true }));
+    }
 
     return { success: true };
   }

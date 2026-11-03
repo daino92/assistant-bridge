@@ -263,3 +263,8 @@ host state; the SDK does not assign DOM values or dispatch synthetic clicks.
 
 Unsupported callbacks return `ACTION_NOT_AVAILABLE`; unregistered targets return
 `TARGET_NOT_FOUND`. Business validation stays in the host callbacks.
+
+`useUiTarget` also accepts an async `onSelect` callback returning `Promise<void>`.
+The `ui.select` action waits for it before reporting success and propagates
+rejections. Return the promise from the callback; avoid fire-and-forget wrappers
+when the assistant must wait for selection or navigation.

@@ -102,3 +102,45 @@ describe('extended UI actions', () => {
     ).rejects.toMatchObject({ code: ERROR_CODES.TARGET_NOT_FOUND });
   });
 });
+
+it('ui.select waits for async selection and propagates callback failures', async () => {
+  const integration = createHostIntegration({
+    actions: ({ targets }) =>
+      createUiActions({ targets: { registry: targets, enable: ['select'] } }),
+  });
+
+  disposers.push(() => integration.dispose());
+
+  let finish = () => {};
+
+  const select = vi.fn(
+    () =>
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+  );
+
+  integration.targetRegistry.register({
+    id: 'offer',
+    highlight: vi.fn(),
+    clearHighlight: vi.fn(),
+    scrollIntoView: vi.fn(),
+    select,
+  });
+
+  const settled = vi.fn();
+
+  const pending = integration.assistantClient
+    .requestHostAction('ui.select', { targetId: 'offer' })
+    .then(settled);
+
+  await vi.waitFor(() => expect(select).toHaveBeenCalledOnce());
+  expect(settled).not.toHaveBeenCalled();
+  finish();
+  await pending;
+  expect(settled).toHaveBeenCalledWith({ targetId: 'offer', value: undefined });
+  select.mockImplementation(() => Promise.reject(new Error('Selection failed')));
+  await expect(
+    integration.assistantClient.requestHostAction('ui.select', { targetId: 'offer' }),
+  ).rejects.toMatchObject({ code: ERROR_CODES.EXECUTION_FAILED });
+});

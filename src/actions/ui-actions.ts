@@ -113,8 +113,8 @@ export const selectAction = (
     name: HOST_ACTION_NAMES.UI_SELECT,
     description: 'Select value on a registered UI target',
     schema: uiSelectPayloadSchema,
-    handler({ targetId, value }) {
-      const result = targets.select(targetId, value);
+    async handler({ targetId, value }) {
+      const result = await targets.select(targetId, value);
 
       if (!result.success) {
         targetMiss(result.error);
