@@ -11,6 +11,11 @@ import {
   uiOpenDetailsPayloadSchema,
   uiScrollToPayloadSchema,
   uiSelectPayloadSchema,
+  uiClearHighlightPayloadSchema,
+  uiActivateTabPayloadSchema,
+  uiSetExpandedPayloadSchema,
+  uiSetCheckedPayloadSchema,
+  uiSetValuePayloadSchema,
 } from '@/contracts';
 import type { HostActionInput } from '@/actions';
 
@@ -131,6 +136,101 @@ export const openDetailsAction = (deps: {
       deps.openDetails(entityType, id);
 
       return { entityType, id };
+    },
+  };
+};
+
+export const setValueAction = (
+  targets: UiTargetRegistry,
+): HostActionInput<z.infer<typeof uiSetValuePayloadSchema>> => {
+  return {
+    name: HOST_ACTION_NAMES.UI_SET_VALUE,
+    description: 'Set the value of a registered UI target',
+    schema: uiSetValuePayloadSchema,
+    handler({ targetId, value }) {
+      const result = targets.setValue(targetId, value);
+
+      if (!result.success) {
+        targetMiss(result.error);
+      }
+
+      return { targetId, value };
+    },
+  };
+};
+
+export const setCheckedAction = (
+  targets: UiTargetRegistry,
+): HostActionInput<z.infer<typeof uiSetCheckedPayloadSchema>> => {
+  return {
+    name: HOST_ACTION_NAMES.UI_SET_CHECKED,
+    description: 'Set the checked state of a registered UI target',
+    schema: uiSetCheckedPayloadSchema,
+    handler({ targetId, checked }) {
+      const result = targets.setChecked(targetId, checked);
+
+      if (!result.success) {
+        targetMiss(result.error);
+      }
+
+      return { targetId, checked };
+    },
+  };
+};
+
+export const setExpandedAction = (
+  targets: UiTargetRegistry,
+): HostActionInput<z.infer<typeof uiSetExpandedPayloadSchema>> => {
+  return {
+    name: HOST_ACTION_NAMES.UI_SET_EXPANDED,
+    description: 'Set the expanded state of a registered UI target',
+    schema: uiSetExpandedPayloadSchema,
+    handler({ targetId, expanded }) {
+      const result = targets.setExpanded(targetId, expanded);
+
+      if (!result.success) {
+        targetMiss(result.error);
+      }
+
+      return { targetId, expanded };
+    },
+  };
+};
+
+export const activateTabAction = (
+  targets: UiTargetRegistry,
+): HostActionInput<z.infer<typeof uiActivateTabPayloadSchema>> => {
+  return {
+    name: HOST_ACTION_NAMES.UI_ACTIVATE_TAB,
+    description: 'Activate a registered tab',
+    schema: uiActivateTabPayloadSchema,
+    handler({ targetId }) {
+      const result = targets.activateTab(targetId);
+
+      if (!result.success) {
+        targetMiss(result.error);
+      }
+
+      return { targetId };
+    },
+  };
+};
+
+export const clearHighlightAction = (
+  targets: UiTargetRegistry,
+): HostActionInput<z.infer<typeof uiClearHighlightPayloadSchema>> => {
+  return {
+    name: HOST_ACTION_NAMES.UI_CLEAR_HIGHLIGHT,
+    description: 'Clear the highlight of a registered UI target',
+    schema: uiClearHighlightPayloadSchema,
+    handler({ targetId }) {
+      const result = targets.clearTargetHighlight(targetId);
+
+      if (!result.success) {
+        targetMiss(result.error);
+      }
+
+      return { targetId };
     },
   };
 };

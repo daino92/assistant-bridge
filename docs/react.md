@@ -224,3 +224,42 @@ const hostOptions = createHostAgentOptions(bridge, {
 ```
 
 This hook does not need `IntegrationProvider` and works in the independent chat app. Pending state and promise orchestration live in the core `createActionConfirmationController`; React subscribes using `useSyncExternalStore`. Stop/disconnect cancels via the executor-supplied signal. Unmount cancels pending work and permanently disposes the controller after the Strict Mode replay window. Stale handlers cannot approve a newer confirmation. Existing single-argument confirmation callbacks remain supported.
+
+### Form controls, sections and tabs
+
+Enable actions explicitly with `createUiActions({ targets: { registry: targets,
+enable: ['setValue', 'setChecked', 'setExpanded', 'activateTab', 'clearHighlight'] } })`.
+Each target advertises only the callbacks it implements. `clearHighlight` is available
+on every registered target and cancels its pending highlight timeout.
+
+```tsx
+const search = useUiTarget<HTMLInputElement>('renewals-search', {
+  onSetValue: setSearch,
+});
+const checkbox = useUiTarget<HTMLInputElement>('include-expired', {
+  onSetChecked: setIncludeExpired,
+});
+const section = useUiTarget<HTMLDivElement>('renewal-details', {
+  onSetExpanded: setDetailsExpanded,
+});
+const activateHistory = useCallback(() => setActiveTab('history'), []);
+const historyTab = useUiTarget<HTMLButtonElement>('history-tab', {
+  onActivateTab: activateHistory,
+});
+```
+
+Attach each returned `ref` to its corresponding element. These callbacks update
+host state; the SDK does not assign DOM values or dispatch synthetic clicks.
+`setValue` accepts a string (including an empty string); `setChecked` and
+`setExpanded` require explicit booleans. Register one target per tab.
+
+| Action              | Payload example                                   |
+| ------------------- | ------------------------------------------------- |
+| `ui.setValue`       | `{ targetId: 'renewals-search', value: 'Alice' }` |
+| `ui.setChecked`     | `{ targetId: 'include-expired', checked: false }` |
+| `ui.setExpanded`    | `{ targetId: 'renewal-details', expanded: true }` |
+| `ui.activateTab`    | `{ targetId: 'history-tab' }`                     |
+| `ui.clearHighlight` | `{ targetId: 'renewal-details' }`                 |
+
+Unsupported callbacks return `ACTION_NOT_AVAILABLE`; unregistered targets return
+`TARGET_NOT_FOUND`. Business validation stays in the host callbacks.

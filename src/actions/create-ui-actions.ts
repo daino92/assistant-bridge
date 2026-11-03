@@ -5,11 +5,25 @@ import {
   openDetailsAction,
   scrollToAction,
   selectAction,
+  clearHighlightAction,
+  activateTabAction,
+  setExpandedAction,
+  setCheckedAction,
+  setValueAction,
   type HostActionInput,
 } from '@/actions';
 import type { UiTargetRegistry } from '@/capabilities';
 
-export type UiTargetActionName = 'highlight' | 'scrollTo' | 'focus' | 'select';
+export type UiTargetActionName =
+  | 'highlight'
+  | 'scrollTo'
+  | 'focus'
+  | 'setValue'
+  | 'setChecked'
+  | 'setExpanded'
+  | 'activateTab'
+  | 'clearHighlight'
+  | 'select';
 
 export interface CreateUiActionsOptions {
   navigation?: Parameters<typeof navigateAction>[0];
@@ -36,6 +50,11 @@ export const createUiActions = (options: CreateUiActionsOptions = {}): HostActio
       scrollTo: scrollToAction,
       focus: focusAction,
       select: selectAction,
+      clearHighlight: clearHighlightAction,
+      activateTab: activateTabAction,
+      setExpanded: setExpandedAction,
+      setChecked: setCheckedAction,
+      setValue: setValueAction,
     };
 
     for (const name of new Set(options.targets.enable)) {

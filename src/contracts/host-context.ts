@@ -41,7 +41,19 @@ export const hostContextSchema = z.object({
         id: z.string(),
         label: z.string(),
         description: z.string().optional(),
-        actions: z.array(z.enum(['highlight', 'scrollTo', 'focus', 'select'])),
+        actions: z.array(
+          z.enum([
+            'highlight',
+            'scrollTo',
+            'focus',
+            'select',
+            'setValue',
+            'setChecked',
+            'setExpanded',
+            'activateTab',
+            'clearHighlight',
+          ]),
+        ),
       }),
     )
     .optional(),

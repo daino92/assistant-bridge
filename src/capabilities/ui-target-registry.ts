@@ -9,6 +9,10 @@ export interface UiTarget {
   clearHighlight: () => void;
   scrollIntoView: (behavior?: ScrollBehavior) => void;
   focus?: () => void;
+  setValue?: (value: string) => void;
+  setChecked?: (checked: boolean) => void;
+  setExpanded?: (expanded: boolean) => void;
+  activateTab?: () => void;
   select?: (value?: string) => void;
 }
 
@@ -40,10 +44,25 @@ export class UiTargetRegistry {
       ...(target.description ? { description: target.description } : {}),
       actions: [
         'highlight',
+        'clearHighlight',
         'scrollTo',
         ...(target.focus ? ['focus'] : []),
+        ...(target.setValue ? ['setValue'] : []),
+        ...(target.setChecked ? ['setChecked'] : []),
+        ...(target.setExpanded ? ['setExpanded'] : []),
+        ...(target.activateTab ? ['activateTab'] : []),
         ...(target.select ? ['select'] : []),
-      ] as ('highlight' | 'scrollTo' | 'focus' | 'select')[],
+      ] as (
+        | 'highlight'
+        | 'scrollTo'
+        | 'focus'
+        | 'select'
+        | 'setValue'
+        | 'setChecked'
+        | 'setExpanded'
+        | 'activateTab'
+        | 'clearHighlight'
+      )[],
     }));
   }
 
@@ -115,6 +134,17 @@ export class UiTargetRegistry {
     target?.clearHighlight();
   }
 
+  /** Validated action entry; internal cleanup can still clear an absent target. */
+  clearTargetHighlight(id: string): { success: boolean; error?: string } {
+    if (!this.targets.has(id)) {
+      return { success: false, error: ERROR_CODES.TARGET_NOT_FOUND };
+    }
+
+    this.clearHighlight(id);
+
+    return { success: true };
+  }
+
   clearAllHighlights(): void {
     for (const id of this.activeHighlights.keys()) {
       this.clearHighlight(id);
@@ -161,6 +191,70 @@ export class UiTargetRegistry {
     }
 
     target.select(value);
+
+    return { success: true };
+  }
+
+  setValue(id: string, value: string): { success: boolean; error?: string } {
+    const target = this.targets.get(id);
+
+    if (!target) {
+      return { success: false, error: ERROR_CODES.TARGET_NOT_FOUND };
+    }
+
+    if (!target.setValue) {
+      return { success: false, error: ERROR_CODES.ACTION_NOT_AVAILABLE };
+    }
+
+    target.setValue(value);
+
+    return { success: true };
+  }
+
+  setChecked(id: string, checked: boolean): { success: boolean; error?: string } {
+    const target = this.targets.get(id);
+
+    if (!target) {
+      return { success: false, error: ERROR_CODES.TARGET_NOT_FOUND };
+    }
+
+    if (!target.setChecked) {
+      return { success: false, error: ERROR_CODES.ACTION_NOT_AVAILABLE };
+    }
+
+    target.setChecked(checked);
+
+    return { success: true };
+  }
+
+  setExpanded(id: string, expanded: boolean): { success: boolean; error?: string } {
+    const target = this.targets.get(id);
+
+    if (!target) {
+      return { success: false, error: ERROR_CODES.TARGET_NOT_FOUND };
+    }
+
+    if (!target.setExpanded) {
+      return { success: false, error: ERROR_CODES.ACTION_NOT_AVAILABLE };
+    }
+
+    target.setExpanded(expanded);
+
+    return { success: true };
+  }
+
+  activateTab(id: string): { success: boolean; error?: string } {
+    const target = this.targets.get(id);
+
+    if (!target) {
+      return { success: false, error: ERROR_CODES.TARGET_NOT_FOUND };
+    }
+
+    if (!target.activateTab) {
+      return { success: false, error: ERROR_CODES.ACTION_NOT_AVAILABLE };
+    }
+
+    target.activateTab();
 
     return { success: true };
   }

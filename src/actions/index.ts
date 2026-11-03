@@ -13,4 +13,9 @@ export {
   openDetailsAction,
   scrollToAction,
   selectAction,
+  clearHighlightAction,
+  activateTabAction,
+  setExpandedAction,
+  setCheckedAction,
+  setValueAction,
 } from './ui-actions';

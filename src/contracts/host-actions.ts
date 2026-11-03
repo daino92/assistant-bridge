@@ -53,6 +53,29 @@ export const uiSelectPayloadSchema = z.object({
   value: z.string().optional(),
 });
 
+export const uiSetValuePayloadSchema = z.object({
+  targetId: z.string(),
+  value: z.string(),
+});
+
+export const uiSetCheckedPayloadSchema = z.object({
+  targetId: z.string(),
+  checked: z.boolean(),
+});
+
+export const uiSetExpandedPayloadSchema = z.object({
+  targetId: z.string(),
+  expanded: z.boolean(),
+});
+
+export const uiActivateTabPayloadSchema = z.object({
+  targetId: z.string(),
+});
+
+export const uiClearHighlightPayloadSchema = z.object({
+  targetId: z.string(),
+});
+
 export const uiOpenDetailsPayloadSchema = z.object({
   entityType: z.enum(['catalog', 'record']),
   id: z.string(),
@@ -81,6 +104,11 @@ export const HOST_ACTION_NAMES = {
   UI_SCROLL_TO: 'ui.scrollTo',
   UI_FOCUS: 'ui.focus',
   UI_SELECT: 'ui.select',
+  UI_CLEAR_HIGHLIGHT: 'ui.clearHighlight',
+  UI_ACTIVATE_TAB: 'ui.activateTab',
+  UI_SET_EXPANDED: 'ui.setExpanded',
+  UI_SET_CHECKED: 'ui.setChecked',
+  UI_SET_VALUE: 'ui.setValue',
   UI_OPEN_DETAILS: 'ui.openDetails',
   CATALOG_FILTER: 'catalog.filter',
   RECORDS_FILTER: 'records.filter',

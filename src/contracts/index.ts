@@ -28,6 +28,11 @@ export {
   uiOpenDetailsPayloadSchema,
   uiScrollToPayloadSchema,
   uiSelectPayloadSchema,
+  uiClearHighlightPayloadSchema,
+  uiActivateTabPayloadSchema,
+  uiSetExpandedPayloadSchema,
+  uiSetCheckedPayloadSchema,
+  uiSetValuePayloadSchema,
   type HostActionRequest,
   type HostActionResult,
 } from './host-actions';

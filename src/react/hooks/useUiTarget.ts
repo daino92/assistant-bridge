@@ -6,13 +6,26 @@ export interface UiTargetOptions {
   label?: string;
   description?: string;
   focusRef?: RefObject<HTMLElement | null>;
+  onSetValue?: (value: string) => void;
+  onSetChecked?: (checked: boolean) => void;
+  onSetExpanded?: (expanded: boolean) => void;
+  onActivateTab?: () => void;
   onSelect?: (value?: string) => void;
 }
 
 /** Registers host-owned DOM behavior; the host chooses how highlights are styled. */
 export const useUiTarget = <T extends HTMLElement = HTMLElement>(
   id: string,
-  { focusRef, onSelect, label, description }: UiTargetOptions = {},
+  {
+    focusRef,
+    onSetValue,
+    onSetChecked,
+    onSetExpanded,
+    onActivateTab,
+    onSelect,
+    label,
+    description,
+  }: UiTargetOptions = {},
 ): { highlighted: boolean; ref: RefObject<T | null> } => {
   const { targetRegistry } = useIntegration();
   const ref = useRef<T | null>(null);
@@ -43,9 +56,24 @@ export const useUiTarget = <T extends HTMLElement = HTMLElement>(
             },
           }
         : {}),
+      ...(onSetValue ? { setValue: onSetValue } : {}),
+      ...(onSetChecked ? { setChecked: onSetChecked } : {}),
+      ...(onSetExpanded ? { setExpanded: onSetExpanded } : {}),
+      ...(onActivateTab ? { activateTab: onActivateTab } : {}),
       ...(onSelect ? { select: (value?: string) => onSelect(value) } : {}),
     });
-  }, [id, targetRegistry, focusRef, onSelect, label, description]);
+  }, [
+    id,
+    targetRegistry,
+    focusRef,
+    onSetValue,
+    onSetChecked,
+    onSetExpanded,
+    onActivateTab,
+    onSelect,
+    label,
+    description,
+  ]);
 
   return { highlighted, ref };
 };

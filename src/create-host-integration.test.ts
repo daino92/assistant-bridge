@@ -109,7 +109,7 @@ it('publishes named targets and destinations while limiting capabilities to the 
   });
 
   expect(integration.contextManager.getSnapshot()).toMatchObject({
-    targets: [{ id: 'revenue', label: 'Revenue pipeline', actions: ['highlight', 'scrollTo'] }],
+    targets: [{ id: 'revenue', label: 'Revenue pipeline', actions: ['highlight', 'clearHighlight', 'scrollTo'] }],
     destinations: [{ path: '/records', label: 'Records' }],
   });
   unregister();

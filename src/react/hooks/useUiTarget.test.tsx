@@ -101,8 +101,68 @@ it('advertises only mounted target interactions without inventing focus or selec
   );
 
   expect(integration.contextManager.getSnapshot().targets).toEqual([
-    { id: 'revenue', label: 'Revenue pipeline', actions: ['highlight', 'scrollTo'] },
+    {
+      id: 'revenue',
+      label: 'Revenue pipeline',
+      actions: ['highlight', 'clearHighlight', 'scrollTo'],
+    },
   ]);
   unmount();
   expect(integration.contextManager.getSnapshot().targets).toEqual([]);
+});
+
+it('registers new callbacks, replaces stale callbacks and removes unsupported interactions', () => {
+  const integration = createHostIntegration({ actions: [] });
+
+  disposers.push(() => integration.dispose());
+
+  interface ControlsProps {
+    onSetValue?: (value: string) => void;
+    onSetChecked?: (checked: boolean) => void;
+    onSetExpanded?: (expanded: boolean) => void;
+    onActivateTab?: () => void;
+  }
+
+  const Controls = (props: ControlsProps) => {
+    const { ref } = useUiTarget<HTMLDivElement>('controls', props);
+
+    return <div ref={ref} />;
+  };
+
+  const first = vi.fn();
+  const next = vi.fn();
+
+  const Wrapper = ({ children }: WrapperProps) => (
+    <IntegrationProvider integration={integration}>{children}</IntegrationProvider>
+  );
+
+  const { rerender, unmount } = render(
+    <Controls
+      onSetValue={first}
+      onSetChecked={first}
+      onSetExpanded={first}
+      onActivateTab={first}
+    />,
+    { wrapper: Wrapper },
+  );
+
+  integration.targetRegistry.setValue('controls', 'first');
+  rerender(
+    <Controls onSetValue={next} onSetChecked={next} onSetExpanded={next} onActivateTab={next} />,
+  );
+  integration.targetRegistry.setValue('controls', 'next');
+  integration.targetRegistry.setChecked('controls', false);
+  integration.targetRegistry.setExpanded('controls', true);
+  integration.targetRegistry.activateTab('controls');
+  expect(first).toHaveBeenCalledExactlyOnceWith('first');
+  expect(next.mock.calls).toEqual([['next'], [false], [true], []]);
+  rerender(<Controls />);
+  expect(integration.targetRegistry.describe()[0].actions).toEqual([
+    'highlight',
+    'clearHighlight',
+    'scrollTo',
+  ]);
+  expect(integration.targetRegistry.activateTab('controls').success).toBe(false);
+  unmount();
+  expect(integration.targetRegistry.has('controls')).toBe(false);
 });
