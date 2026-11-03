@@ -6,6 +6,8 @@ export {
   useAssistantPanel,
   useAssistantIframeConnection,
   useAssistantContext,
+  useAssistantIntegration,
+  type UseAssistantIntegrationOptions,
   useAssistantCommandHandler,
   useHostIntegration,
   useHostPageContext,

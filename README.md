@@ -6,6 +6,8 @@ The SDK supplies the contracts and execution boundary. The host owns its routes,
 
 > **Beta:** the public API may change before the first stable release.
 
+For an existing chat app, see [the integration guide](docs/existing-chat.md) and `useAssistantIntegration` from `assistant-bridge/react`.
+
 ## Installation
 
 ```bash

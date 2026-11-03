@@ -139,6 +139,26 @@ The component loads the remote, supplies only `EmbeddedAssistantOptions`, and ow
 
 The host `AssistantPanel` in `src/components/AssistantPanel.tsx` uses `AssistantEmbed` to select these adapters. It owns public URLs, mode selection, shared runtime configuration and panel/launcher visuals. The panel stays mounted while closed and offers reconnect on connection errors.
 
+## Existing chat integration
+
+`useAssistantIntegration` composes host connection, current context, fresh command callbacks, action execution and approval state. It supports directly supplied `bridge`/`onReady`, iframe initialization and standalone operation without a host provider. It does not own chat UI, messages or backend transport. Use it to adapt an existing chat; the lower-level hooks below remain available.
+
+```tsx
+const integration = useAssistantIntegration({
+  bridge,
+  onReady,
+  commands: {
+    onOpen: openChat,
+    onClose: closeChat,
+    onFocus: focusInput,
+    onPrefill: setDraft,
+    onSubmit: sendThroughExistingBackend,
+  },
+});
+```
+
+Use `integration.context` and `integration.isConnected` for host state. Await `integration.executeHostAction(name, payload)` for backend-originated host requests. Render `integration.confirmation` with `approve`/`reject`, or supply `actions.requestConfirmation` for an existing approval UI. AG-UI consumers can pass `integration.bridge` and `integration.requestConfirmation` to their existing session. See the [existing chat integration guide](existing-chat.md) for lifecycle, backend protocol boundaries, and Commercebot/Tell-a-story adapter mappings.
+
 ## Assistant-side hooks
 
 These hooks run inside the chat, including a standalone chat without `IntegrationProvider`. They use only `AssistantBridgeClient` and the embedding callbacks; host registries and services are not exposed.

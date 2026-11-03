@@ -14,3 +14,8 @@ export { useHostPageContext, type HostPageContextOptions } from './useHostPageCo
 export { useAskAi } from './useAskAi';
 
 export { useActionConfirmation } from './useActionConfirmation';
+
+export {
+  useAssistantIntegration,
+  type UseAssistantIntegrationOptions,
+} from './useAssistantIntegration';
