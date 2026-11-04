@@ -110,6 +110,44 @@ describe('useHostIntegration', () => {
     ).rejects.toMatchObject({ code: ERROR_CODES.UNKNOWN_ACTION });
   });
 
+  it('re-registers actions when actionDeps change even if the actions factory reference is new', async () => {
+    const schema = z.object({});
+    const firstHandler = vi.fn(() => 'first');
+    const secondHandler = vi.fn(() => 'second');
+
+    const { result, rerender } = renderHook(
+      ({ deps, handler }) =>
+        useHostIntegration({
+          actionDeps: deps,
+          actions: () => [
+            { name: 'test.action', description: 'Test', schema, handler },
+          ],
+        }),
+      {
+        initialProps: { deps: { version: 1 }, handler: firstHandler },
+        wrapper: Wrapper,
+      },
+    );
+
+    const integration = result.current;
+
+    await expect(integration.assistantClient.requestHostAction('test.action', {})).resolves.toBe(
+      'first',
+    );
+
+    rerender({ deps: { version: 1 }, handler: firstHandler });
+    await expect(integration.assistantClient.requestHostAction('test.action', {})).resolves.toBe(
+      'first',
+    );
+    expect(firstHandler).toHaveBeenCalledTimes(2);
+
+    rerender({ deps: { version: 2 }, handler: secondHandler });
+    await expect(integration.assistantClient.requestHostAction('test.action', {})).resolves.toBe(
+      'second',
+    );
+    expect(secondHandler).toHaveBeenCalledOnce();
+  });
+
   it('clears active highlights and rejects pending commands on final unmount', async () => {
     const { result, unmount } = renderHook(
       () => useHostIntegration({ actions: [] }),

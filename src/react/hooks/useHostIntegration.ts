@@ -8,9 +8,15 @@ import {
 import type { HostActionInput } from '@/actions';
 import type { IntegrationTimelineEntry } from '@/contracts';
 
+export type UseHostIntegrationOptions = CreateHostIntegrationOptions & {
+  /** When set, action registration updates follow this value instead of the `actions` reference. Memoize host state the factory closes over. */
+  actionDeps?: unknown;
+};
+
 interface ManagedIntegration {
   integration: HostIntegration;
   actions: CreateHostIntegrationOptions['actions'];
+  actionDeps: unknown;
   actionNames: Set<string>;
   lifecycle: {
     mounted: boolean;
@@ -26,9 +32,53 @@ const resolveActions = (
   targets: HostIntegration['targetRegistry'],
 ): HostActionInput[] => (typeof actions === 'function' ? actions({ targets }) : actions);
 
+const registerActions = (
+  managed: ManagedIntegration,
+  actions: HostActionInput[],
+): void => {
+  const { integration } = managed;
+  const names = new Set<string>();
+
+  for (const action of actions) {
+    if (
+      names.has(action.name) ||
+      (integration.actionRegistry.hasAction(action.name) && !managed.actionNames.has(action.name))
+    ) {
+      throw new Error(`Action already registered: ${action.name}`);
+    }
+
+    names.add(action.name);
+  }
+
+  managed.actionNames.forEach((name) => integration.actionRegistry.unregister(name));
+
+  for (const action of actions) {
+    integration.actionRegistry.register({
+      name: action.name,
+      description: action.description,
+      parametersSchema: action.schema,
+      requiresConfirmation: action.requiresConfirmation ?? false,
+      isAvailable: action.available,
+      handler: action.handler,
+    });
+  }
+
+  managed.actionNames = names;
+
+  if (
+    JSON.stringify(integration.actionRegistry.getCapabilities()) !==
+    JSON.stringify(integration.contextManager.getSnapshot().capabilities)
+  ) {
+    integration.bridge.syncCapabilities();
+  }
+};
+
 /** Owns one integration for this mounted host. Bootstrap options are fixed for its lifetime. */
-export const useHostIntegration = (options: CreateHostIntegrationOptions): HostIntegration => {
+export const useHostIntegration = (options: UseHostIntegrationOptions): HostIntegration => {
   const managedRef = useRef<ManagedIntegration | null>(null);
+  const actionsRef = useRef(options.actions);
+
+  actionsRef.current = options.actions;
 
   if (!managedRef.current) {
     const lifecycle: ManagedIntegration['lifecycle'] = {
@@ -64,6 +114,7 @@ export const useHostIntegration = (options: CreateHostIntegrationOptions): HostI
       integration,
       lifecycle,
       actions: options.actions,
+      actionDeps: options.actionDeps,
       actionNames: new Set(initialActions.map((action) => action.name)),
     };
   }
@@ -75,48 +126,20 @@ export const useHostIntegration = (options: CreateHostIntegrationOptions): HostI
   }, [managed, options.onTimeline]);
 
   useLayoutEffect(() => {
-    if (managed.actions === options.actions) {
+    const usesActionDeps = options.actionDeps !== undefined;
+    const shouldUpdate = usesActionDeps
+      ? !Object.is(managed.actionDeps, options.actionDeps)
+      : managed.actions !== options.actions;
+
+    if (!shouldUpdate) {
       return;
     }
 
-    const { integration } = managed;
-    const actions = resolveActions(options.actions, integration.targetRegistry);
-    const names = new Set<string>();
-
-    for (const action of actions) {
-      if (
-        names.has(action.name) ||
-        (integration.actionRegistry.hasAction(action.name) && !managed.actionNames.has(action.name))
-      ) {
-        throw new Error(`Action already registered: ${action.name}`);
-      }
-
-      names.add(action.name);
-    }
-
-    managed.actionNames.forEach((name) => integration.actionRegistry.unregister(name));
-
-    for (const action of actions) {
-      integration.actionRegistry.register({
-        name: action.name,
-        description: action.description,
-        parametersSchema: action.schema,
-        requiresConfirmation: action.requiresConfirmation ?? false,
-        isAvailable: action.available,
-        handler: action.handler,
-      });
-    }
-
+    managed.actionDeps = options.actionDeps;
     managed.actions = options.actions;
-    managed.actionNames = names;
 
-    if (
-      JSON.stringify(integration.actionRegistry.getCapabilities()) !==
-      JSON.stringify(integration.contextManager.getSnapshot().capabilities)
-    ) {
-      integration.bridge.syncCapabilities();
-    }
-  }, [managed, options.actions]);
+    registerActions(managed, resolveActions(actionsRef.current, managed.integration.targetRegistry));
+  }, [managed, options.actionDeps, options.actions]);
 
   useEffect(() => {
     const { lifecycle, integration } = managed;

@@ -10,6 +10,7 @@ export {
   type UseAssistantIntegrationOptions,
   useAssistantCommandHandler,
   useHostIntegration,
+  type UseHostIntegrationOptions,
   useHostPageContext,
   useAskAi,
   useActionConfirmation,

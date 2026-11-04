@@ -8,7 +8,7 @@ export {
 
 export { useAssistantContext } from './useAssistantContext';
 export { useAssistantCommandHandler } from './useAssistantCommandHandler';
-export { useHostIntegration } from './useHostIntegration';
+export { useHostIntegration, type UseHostIntegrationOptions } from './useHostIntegration';
 
 export { useHostPageContext, type HostPageContextOptions } from './useHostPageContext';
 export { useAskAi } from './useAskAi';
