@@ -14,6 +14,7 @@ The framework-independent API of `assistant-bridge`. It has no React, federation
 │  ├─ <a href="#update-the-page">integration.updatePage</a>
 │  ├─ <a href="#publish-context">contextManager, syncCapabilities</a>
 │  ├─ <a href="#context-commits">Context commits and revisions</a>
+│  ├─ <a href="#define-page-catalog">definePageCatalog</a>
 │  └─ <a href="#map-host-entities">mapHostEntities</a>
 ├─ Assistant client and commands
 │  ├─ <a href="#use-the-client-inside-the-assistant">AssistantBridgeClient</a>
@@ -181,6 +182,34 @@ The core `HostContextManager` owns value equality and revision generation for al
 Inputs, snapshots and each subscriber notification are deeply cloned, including page, selection, destinations, targets, entities and nested capability schemas. Mutating a returned snapshot or an input after assignment cannot alter stored state or another subscriber's notification. Reentrant updates are queued so subscribers observe revisions in order.
 
 Repeated identical `updatePage` calls preserve current selection/highlights. Selection policy applies when route, page metadata or policy changes. Use `contextManager.clearSelection()` for an explicit same-page selection reset. Core `updatePage` preserves entities when omitted; the React `useHostPageContext` hook supplies an empty array by default to clear old page summaries. Hosts still own routing policy, entity mapping and action availability rules.
+
+## Define page catalog
+
+`definePageCatalog(definition)` turns a host-owned page map into integration metadata from one source of truth. Keys become route paths (`/dashboard`), destination labels and `HostContext.page` metadata.
+
+```ts
+import { definePageCatalog } from 'assistant-bridge';
+
+const catalog = definePageCatalog({
+  dashboard: { title: 'Dashboard', type: 'dashboard' },
+  catalog: { title: 'Catalog', type: 'catalog-list' },
+});
+
+createHostIntegration({
+  destinations: catalog.destinations,
+  actions: [
+    navigateAction({ navigate, allowedRoutes: catalog.paths }),
+    // ...
+  ],
+});
+
+integration.updatePage({
+  route: catalog.route('catalog'),
+  page: catalog.pageMeta('catalog'),
+});
+```
+
+Use `catalog.pageKeyFromRoute(pathname)`, `catalog.isRoute(context, 'dashboard')`, and `catalog.isPageType(context, 'dashboard')` in navigation guards and action `available` predicates. The helper does not register routes, watch a router or choose entity payloads.
 
 ## Map host entities
 

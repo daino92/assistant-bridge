@@ -88,7 +88,15 @@ export {
   type UpdatePageOptions,
 } from './create-host-integration';
 
-export { HostContextManager, mapHostEntities, type HostEntityMapping } from './host-context';
+export {
+  HostContextManager,
+  mapHostEntities,
+  definePageCatalog,
+  type HostEntityMapping,
+  type PageCatalog,
+  type PageCatalogDefinition,
+  type PageCatalogEntry,
+} from './host-context';
 export { attachHostPort, createPortAssistantClient } from './bridge';
 
 export {
