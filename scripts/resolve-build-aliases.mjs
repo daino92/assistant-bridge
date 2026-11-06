@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
@@ -58,7 +58,10 @@ const rewrite = (file) => {
   }
 
   if (output !== source) {
-    writeFileSync(file, output);
+    const tempFile = `${file}.${process.pid}.tmp`;
+
+    writeFileSync(tempFile, output);
+    renameSync(tempFile, file);
   }
 };
 
