@@ -29,6 +29,8 @@ export const navigateAction = (deps: {
   navigate: (path: string) => void | Promise<void>;
   allowedRoutes: readonly string[];
   detailPattern?: RegExp;
+  /** Runs after the route allowlist check and before `navigate`. Throw `createIntegrationError` with optional business `reason`. */
+  beforeNavigate?: (path: string) => void | Promise<void>;
 }): HostActionInput<{ path: string }> => {
   return {
     name: HOST_ACTION_NAMES.UI_NAVIGATE,
@@ -40,6 +42,10 @@ export const navigateAction = (deps: {
 
       if (!allowed) {
         throw createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE);
+      }
+
+      if (deps.beforeNavigate) {
+        await deps.beforeNavigate(path);
       }
 
       await deps.navigate(path);

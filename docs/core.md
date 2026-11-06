@@ -79,6 +79,8 @@ const integration = createHostIntegration({
 
 The navigation callback is illustrative. In a routed application, supply its router's navigation function so route rendering and context updates stay coordinated. The callback may return a promise: the action result waits for it, and a rejection fails the action, so hosts can apply route preconditions or wait for page data.
 
+After the built-in allowlist (and optional detail pattern) accepts a path, `navigateAction` runs an optional **`beforeNavigate(path)`** hook, then `navigate`. Use it for host business rules without wrapping `navigate`; throw `createIntegrationError(ACTION_NOT_AVAILABLE, reason)` for stable assistant-facing guidance (see *Business reasons on ACTION_NOT_AVAILABLE*).
+
 The returned integration exposes `bridge`, `contextManager`, `actionRegistry`, `targetRegistry`, `assistantCommands`, and `assistantClient`. Keep those host services on the host side; give assistant application logic only `AssistantBridgeClient`.
 
 ## Define host actions
@@ -137,7 +139,7 @@ const actions = [
 ];
 ```
 
-`createUiActions` returns `HostActionInput[]` without registering or executing anything. Pass the result to `createHostIntegration` or `useHostIntegration`. Omitted groups enable no actions; `{}` returns an empty list. Target action names are explicitly selected and duplicate selections are included once, in their first-occurrence order. **`UI_TARGET_ACTIONS`** lists every built-in UI-target tool so hosts can enable the full set without repeating names; slice or replace it for a tighter surface. Navigation is emitted first, then selected target actions, then details.
+`createUiActions` returns `HostActionInput[]` without registering or executing anything. Pass the result to `createHostIntegration` or `useHostIntegration`. Omitted groups enable no actions; `{}` returns an empty list. Target action names are explicitly selected and duplicate selections are included once, in their first-occurrence order. **`UI_TARGET_ACTIONS`** lists every built-in UI-target tool so hosts can enable the full set without repeating names; slice or replace it for a tighter surface. Navigation is emitted first, then selected target actions, then details. Pass **`beforeNavigate`** inside `navigation` for the same guard hook as `navigateAction`.
 
 `CreateUiActionsOptions` and `UiTargetActionName` are exported for typed configuration. The helper delegates to the individual action factories, preserving their schemas, route checks and errors. Those factories remain available separately. Hosts still own allowed routes, detail URL mapping, target IDs and business handlers; the helper adds no catalog/records store access or implicit permissions.
 

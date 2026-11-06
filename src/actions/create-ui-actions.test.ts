@@ -105,6 +105,56 @@ describe('createUiActions', () => {
     ).toEqual([HOST_ACTION_NAMES.UI_NAVIGATE, HOST_ACTION_NAMES.UI_OPEN_DETAILS]);
   });
 
+  it('runs beforeNavigate after allowlist check and before navigate', async () => {
+    const navigate = vi.fn();
+    const beforeNavigate = vi.fn();
+
+    const integration = createHostIntegration({
+      actions: createUiActions({
+        navigation: { navigate, allowedRoutes: ['/allowed'], beforeNavigate },
+      }),
+    });
+
+    disposers.push(() => integration.bridge.destroy());
+    await integration.assistantClient.requestHostAction(HOST_ACTION_NAMES.UI_NAVIGATE, {
+      path: '/allowed',
+    });
+    expect(beforeNavigate).toHaveBeenCalledWith('/allowed');
+    expect(navigate).toHaveBeenCalledWith('/allowed');
+    await expect(
+      integration.assistantClient.requestHostAction(HOST_ACTION_NAMES.UI_NAVIGATE, {
+        path: '/blocked',
+      }),
+    ).rejects.toMatchObject({ code: ERROR_CODES.ACTION_NOT_AVAILABLE });
+    expect(beforeNavigate).toHaveBeenCalledOnce();
+    expect(navigate).toHaveBeenCalledOnce();
+  });
+
+  it('propagates beforeNavigate rejections with optional business reason', async () => {
+    const navigate = vi.fn();
+    const reason = { code: 'TEST_GUARD' as const, message: 'Guard message' };
+
+    const integration = createHostIntegration({
+      actions: createUiActions({
+        navigation: {
+          navigate,
+          allowedRoutes: ['/catalog'],
+          beforeNavigate: () => {
+            throw createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE, reason);
+          },
+        },
+      }),
+    });
+
+    disposers.push(() => integration.bridge.destroy());
+    await expect(
+      integration.assistantClient.requestHostAction(HOST_ACTION_NAMES.UI_NAVIGATE, {
+        path: '/catalog',
+      }),
+    ).rejects.toMatchObject({ code: ERROR_CODES.ACTION_NOT_AVAILABLE, reason });
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
   it('waits for async navigation and propagates host navigation failures', async () => {
     let finishNavigation = () => {};
 
