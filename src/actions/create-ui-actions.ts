@@ -25,6 +25,19 @@ export type UiTargetActionName =
   | 'clearHighlight'
   | 'select';
 
+/** Every built-in UI-target tool; pass to `createUiActions({ targets: { enable, … } })` instead of hand-writing the list. */
+export const UI_TARGET_ACTIONS: readonly UiTargetActionName[] = [
+  'highlight',
+  'scrollTo',
+  'focus',
+  'select',
+  'setValue',
+  'setChecked',
+  'setExpanded',
+  'activateTab',
+  'clearHighlight',
+];
+
 export interface CreateUiActionsOptions {
   navigation?: Parameters<typeof navigateAction>[0];
   targets?: {

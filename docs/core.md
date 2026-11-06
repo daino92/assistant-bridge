@@ -125,19 +125,19 @@ Register and unregister UI targets as their elements mount and unmount. For Reac
 ## Compose common UI actions
 
 ```ts
-import { createUiActions, defineAction } from 'assistant-bridge';
+import { UI_TARGET_ACTIONS, createUiActions, defineAction } from 'assistant-bridge';
 
 const actions = [
   ...createUiActions({
     navigation: { navigate, allowedRoutes: ALLOWED_ROUTES, detailPattern: DETAIL_ROUTE },
-    targets: { registry: targets, enable: ['highlight', 'scrollTo', 'focus', 'select'] },
+    targets: { registry: targets, enable: UI_TARGET_ACTIONS },
     details: { open: openDetails },
   }),
   // Add host-specific actions with defineAction(...).
 ];
 ```
 
-`createUiActions` returns `HostActionInput[]` without registering or executing anything. Pass the result to `createHostIntegration` or `useHostIntegration`. Omitted groups enable no actions; `{}` returns an empty list. Target action names are explicitly selected and duplicate selections are included once, in their first-occurrence order. Navigation is emitted first, then selected target actions, then details.
+`createUiActions` returns `HostActionInput[]` without registering or executing anything. Pass the result to `createHostIntegration` or `useHostIntegration`. Omitted groups enable no actions; `{}` returns an empty list. Target action names are explicitly selected and duplicate selections are included once, in their first-occurrence order. **`UI_TARGET_ACTIONS`** lists every built-in UI-target tool so hosts can enable the full set without repeating names; slice or replace it for a tighter surface. Navigation is emitted first, then selected target actions, then details.
 
 `CreateUiActionsOptions` and `UiTargetActionName` are exported for typed configuration. The helper delegates to the individual action factories, preserving their schemas, route checks and errors. Those factories remain available separately. Hosts still own allowed routes, detail URL mapping, target IDs and business handlers; the helper adds no catalog/records store access or implicit permissions.
 

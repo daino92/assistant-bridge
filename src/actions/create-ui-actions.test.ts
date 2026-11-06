@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createUiActions } from '@/actions';
+import { UI_TARGET_ACTIONS, createUiActions } from '@/actions';
 import { createHostIntegration } from '@/create-host-integration';
 import { ERROR_CODES, HOST_ACTION_NAMES } from '@/contracts';
 import { createIntegrationError } from '@/errors';
@@ -15,6 +15,20 @@ afterEach(() => {
 });
 
 describe('createUiActions', () => {
+  it('UI_TARGET_ACTIONS lists every built-in UI target tool', () => {
+    expect(UI_TARGET_ACTIONS).toEqual([
+      'highlight',
+      'scrollTo',
+      'focus',
+      'select',
+      'setValue',
+      'setChecked',
+      'setExpanded',
+      'activateTab',
+      'clearHighlight',
+    ]);
+  });
+
   it('enables only selected target actions and preserves payload and target validation', async () => {
     const focus = vi.fn();
 

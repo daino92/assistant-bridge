@@ -6,6 +6,7 @@ export {
 
 export {
   defineAction,
+  UI_TARGET_ACTIONS,
   createUiActions,
   focusAction,
   highlightAction,

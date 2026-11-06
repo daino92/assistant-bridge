@@ -1,6 +1,7 @@
 export { defineAction, type HostActionInput } from './types';
 
 export {
+  UI_TARGET_ACTIONS,
   createUiActions,
   type CreateUiActionsOptions,
   type UiTargetActionName,
