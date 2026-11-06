@@ -11,6 +11,12 @@ export { useAssistantCommandHandler } from './useAssistantCommandHandler';
 export { useHostIntegration, type UseHostIntegrationOptions } from './useHostIntegration';
 
 export { useHostPageContext, type HostPageContextOptions } from './useHostPageContext';
+
+export {
+  useHostPageContextFromCatalog,
+  type HostPageContextFromCatalogOptions,
+} from './useHostPageContextFromCatalog';
+
 export { useAskAi } from './useAskAi';
 
 export { useActionConfirmation } from './useActionConfirmation';

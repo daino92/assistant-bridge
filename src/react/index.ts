@@ -12,9 +12,11 @@ export {
   useHostIntegration,
   type UseHostIntegrationOptions,
   useHostPageContext,
+  useHostPageContextFromCatalog,
   useAskAi,
   useActionConfirmation,
   type HostPageContextOptions,
+  type HostPageContextFromCatalogOptions,
   type UiTargetOptions,
   type UseAssistantIframeConnectionOptions,
 } from './hooks';
