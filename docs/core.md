@@ -211,6 +211,44 @@ integration.updatePage({
 
 Use `catalog.pageKeyFromRoute(pathname)`, `catalog.isRoute(context, 'dashboard')`, and `catalog.isPageType(context, 'dashboard')` in navigation guards and action `available` predicates. The helper does not register routes, watch a router or choose entity payloads.
 
+## Action authoring helpers (optional)
+
+For `defineAction` handlers that take no parameters, use `emptyPayloadSchema` instead of repeating `z.object({})`.
+
+`whenPageType(catalog, pageKey)` returns an `available` predicate that delegates to `catalog.isPageType(context, pageKey)`. For actions that also depend on live application state not mirrored in `HostContext` (workspace selection, feature flags, and so on), use `whenPageTypeAnd(catalog, pageKey, host, (h) => …)`.
+
+```ts
+import {
+  defineAction,
+  emptyPayloadSchema,
+  definePageCatalog,
+  whenPageType,
+  whenPageTypeAnd,
+} from 'assistant-bridge';
+
+const catalog = definePageCatalog({
+  dashboard: { title: 'Dashboard', type: 'dashboard' },
+});
+
+defineAction({
+  name: 'orders.open',
+  description: 'Open orders from the dashboard.',
+  schema: emptyPayloadSchema,
+  available: whenPageType(catalog, 'dashboard'),
+  handler: () => ({ opened: true }),
+});
+
+const host = { cart: { items: [] as string[] } };
+
+defineAction({
+  name: 'cart.checkout',
+  description: 'Checkout when the cart is non-empty.',
+  schema: emptyPayloadSchema,
+  available: whenPageTypeAnd(catalog, 'dashboard', host, (h) => h.cart.items.length > 0),
+  handler: () => ({ ok: true }),
+});
+```
+
 ## Map host entities
 
 `mapHostEntities(items, mapping)` builds the standard entity summaries without depending on React, routing or a business model:
