@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-beta.3
 
+- Add `useHostPageContextFromCatalog` to sync page context from a page catalog.
+- Add action authoring helpers for empty payloads and page-type availability.
+- Add `UI_TARGET_ACTIONS` to enable all built-in UI target tools.
+- Add a `beforeNavigate` hook to `navigateAction` and `createUiActions`.
+- Move the Zod override from `.npmrc` to `package.json`.
 - **Breaking:** remove `appId` from `HostContext`, `createHostIntegration` / `useHostIntegration`, and the `host.ready` event payload. Host identity is no longer part of the integration contract.
 
 ## 0.1.0-beta.2
