@@ -66,7 +66,7 @@ it('loads federation only when selected and retries without requiring a host sub
   await screen.findByText('Federated chat');
   expect(adapters.load).toHaveBeenCalledOnce();
   expect(onStatus).toHaveBeenCalledWith('loading');
-  expect(onStatus).toHaveBeenCalledWith('ready');
+  await waitFor(() => expect(onStatus).toHaveBeenCalledWith('ready'));
 
   rerender(<AssistantEmbed config={{ ...federation }} onStatus={onStatus} />);
   expect(adapters.mount).toHaveBeenCalledOnce();
