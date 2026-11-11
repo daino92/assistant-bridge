@@ -27,4 +27,5 @@ export const whenPageTypeAnd =
     host: H,
     when: (state: H) => boolean,
   ): ((ctx: HostContext) => boolean) =>
-  (ctx) => whenPageType(catalog, pageKey)(ctx) && when(host);
+  (ctx) =>
+    whenPageType(catalog, pageKey)(ctx) && when(host);
