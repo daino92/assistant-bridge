@@ -124,7 +124,7 @@ export const useHostIntegration = (options: UseHostIntegrationOptions): HostInte
 
   useLayoutEffect(() => {
     const usesActionDeps = options.actionDeps !== undefined;
-    
+
     const shouldUpdate = usesActionDeps
       ? !Object.is(managed.actionDeps, options.actionDeps)
       : managed.actions !== options.actions;
