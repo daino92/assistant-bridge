@@ -119,9 +119,7 @@ describe('useHostIntegration', () => {
       ({ deps, handler }) =>
         useHostIntegration({
           actionDeps: deps,
-          actions: () => [
-            { name: 'test.action', description: 'Test', schema, handler },
-          ],
+          actions: () => [{ name: 'test.action', description: 'Test', schema, handler }],
         }),
       {
         initialProps: { deps: { version: 1 }, handler: firstHandler },
@@ -149,10 +147,9 @@ describe('useHostIntegration', () => {
   });
 
   it('clears active highlights and rejects pending commands on final unmount', async () => {
-    const { result, unmount } = renderHook(
-      () => useHostIntegration({ actions: [] }),
-      { wrapper: Wrapper },
-    );
+    const { result, unmount } = renderHook(() => useHostIntegration({ actions: [] }), {
+      wrapper: Wrapper,
+    });
 
     const integration = result.current;
     const clearHighlight = vi.fn();

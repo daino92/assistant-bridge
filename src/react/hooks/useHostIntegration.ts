@@ -32,10 +32,7 @@ const resolveActions = (
   targets: HostIntegration['targetRegistry'],
 ): HostActionInput[] => (typeof actions === 'function' ? actions({ targets }) : actions);
 
-const registerActions = (
-  managed: ManagedIntegration,
-  actions: HostActionInput[],
-): void => {
+const registerActions = (managed: ManagedIntegration, actions: HostActionInput[]): void => {
   const { integration } = managed;
   const names = new Set<string>();
 
@@ -127,6 +124,7 @@ export const useHostIntegration = (options: UseHostIntegrationOptions): HostInte
 
   useLayoutEffect(() => {
     const usesActionDeps = options.actionDeps !== undefined;
+
     const shouldUpdate = usesActionDeps
       ? !Object.is(managed.actionDeps, options.actionDeps)
       : managed.actions !== options.actions;
@@ -138,7 +136,10 @@ export const useHostIntegration = (options: UseHostIntegrationOptions): HostInte
     managed.actionDeps = options.actionDeps;
     managed.actions = options.actions;
 
-    registerActions(managed, resolveActions(actionsRef.current, managed.integration.targetRegistry));
+    registerActions(
+      managed,
+      resolveActions(actionsRef.current, managed.integration.targetRegistry),
+    );
   }, [managed, options.actionDeps, options.actions]);
 
   useEffect(() => {

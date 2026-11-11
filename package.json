@@ -1,6 +1,6 @@
 {
   "name": "assistant-bridge",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.3",
   "type": "module",
   "exports": {
     ".": {
@@ -26,10 +26,10 @@
     "./schemas/*": "./schemas/*"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && node scripts/resolve-build-aliases.mjs && node scripts/generate-agent-schemas.mjs",
+    "build": "tsc6 -p tsconfig.build.json && node scripts/resolve-build-aliases.mjs && node scripts/generate-agent-schemas.mjs",
     "schemas:check": "node scripts/generate-agent-schemas.mjs --check",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.tests.json",
+    "typecheck": "tsc6 -p tsconfig.tests.json",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -99,5 +99,10 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/",
     "tag": "beta"
+  },
+  "pnpm": {
+    "overrides": {
+      "zod": "^4.6.6"
+    }
   }
 }

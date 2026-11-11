@@ -17,6 +17,7 @@ it('syncs route and page from catalog like useHostPageContext', () => {
     destinations: catalog.destinations,
     actions: [],
   });
+
   const published = vi.fn();
 
   integration.assistantClient.subscribeContext(published);
@@ -24,13 +25,7 @@ it('syncs route and page from catalog like useHostPageContext', () => {
   const entity = { type: 'record', id: 'one', label: 'One' };
 
   const { rerender, unmount } = renderHook(
-    ({
-      pageKey,
-      label,
-    }: {
-      pageKey: 'workspace' | 'dashboard';
-      label: string;
-    }) =>
+    ({ pageKey, label }: { pageKey: 'workspace' | 'dashboard'; label: string }) =>
       useHostPageContextFromCatalog(integration, {
         catalog,
         pageKey,
@@ -47,6 +42,7 @@ it('syncs route and page from catalog like useHostPageContext', () => {
   expect(snap0.page).toEqual({ title: 'Dashboard', type: 'dashboard' });
 
   rerender({ pageKey: 'workspace', label: 'One' });
+
   const snap1 = integration.contextManager.getSnapshot();
 
   expect(snap1.route).toBe('/workspace');

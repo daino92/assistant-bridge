@@ -79,7 +79,7 @@ const integration = createHostIntegration({
 
 The navigation callback is illustrative. In a routed application, supply its router's navigation function so route rendering and context updates stay coordinated. The callback may return a promise: the action result waits for it, and a rejection fails the action, so hosts can apply route preconditions or wait for page data.
 
-After the built-in allowlist (and optional detail pattern) accepts a path, `navigateAction` runs an optional **`beforeNavigate(path)`** hook, then `navigate`. Use it for host business rules without wrapping `navigate`; throw `createIntegrationError(ACTION_NOT_AVAILABLE, reason)` for stable assistant-facing guidance (see *Business reasons on ACTION_NOT_AVAILABLE*).
+After the built-in allowlist (and optional detail pattern) accepts a path, `navigateAction` runs an optional **`beforeNavigate(path)`** hook, then `navigate`. Use it for host business rules without wrapping `navigate`; throw `createIntegrationError(ACTION_NOT_AVAILABLE, reason)` for stable assistant-facing guidance (see _Business reasons on ACTION_NOT_AVAILABLE_).
 
 The returned integration exposes `bridge`, `contextManager`, `actionRegistry`, `targetRegistry`, `assistantCommands`, and `assistantClient`. Keep those host services on the host side; give assistant application logic only `AssistantBridgeClient`.
 
