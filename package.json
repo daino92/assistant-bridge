@@ -26,10 +26,10 @@
     "./schemas/*": "./schemas/*"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && node scripts/resolve-build-aliases.mjs && node scripts/generate-agent-schemas.mjs",
+    "build": "tsc6 -p tsconfig.build.json && node scripts/resolve-build-aliases.mjs && node scripts/generate-agent-schemas.mjs",
     "schemas:check": "node scripts/generate-agent-schemas.mjs --check",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.tests.json",
+    "typecheck": "tsc6 -p tsconfig.tests.json",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
