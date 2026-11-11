@@ -99,5 +99,10 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/",
     "tag": "beta"
+  },
+  "pnpm": {
+    "overrides": {
+      "zod": "^4.6.6"
+    }
   }
 }
