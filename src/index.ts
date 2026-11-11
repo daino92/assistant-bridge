@@ -101,6 +101,7 @@ export {
   type PageCatalogDefinition,
   type PageCatalogEntry,
 } from './host-context';
+
 export { attachHostPort, createPortAssistantClient } from './bridge';
 
 export {
