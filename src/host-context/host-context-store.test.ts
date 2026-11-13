@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import { HostContextManager } from '@/host-context';
+import { HostContextManager, whenPermitted } from '@/host-context';
 import { createHostIntegration } from '@/create-host-integration';
 import type { HostContext } from '@/contracts';
 
@@ -207,6 +207,86 @@ it('isolates context notifications between direct assistant clients', () => {
   integration.assistantClient.subscribeContext(listener);
   integration.updatePage({ route: '/records', page: { title: 'Records', type: 'records' } });
   expect(listener.mock.calls[0][0].page.title).toBe('Records');
-  expect(integration.assistantClient.getInitialContext().page.title).toBe('Records');
+  expect(integration.assistantClient.getContext().page.title).toBe('Records');
+  // Deprecated alias keeps returning the latest context.
+  expect(integration.assistantClient.getInitialContext()).toEqual(
+    integration.assistantClient.getContext(),
+  );
+  integration.dispose();
+});
+
+it('replaces destinations through updatePage and preserves them when omitted', () => {
+  const integration = createHostIntegration({
+    actions: [],
+    initialRoute: '/',
+    destinations: [{ path: '/records', label: 'Records' }],
+  });
+
+  const listener = vi.fn();
+
+  integration.contextManager.subscribe(listener);
+
+  const page = { title: 'Home', type: 'home' };
+  const reduced = [{ path: '/settings', label: 'Settings' }];
+
+  integration.updatePage({ route: '/', page, destinations: reduced });
+  expect(integration.contextManager.getSnapshot().destinations).toEqual(reduced);
+  expect(listener).toHaveBeenCalledOnce();
+
+  const revision = integration.contextManager.getSnapshot().revision;
+
+  integration.updatePage({ route: '/', page });
+  expect(integration.contextManager.getSnapshot().destinations).toEqual(reduced);
+  expect(integration.contextManager.getSnapshot().revision).toBe(revision);
+
+  integration.updatePage({ route: '/', page, destinations: [] });
+  expect(integration.contextManager.getSnapshot().destinations).toEqual([]);
+  expect(listener).toHaveBeenCalledTimes(2);
+  integration.dispose();
+});
+
+it('publishes, preserves and clears the principal through updatePage', () => {
+  const integration = createHostIntegration({ actions: [] });
+  const page = { title: 'Home', type: 'home' };
+  const principal = { id: 'user-1', label: 'Editor', permissions: ['content:read'] };
+
+  integration.updatePage({ route: '/', page, principal });
+  expect(integration.assistantClient.getContext().principal).toEqual(principal);
+
+  integration.updatePage({ route: '/', page });
+  expect(integration.assistantClient.getContext().principal).toEqual(principal);
+
+  integration.updatePage({ route: '/', page, principal: null });
+  expect(integration.assistantClient.getContext().principal).toBeUndefined();
+  integration.dispose();
+});
+
+it('recomputes action availability when permissions change', () => {
+  const integration = createHostIntegration({
+    actions: [
+      {
+        name: 'content.publish',
+        description: 'Publish',
+        schema: z.object({}),
+        available: whenPermitted('content:publish'),
+        handler: () => ({}),
+      },
+    ],
+  });
+
+  const page = { title: 'Home', type: 'home' };
+
+  const names = () =>
+    integration.contextManager.getSnapshot().capabilities.map((item) => item.name);
+
+  integration.updatePage({ route: '/', page, principal: { id: 'u', permissions: [] } });
+  expect(names()).toEqual([]);
+
+  integration.updatePage({
+    route: '/',
+    page,
+    principal: { id: 'u', permissions: ['content:publish'] },
+  });
+  expect(names()).toEqual(['content.publish']);
   integration.dispose();
 });

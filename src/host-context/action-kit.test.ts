@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import { definePageCatalog } from '@/host-context/page-catalog';
-import { emptyPayloadSchema, whenPageType, whenPageTypeAnd } from '@/host-context/action-kit';
+import {
+  emptyPayloadSchema,
+  whenPageType,
+  whenPageTypeAnd,
+  whenPermitted,
+} from '@/host-context/action-kit';
 
 describe('action-kit', () => {
   const catalog = definePageCatalog({
@@ -38,5 +43,17 @@ describe('action-kit', () => {
     expect(whenPageTypeAnd(catalog, 'a', host, (h) => h.ok)(ctxA)).toBe(true);
     expect(whenPageTypeAnd(catalog, 'a', { ok: false }, (h) => h.ok)(ctxA)).toBe(false);
     expect(whenPageTypeAnd(catalog, 'a', host, (h) => h.ok)(ctxB)).toBe(false);
+  });
+});
+
+describe('whenPermitted', () => {
+  const base = { route: '/', page: { title: 'A', type: 'ta' }, revision: 0, capabilities: [] };
+
+  it('requires the permission on the published principal', () => {
+    const principal = { id: 'u', permissions: ['content:read'] };
+
+    expect(whenPermitted('content:read')({ ...base, principal })).toBe(true);
+    expect(whenPermitted('content:publish')({ ...base, principal })).toBe(false);
+    expect(whenPermitted('content:read')(base)).toBe(false);
   });
 });

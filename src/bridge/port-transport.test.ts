@@ -72,7 +72,7 @@ describe('iframe port transport', () => {
     remote.client.subscribeContext(context);
     contextManager.setRoute('/records', { title: 'Records', type: 'records' });
     await vi.waitFor(() => expect(context).toHaveBeenCalled());
-    expect(remote.client.getInitialContext().route).toBe('/records');
+    expect(remote.client.getContext().route).toBe('/records');
     await expect(assistantCommands.prefill('Review records')).resolves.toEqual({
       command: 'assistant.prefill',
     });
@@ -183,10 +183,10 @@ it('forwards one correlated lifecycle between executor, host and iframe subscrib
 
 it('isolates iframe context snapshots and each subscriber notification', async () => {
   const { remote, contextManager } = connect();
-  const snapshot = remote.client.getInitialContext();
+  const snapshot = remote.client.getContext();
 
   snapshot.page.title = 'MUTATED';
-  expect(remote.client.getInitialContext().page.title).not.toBe('MUTATED');
+  expect(remote.client.getContext().page.title).not.toBe('MUTATED');
   remote.client.subscribeContext((context) => {
     context.page.title = 'MUTATED';
   });
@@ -197,7 +197,7 @@ it('isolates iframe context snapshots and each subscriber notification', async (
   contextManager.setRoute('/records', { title: 'Records', type: 'records' });
   await vi.waitFor(() => expect(listener).toHaveBeenCalledOnce());
   expect(listener.mock.calls[0][0].page.title).toBe('Records');
-  expect(remote.client.getInitialContext().page.title).toBe('Records');
+  expect(remote.client.getContext().page.title).toBe('Records');
 });
 
 it('preserves public business guidance through direct and iframe action results', async () => {

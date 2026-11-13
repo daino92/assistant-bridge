@@ -7,7 +7,8 @@ import { ERROR_CODES, type IntegrationDiagnostic } from '@/contracts';
 export type AssistantConnectionStatus = 'loading' | 'ready' | 'error';
 
 export interface AssistantConnectionOptions {
-  onStatus: (status: AssistantConnectionStatus) => void;
+  /** Optional; same-window hosts that do not show connection state can omit it. */
+  onStatus?: (status: AssistantConnectionStatus) => void;
   timeoutMs?: number;
   assistantId?: string;
 }
@@ -66,7 +67,7 @@ export const createAssistantConnection = (
     bridge.reportDiagnostic(diagnostic);
     disconnect();
     close();
-    options.onStatus('error');
+    options.onStatus?.('error');
   };
 
   const loading = () => {
@@ -76,7 +77,7 @@ export const createAssistantConnection = (
 
     disconnect();
     timer = setTimeout(() => fail(timeoutDiagnostic), options.timeoutMs ?? 10_000);
-    options.onStatus('loading');
+    options.onStatus?.('loading');
   };
 
   const dispose = () => {
@@ -118,7 +119,7 @@ export const createAssistantConnection = (
 
       clearTimeout(timer);
       bridge.notifyAssistantReady(options.assistantId ?? 'assistant');
-      options.onStatus('ready');
+      options.onStatus?.('ready');
     },
     dispose,
   };

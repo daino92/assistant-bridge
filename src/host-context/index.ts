@@ -8,4 +8,4 @@ export {
   type PageCatalogEntry,
 } from './page-catalog';
 
-export { emptyPayloadSchema, whenPageType, whenPageTypeAnd } from './action-kit';
+export { emptyPayloadSchema, whenPageType, whenPageTypeAnd, whenPermitted } from './action-kit';

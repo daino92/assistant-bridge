@@ -29,6 +29,7 @@ it('requires explicit approval, snapshots arguments and rechecks permissions bef
   const dispatch = vi.fn(async () => ({ status: 'archived' }));
 
   const bridge: AssistantBridgeClient = {
+    getContext: () => context,
     getInitialContext: () => context,
     subscribeContext: () => () => {},
     requestHostAction: dispatch,
@@ -100,6 +101,7 @@ it('refuses approval if business entity context changes while the card is open',
   const dispatch = vi.fn();
 
   const bridge: AssistantBridgeClient = {
+    getContext: () => context,
     getInitialContext: () => context,
     subscribeContext: () => () => {},
     requestHostAction: dispatch,
@@ -138,6 +140,7 @@ it('does not dispatch when a run stops while approval is pending', async () => {
   };
 
   const bridge: AssistantBridgeClient = {
+    getContext: () => context,
     getInitialContext: () => context,
     subscribeContext: () => () => {},
     requestHostAction: dispatch,

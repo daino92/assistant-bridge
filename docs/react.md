@@ -3,14 +3,23 @@
 Optional React context from the single `assistant-bridge` package. Import this entry point only in React consumers and supply the optional `react` peer dependency. The root entry remains framework agnostic.
 
 ```tsx
-import { IntegrationProvider, useIntegration } from 'assistant-bridge/react';
+import {
+  IntegrationProvider,
+  useIntegration,
+  useOptionalIntegration,
+} from 'assistant-bridge/react';
 
 // integration is the host-owned, stable result of createHostIntegration().
 <IntegrationProvider integration={integration}>{children}</IntegrationProvider>;
 
 // In a descendant component:
 const { assistantCommands } = useIntegration();
+
+// In a component that may render without a host (before sign-in, standalone):
+const integration = useOptionalIntegration(); // HostIntegration | null
 ```
+
+`useIntegration()` throws outside `IntegrationProvider`. `useOptionalIntegration()` returns `null` there, so a component can render with or without a host and ask the question explicitly.
 
 The provider only shares the supplied integration; it does not create or destroy it. Use `useHostIntegration` for SDK-managed instance lifecycle, or manage a core `createHostIntegration` instance yourself. The host owns routing and action handlers. Hosts typically wrap it to publish route changes via `updatePage` with their own selection policy.
 
@@ -32,7 +41,7 @@ New `actions` arrays/factories are applied after commit, so handlers and availab
 
 When the `actions` factory closes over changing host state, pass a memoized `actionDeps` value (for example `{ host: actionHost }`). While `actionDeps` is set, action registration follows that reference instead of the factory reference, so inline `actions: ({ targets }) => …` factories do not re-register on every render.
 
-Initial route/page and request timeout options are bootstrap settings for the instance. To change those settings, remount the component that owns the hook. Continue publishing current page changes with `integration.updatePage`; route metadata, allowed actions and selection policy remain host-owned.
+Initial route/page, initial destinations and request timeout options are bootstrap settings for the instance. Destinations that depend on the user or environment do not need a remount: pass the current list to `useHostPageContext` (or `integration.updatePage`) and it replaces the published list. Remount only to change the timeouts. Continue publishing current page changes with `integration.updatePage`; route metadata, allowed actions and selection policy remain host-owned.
 
 On final unmount, the hook clears active highlights, marks the assistant unavailable, rejects pending requests and destroys the bridge. Disposal waits one microtask, allowing immediate React Strict Mode effect replay to reuse the live instance. Child target and transport components still perform their own cleanup. Do not manually destroy an integration owned by this hook. The context-only `IntegrationProvider` still accepts manually created instances for consumers that want to manage their own lifecycle.
 
@@ -86,17 +95,18 @@ const { onStatus, attempt } = useAssistantPanel();
       exposedModule: 'EmbeddedAssistant',
       entry: remoteEntryUrl,
     },
+    loadAdapter: () => import('assistant-bridge/react/federation'),
   }}
   onStatus={onStatus}
   attempt={attempt}
 />;
 ```
 
-`AssistantEmbedConfig` is a discriminated union: each mode requires its own configuration. `AssistantEmbedProps` and `AssistantEmbedConfig` are exported from `/react`. Render beneath `IntegrationProvider`. The component adds no wrapper or visual styles; standard iframe props belong inside `iframe`.
+`AssistantEmbedConfig` is a discriminated union: each mode requires its own configuration. `AssistantEmbedProps`, `AssistantEmbedConfig` and `FederationAdapterModule` are exported from `/react`. Render beneath `IntegrationProvider`. The component adds no wrapper or visual styles; standard iframe props belong inside `iframe`.
 
 `attempt` defaults to zero. Increasing it remounts the selected adapter, so the host does not need a connection subtree key. Switching mode disposes the previous adapter. Ordinary status callback changes do not reconnect. Keep configuration values stable unless the connection should change.
 
-The federation adapter is dynamically imported only when federation is selected. Its module load reports `loading`, then hands status reporting to the existing adapter. Import failure or module-load timeout reports `error`; retry increments `attempt` and tries loading again. `timeoutMs` in the federation configuration bounds module loading (default 10 seconds) and separately bounds the adapter's remote/receiver connection phase. Late imports after timeout or unmount are ignored. No error UI is supplied.
+The host supplies `loadAdapter`, which `AssistantEmbed` calls only when federation is selected. `/react` contains no import of the federation adapter or runtime, so hosts that only use iframes do not install `@module-federation/runtime`, and bundlers do not need it. Its module load reports `loading`, then hands status reporting to the existing adapter. A rejected `loadAdapter` or a module-load timeout reports `error` with a `FEDERATION_ADAPTER_LOAD_FAILED` or `FEDERATION_ADAPTER_TIMEOUT` diagnostic; retry increments `attempt` and tries loading again. `timeoutMs` in the federation configuration bounds module loading (default 10 seconds) and separately bounds the adapter's remote/receiver connection phase. Late imports after timeout or unmount are ignored. No error UI is supplied.
 
 Iframe mode does not execute or download the federation adapter. Bundlers still resolve the dynamic import when building this unified entry, so consumers building it need the federation peer available; use a build that excludes that branch if the peer must be absent entirely. Federation still requires the host's build plugin/shared dependency configuration. The individual components remain available for explicit adapter selection.
 

@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+- Require `@ag-ui/client` and `@ag-ui/core` `^1.0.4`, which take Zod as a peer dependency.
+  Applications no longer need a `zod` override for GHSA-mrhx-c7xc-m3w5.
+- Remove the package's own `zod` override.
+- **Breaking:** `AssistantEmbed` federation configuration requires `loadAdapter`
+  (`() => import('assistant-bridge/react/federation')`). `/react` no longer imports
+  the federation adapter, so applications bundle it without `@module-federation/runtime`.
+- `package:check` bundles `/react` with Vite in a consumer that has only React installed.
+- Add `useOptionalIntegration()` to `/react`; it returns `null` outside `IntegrationProvider`.
+- `updatePage` and `useHostPageContext` accept `destinations`, so destinations can follow
+  permission or environment changes without remounting the integration. Omitted destinations
+  are preserved.
+- Add `AssistantBridgeClient.getContext()`. `getInitialContext()` is a deprecated alias.
+  Custom `AssistantBridgeClient` implementations must add `getContext`.
+- `onStatus` is optional in `connectEmbeddedAssistant` and the other connection options.
+- Document `askAbout` for host suggested questions and the entity-structure conventions.
+- `navigateAction` accepts `routes` with per-route parameter schemas. The assistant sends
+  `{ path, params }`, the SDK validates `params`, and `navigate(path, params)` lets the host build
+  the URL. `allowedRoutes` is now optional; without `routes` the payload schema is unchanged.
+- Add an optional `HostContext.principal` (`id`, `label`, `permissions`) published through
+  `updatePage`, `useHostPageContext` or `contextManager.setPrincipal`, and the `whenPermitted`
+  availability helper. The principal is assistant-facing data, not authorization.
+
 ## 0.1.0-beta.3
 
 - Add `useHostPageContextFromCatalog` to sync page context from a page catalog.

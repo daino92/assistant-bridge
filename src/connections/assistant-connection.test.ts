@@ -25,6 +25,15 @@ const connect = (timeoutMs = 1000) => {
 };
 
 describe('assistant connection lifecycle', () => {
+  it('connects without an onStatus callback', async () => {
+    const integration = createHostIntegration({ actions: [] });
+    const connection = connectEmbeddedAssistant(integration, { timeoutMs: 1000 });
+
+    cleanups.push(() => integration.bridge.destroy(), connection.dispose);
+    connection.onReady(() => 'ready');
+    await expect(integration.assistantCommands.open()).resolves.toBe('ready');
+  });
+
   it('times out and ignores receivers that arrive after failure', () => {
     vi.useFakeTimers();
 

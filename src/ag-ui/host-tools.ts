@@ -11,7 +11,7 @@ export const createHostAgentOptions = (
   options: AssistantActionExecutorOptions = {},
 ) => {
   const getHostState = (): HostAgentState => {
-    const snapshot = bridge?.getInitialContext();
+    const snapshot = bridge?.getContext();
 
     return {
       tools:

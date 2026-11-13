@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const MANIFEST = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
@@ -14,7 +14,7 @@ const run = (command, args, cwd) => {
   execFileSync(command, args, { cwd, stdio: 'inherit' });
 };
 
-const checkConsumer = (label, peers, code) => {
+const createConsumer = (label, peers) => {
   const directory = path.join(TEMP, label);
 
   // Each consumer lives outside the repository, so workspace aliases cannot hide errors.
@@ -24,7 +24,39 @@ const checkConsumer = (label, peers, code) => {
   writeFileSync(path.join(directory, 'package.json'), JSON.stringify(manifest));
   writeFileSync(path.join(directory, '.npmrc'), 'auto-install-peers=false\n');
   run(PNPM, ['add', archive, '--ignore-scripts', ...peers], directory);
-  run(process.execPath, ['--input-type=module', '-e', code], directory);
+
+  return directory;
+};
+
+const checkConsumer = (label, peers, code) => {
+  run(process.execPath, ['--input-type=module', '-e', code], createConsumer(label, peers));
+};
+
+const VITE = pathToFileURL(path.join(ROOT, 'node_modules/vite/dist/node/index.js')).href;
+
+/** Bundles `entry` with Vite, as an application would, using only the given peers. */
+const checkBundle = (label, peers, entry) => {
+  const directory = createConsumer(label, peers);
+
+  writeFileSync(path.join(directory, 'entry.js'), entry);
+  run(
+    process.execPath,
+    [
+      '--input-type=module',
+      '-e',
+      `
+      const { build } = await import(${JSON.stringify(VITE)});
+      await build({
+        root: process.cwd(),
+        configFile: false,
+        logLevel: 'warn',
+        build: { outDir: 'dist', rollupOptions: { input: 'entry.js' } },
+      });
+      console.log(${JSON.stringify(`${label} bundle OK`)});
+    `,
+    ],
+    directory,
+  );
 };
 
 let archive;
@@ -103,7 +135,17 @@ try {
   `,
   );
 
-  console.log(`Package verified: ${entries.length} archive entries and both isolated consumers`);
+  // `/react` must bundle without the optional federation peer installed.
+  checkBundle(
+    'react-without-federation',
+    [`react@${MANIFEST.peerDependencies.react}`],
+    `
+    import { AssistantEmbed, IntegrationProvider, useIntegration } from ${JSON.stringify(`${MANIFEST.name}/react`)};
+    console.log(AssistantEmbed, IntegrationProvider, useIntegration);
+  `,
+  );
+
+  console.log(`Package verified: ${entries.length} archive entries and all isolated consumers`);
 } finally {
   rmSync(TEMP, { recursive: true, force: true });
 }

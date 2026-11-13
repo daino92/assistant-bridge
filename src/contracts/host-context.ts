@@ -9,6 +9,18 @@ export const hostCapabilitySchema = z.object({
 
 export type HostCapability = z.infer<typeof hostCapabilitySchema>;
 
+/**
+ * What the signed-in user may do, for UI hints and assistant planning only.
+ * It is not authorization: hosts and backends still check every operation.
+ */
+export const hostPrincipalSchema = z.object({
+  id: z.string().min(1).max(200),
+  label: z.string().max(200).optional(),
+  permissions: z.array(z.string().min(1).max(100)).max(500),
+});
+
+export type HostPrincipal = z.infer<typeof hostPrincipalSchema>;
+
 export const hostContextSchema = z.object({
   route: z.string(),
   page: z.object({
@@ -35,6 +47,7 @@ export const hostContextSchema = z.object({
     .optional(),
   capabilities: z.array(hostCapabilitySchema),
   destinations: z.array(z.object({ path: z.string(), label: z.string() })).optional(),
+  principal: hostPrincipalSchema.optional(),
   targets: z
     .array(
       z.object({

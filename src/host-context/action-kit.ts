@@ -20,6 +20,15 @@ export const whenPageType =
  * Combines {@link whenPageType} with host-owned live state (workspace, selection, router extras)
  * that is not mirrored in {@link HostContext}. The `when` callback closes over that state.
  */
+/**
+ * `available` predicate: the published principal holds `permission`. Use it to hide actions the
+ * user cannot perform; the action handler and backend must still enforce the permission.
+ */
+export const whenPermitted =
+  (permission: string) =>
+  (ctx: HostContext): boolean =>
+    ctx.principal?.permissions.includes(permission) ?? false;
+
 export const whenPageTypeAnd =
   <TKey extends string, H>(
     catalog: PageCatalog<TKey>,

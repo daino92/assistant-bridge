@@ -19,4 +19,8 @@ export {
   setExpandedAction,
   setCheckedAction,
   setValueAction,
+  type NavigateActionOptions,
+  type NavigateParams,
+  type NavigatePayload,
+  type NavigateRoute,
 } from './ui-actions';
