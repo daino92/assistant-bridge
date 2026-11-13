@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- `definePageCatalog` entries accept `path`, `match: 'prefix'`, `needs` and `params`. New
+  catalog methods `allowed`, `destinationsFor` and `navigation` derive pages, destinations and
+  `navigateAction` options for a principal. Existing catalogs behave as before.
+- Add `AssistantHost` and `useAssistantHost` to `/react`: one component for the integration, page
+  context, principal, destinations, `ui.navigate`, host actions, an optional same-window
+  connection, `ask` and an optional highlight style.
+- Add `usePageEntities` for entities of mounted page components.
+- Add `queryNavigate` (router adapter; the base query cannot be overridden) and
+  `pointOutTargets`.
+- `useUiTarget` does nothing outside `IntegrationProvider`, sets `data-assistant-highlight`
+  (`HIGHLIGHT_ATTRIBUTE`) while highlighted and accepts a custom `scrollIntoView`.
+- `NavigateRoute.params` accepts optional schemas, so a page can open with or without parameters.
+
 ## 0.1.0-beta.4
 
 - Require `@ag-ui/client` and `@ag-ui/core` `^1.0.4`, which take Zod as a peer dependency.
