@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Require `@ag-ui/client` and `@ag-ui/core` `^1.0.4`, which take Zod as a peer dependency.
+  Applications no longer need a `zod` override for GHSA-mrhx-c7xc-m3w5.
+- Remove the package's own `zod` override.
+
 ## 0.1.0-beta.3
 
 - Add `useHostPageContextFromCatalog` to sync page context from a page catalog.
