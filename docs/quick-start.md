@@ -181,6 +181,7 @@ Keep the provider, routes, targets, panel hook and component import. Change only
       exposedModule: 'EmbeddedAssistant',
       entry: 'http://localhost:5174/remoteEntry.js',
     },
+    loadAdapter: () => import('assistant-bridge/react/federation'),
   }}
   attempt={attempt}
   onStatus={onStatus}
@@ -189,7 +190,7 @@ Keep the provider, routes, targets, panel hook and component import. Change only
 
 The host must also supply `@module-federation/runtime` and initialize federation through its build plugin with compatible shared React dependencies. The `runtimeName` must match the host plugin name, and the remote name and exposure must match the assistant build.
 
-`AssistantEmbed` downloads the federation adapter only when that mode is selected. Bundlers still resolve its dynamic import at build time, so the federation peer must be available when building this unified entry. The federation adapter expects a default React component accepting `EmbeddedAssistantOptions`; it supplies the restricted bridge client and command readiness callback. The remote must implement that contract. See [unified embedding](react.md#unified-assistant-embedding) for retry and timeout behavior.
+`AssistantEmbed` calls `loadAdapter` only when federation mode is selected. The import lives in host code, so `assistant-bridge/react` never references the federation runtime: a host that only uses iframes builds without `@module-federation/runtime`. The federation adapter expects a default React component accepting `EmbeddedAssistantOptions`; it supplies the restricted bridge client and command readiness callback. The remote must implement that contract. See [unified embedding](react.md#unified-assistant-embedding) for retry and timeout behavior.
 
 ## Responsibility cheat sheet
 

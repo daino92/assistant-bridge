@@ -4,9 +4,23 @@ import { AssistantIframe, type AssistantIframeProps } from '@/react';
 import { useIntegration } from '@/react/context';
 import type { FederatedAssistantProps } from '@/react/federation';
 
+/** Module shape of `assistant-bridge/react/federation`. */
+export interface FederationAdapterModule {
+  FederatedAssistant: ComponentType<FederatedAssistantProps>;
+}
+
 export type AssistantEmbedConfig =
   | { mode: 'iframe'; iframe: Omit<AssistantIframeProps, 'onStatus'> }
-  | { mode: 'federation'; federation: Omit<FederatedAssistantProps, 'onStatus' | 'attempt'> };
+  | {
+      mode: 'federation';
+      federation: Omit<FederatedAssistantProps, 'onStatus' | 'attempt'>;
+      /**
+       * Loads the federation adapter, usually
+       * `() => import('assistant-bridge/react/federation')`. The host supplies it so
+       * `/react` never references the optional federation runtime.
+       */
+      loadAdapter: () => Promise<FederationAdapterModule>;
+    };
 
 export interface AssistantEmbedProps {
   config: AssistantEmbedConfig;
@@ -14,11 +28,17 @@ export interface AssistantEmbedProps {
   attempt?: number;
 }
 
-const DeferredFederatedAssistant = (props: FederatedAssistantProps) => {
+type DeferredFederatedAssistantProps = FederatedAssistantProps & {
+  loadAdapter: () => Promise<FederationAdapterModule>;
+};
+
+const DeferredFederatedAssistant = ({ loadAdapter, ...props }: DeferredFederatedAssistantProps) => {
   const { bridge } = useIntegration();
   const [Adapter, setAdapter] = useState<ComponentType<FederatedAssistantProps> | null>(null);
 
   const reportStatus = useEffectEvent(props.onStatus);
+
+  const load = useEffectEvent(() => loadAdapter());
 
   useEffect(() => {
     let active = true;
@@ -36,28 +56,30 @@ const DeferredFederatedAssistant = (props: FederatedAssistantProps) => {
       reportStatus('error');
     }, props.timeoutMs ?? 10_000);
 
-    void import('@/react/federation').then(
-      ({ FederatedAssistant }) => {
-        if (!active) {
-          return;
-        }
+    void Promise.resolve()
+      .then(() => load())
+      .then(
+        ({ FederatedAssistant }) => {
+          if (!active) {
+            return;
+          }
 
-        clearTimeout(timer);
-        setAdapter(() => FederatedAssistant);
-      },
-      () => {
-        if (active) {
           clearTimeout(timer);
-          bridge.reportDiagnostic({
-            code: 'FEDERATION_ADAPTER_LOAD_FAILED',
-            phase: 'adapter-load',
-            mode: 'federation',
-            message: 'Federation adapter module could not be loaded.',
-          });
-          reportStatus('error');
-        }
-      },
-    );
+          setAdapter(() => FederatedAssistant);
+        },
+        () => {
+          if (active) {
+            clearTimeout(timer);
+            bridge.reportDiagnostic({
+              code: 'FEDERATION_ADAPTER_LOAD_FAILED',
+              phase: 'adapter-load',
+              mode: 'federation',
+              message: 'Federation adapter module could not be loaded.',
+            });
+            reportStatus('error');
+          }
+        },
+      );
 
     return () => {
       active = false;
@@ -78,6 +100,7 @@ const AssistantEmbed = ({ config, onStatus, attempt = 0 }: AssistantEmbedProps) 
     <DeferredFederatedAssistant
       key={JSON.stringify([config.federation, attempt])}
       {...config.federation}
+      loadAdapter={config.loadAdapter}
       attempt={attempt}
       onStatus={onStatus}
     />

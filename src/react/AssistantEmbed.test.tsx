@@ -54,6 +54,7 @@ it('loads federation only when selected and retries without requiring a host sub
       exposedModule: 'EmbeddedAssistant',
       entry: '/remoteEntry.js',
     },
+    loadAdapter: () => import('@/react/federation'),
   };
 
   const { rerender, unmount } = render(<AssistantEmbed config={iframe} onStatus={onStatus} />);
@@ -80,4 +81,30 @@ it('loads federation only when selected and retries without requiring a host sub
   expect(screen.getByTitle('Chat')).toBeTruthy();
   expect(adapters.dispose).toHaveBeenCalledTimes(2);
   unmount();
+});
+
+it('reports a diagnostic and an error status when the host adapter loader fails', async () => {
+  const onStatus = vi.fn();
+
+  render(
+    <AssistantEmbed
+      config={{
+        mode: 'federation',
+        federation: {
+          runtimeName: 'host',
+          remoteName: 'chat',
+          exposedModule: 'EmbeddedAssistant',
+          entry: '/remoteEntry.js',
+        },
+        loadAdapter: () => Promise.reject(new Error('federation peer missing')),
+      }}
+      onStatus={onStatus}
+    />,
+  );
+
+  await waitFor(() => expect(onStatus).toHaveBeenCalledWith('error'));
+  expect(onStatus).toHaveBeenNthCalledWith(1, 'loading');
+  expect(adapters.bridge.reportDiagnostic).toHaveBeenCalledWith(
+    expect.objectContaining({ code: 'FEDERATION_ADAPTER_LOAD_FAILED', phase: 'adapter-load' }),
+  );
 });

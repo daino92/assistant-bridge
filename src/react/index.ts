@@ -27,4 +27,5 @@ export {
   default as AssistantEmbed,
   type AssistantEmbedConfig,
   type AssistantEmbedProps,
+  type FederationAdapterModule,
 } from './AssistantEmbed';
