@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-beta.5
 
 - `definePageCatalog` entries accept `path`, `match: 'prefix'`, `needs` and `params`. New
   catalog methods `allowed`, `destinationsFor` and `navigation` derive pages, destinations and
