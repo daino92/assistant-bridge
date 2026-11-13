@@ -12,3 +12,5 @@ export {
   type HostIframeConnectionOptions,
   type AssistantIframeConnectionOptions,
 } from './iframe-connection';
+
+export { queryNavigate } from './query-navigate';
