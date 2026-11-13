@@ -84,6 +84,7 @@ Assistant-to-host actions and host-to-assistant commands use protocol version `1
 │  ├─ <a href="docs/core.md#integration-errors">createIntegrationError</a>
 │  └─ <a href="docs/core.md#dispose-the-integration">integration.dispose</a>
 ├─ assistant-bridge/react
+│  ├─ <a href="docs/react.md#assistanthost">AssistantHost, useAssistantHost, usePageEntities</a>
 │  ├─ <a href="docs/react.md">IntegrationProvider, useIntegration, useOptionalIntegration</a>
 │  ├─ <a href="docs/react.md#managed-host-integration">useHostIntegration</a>
 │  ├─ <a href="docs/react.md#ui-targets">useUiTarget</a>

@@ -39,7 +39,15 @@ export {
 } from './assistant-client';
 
 export { HostBridge, RequestResponseChannel, TypedEventBus } from './bridge';
-export { UiTargetRegistry, type UiTarget } from './capabilities';
+
+export {
+  UiTargetRegistry,
+  pointOutTargets,
+  type PointOutTargetsOptions,
+  type UiTarget,
+} from './capabilities';
+
+export { queryNavigate } from './connections';
 
 export {
   ASSISTANT_COMMAND_NAMES,

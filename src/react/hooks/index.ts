@@ -1,4 +1,5 @@
-export { useUiTarget, type UiTargetOptions } from './useUiTarget';
+export { HIGHLIGHT_ATTRIBUTE, useUiTarget, type UiTargetOptions } from './useUiTarget';
+export { usePageEntities } from './usePageEntities';
 export { useAssistantPanel } from './useAssistantPanel';
 
 export {
