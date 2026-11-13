@@ -3,6 +3,7 @@ import { useEffect, useEffectEvent, useState, type ComponentType } from 'react';
 import type { EmbeddedAssistantOptions } from '@/assistant-client';
 import { connectFederatedAssistant } from '@/federation';
 import type { AssistantConnectionOptions } from '@/connections';
+import type { AssistantConnectionStatus } from '@/connections';
 import { useIntegration } from '@/react/context';
 import { RemoteErrorBoundary } from '@/react/federation';
 
@@ -33,7 +34,7 @@ const FederatedSession = ({
   const integration = useIntegration();
   const [loaded, setLoaded] = useState<LoadedAssistant | null>(null);
 
-  const reportStatus = useEffectEvent(onStatus);
+  const reportStatus = useEffectEvent((status: AssistantConnectionStatus) => onStatus?.(status));
 
   useEffect(() => {
     const connection = connectFederatedAssistant<ComponentType<EmbeddedAssistantOptions>>(

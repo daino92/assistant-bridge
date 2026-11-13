@@ -83,7 +83,7 @@ export const waitForHostContext = (
       } else if (signal?.aborted) {
         abort();
       } else {
-        check(bridge.getInitialContext());
+        check(bridge.getContext());
       }
     } catch (error) {
       finish(error ?? new Error('Host context subscription failed.'));

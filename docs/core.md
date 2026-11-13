@@ -15,7 +15,8 @@ The framework-independent API of `assistant-bridge`. It has no React, federation
 │  ├─ <a href="#publish-context">contextManager, syncCapabilities</a>
 │  ├─ <a href="#context-commits">Context commits and revisions</a>
 │  ├─ <a href="#define-page-catalog">definePageCatalog</a>
-│  └─ <a href="#map-host-entities">mapHostEntities</a>
+│  ├─ <a href="#map-host-entities">mapHostEntities</a>
+│  └─ <a href="#describe-entity-structure">Describing entity structure</a>
 ├─ Assistant client and commands
 │  ├─ <a href="#use-the-client-inside-the-assistant">AssistantBridgeClient</a>
 │  ├─ <a href="#send-commands-from-the-host">assistantCommands, attachAssistantCommandHandler</a>
@@ -177,13 +178,13 @@ If actions are registered or removed after initialization, call `integration.bri
 
 ## Context commits
 
-`integration.updatePage({ route, page, selection, entities })` applies a page change, optional selection clearing, entity summaries and derived action availability in one context commit. Context subscribers see at most one revision for that update, with capabilities computed against the new page/entities. Target registrations and later data changes remain separate updates.
+`integration.updatePage({ route, page, selection, entities, destinations })` applies a page change, optional selection clearing, entity summaries, navigation destinations and derived action availability in one context commit. Context subscribers see at most one revision for that update, with capabilities computed against the new page/entities. Target registrations and later data changes remain separate updates.
 
 The core `HostContextManager` owns value equality and revision generation for all consumers. Repeating equivalent setter/update values does not notify subscribers or increment `revision`; object property order and omitted/undefined optional fields are equivalent for JSON context data. Revisions count effective published changes, not method calls.
 
 Inputs, snapshots and each subscriber notification are deeply cloned, including page, selection, destinations, targets, entities and nested capability schemas. Mutating a returned snapshot or an input after assignment cannot alter stored state or another subscriber's notification. Reentrant updates are queued so subscribers observe revisions in order.
 
-Repeated identical `updatePage` calls preserve current selection/highlights. Selection policy applies when route, page metadata or policy changes. Use `contextManager.clearSelection()` for an explicit same-page selection reset. Core `updatePage` preserves entities when omitted; the React `useHostPageContext` hook supplies an empty array by default to clear old page summaries. Hosts still own routing policy, entity mapping and action availability rules.
+Repeated identical `updatePage` calls preserve current selection/highlights. Selection policy applies when route, page metadata or policy changes. Use `contextManager.clearSelection()` for an explicit same-page selection reset. Core `updatePage` preserves entities and destinations when omitted; pass `destinations: []` to remove all destinations. Destinations describe where the assistant may navigate, so update them when permissions change, and keep the `ui.navigate` allowlist in sync (rebuild actions through `actionDeps`). the React `useHostPageContext` hook supplies an empty array by default to clear old page summaries. Hosts still own routing policy, entity mapping and action availability rules.
 
 ## Define page catalog
 
@@ -270,6 +271,15 @@ integration.updatePage({ route, page, entities });
 
 `HostEntityMapping<T>` requires a type and ID/label selectors. Reference, aliases and string-valued attributes are optional; undefined optional values are omitted. The helper accepts readonly source lists and clones returned aliases/attribute maps. It does not spread source records, infer fields, filter by route, convert attribute types, deduplicate entities or publish them automatically. The host decides what data is appropriate to expose. Keep record/product selectors in host code; the host only chooses the relevant dataset and passes the resulting summaries to the SDK.
 
+## Describe entity structure
+
+Entities are summaries: labels, aliases and string attributes. An assistant that writes structured content (forms, nested components, ordered sections, references) also needs the shape of the thing on the page. The SDK has no schema field for entities; use one of these conventions.
+
+- **Small, flat shapes:** add a JSON Schema string as an attribute, for example `attributes: { schema: JSON.stringify(jsonSchema) }`. Keep it short, because it travels with every context update.
+- **Large or nested shapes:** describe them on demand. Register a read-only host action (for example `entity.describe` with `{ id }`) or expose a backend tool that returns the schema for an entity ID. The assistant calls it only when it needs the structure.
+
+Prefer the on-demand pattern when shapes include components, dynamic zones or references, and keep schemas generated from the same metadata the host uses to render the form. A schema describes structure; validation and authorization still happen when the host action or backend applies the write.
+
 ## Use the client inside the assistant
 
 ```ts
@@ -279,11 +289,11 @@ const connectAssistant = (
   client: AssistantBridgeClient,
   renderContext: (context: HostContext) => void,
 ) => {
-  renderContext(client.getInitialContext());
+  renderContext(client.getContext());
   const unsubscribe = client.subscribeContext(renderContext);
 
   const openCatalog = async () => {
-    const context = client.getInitialContext();
+    const context = client.getContext();
     return client.requestHostAction('ui.navigate', { path: '/catalog' }, context.revision);
   };
 
@@ -291,7 +301,7 @@ const connectAssistant = (
 };
 ```
 
-Despite its name, `getInitialContext()` returns the latest available snapshot. `subscribeContext()` receives subsequent changes and returns an unsubscribe function. An action request resolves to the handler's returned data or rejects on failure.
+`getContext()` returns the latest available snapshot. `getInitialContext()` is a deprecated alias with the same behavior. `subscribeContext()` receives subsequent changes and returns an unsubscribe function. An action request resolves to the handler's returned data or rejects on failure.
 
 The optional revision is a **minimum host revision**, not an exact-match check. The registry rejects a request when the host revision is lower than the supplied revision; a newer host context is accepted.
 
@@ -322,7 +332,9 @@ await integration.assistantCommands.askAbout('Explain this item', { type: 'catal
 await integration.assistantCommands.prefillAndOpen('Review current selection');
 ```
 
-`askAbout` publishes an optional selection, opens the assistant, then submits the prompt with the current context revision. `prefillAndOpen` opens before prefilling.
+`askAbout` publishes an optional selection, opens the assistant, then submits the prompt with the current context revision. `prefillAndOpen` opens before prefilling. Use `askAbout(prompt)` for suggested-question links instead of chaining `open()` and `submitPrompt()` yourself; it also works outside React.
+
+Suggested questions are host data. Filter them in host code by page and by what the signed-in user may do, then pass the chosen prompt to `askAbout`. The assistant does not need to know which suggestions were hidden. Both commands reject when no receiver is ready (for example when the assistant is disabled), so handle the rejection where the user clicked.
 
 ## Dispatch assistant commands
 
@@ -395,7 +407,7 @@ The high-level iframe connection APIs own the window handshake and exact origin/
 
 ## Connect a same-window assistant
 
-For a directly supplied component or mount API, `connectEmbeddedAssistant(integration, { onStatus })` returns `bridge` and `onReady` properties, plus `dispose()` and `fail()`. Its default 10-second timeout covers both loading and receiver registration. Call `onReady(handler)` only once the command receiver is usable, and run the returned cleanup on unmount. Failed or disposed connections cannot become ready later. Reconnection creates a new connection.
+For a directly supplied component or mount API, `connectEmbeddedAssistant(integration, { onStatus })` returns `bridge` and `onReady` properties, plus `dispose()` and `fail()`. `onStatus` is optional; omit it when the host does not show connection state. Its default 10-second timeout covers both loading and receiver registration. Call `onReady(handler)` only once the command receiver is usable, and run the returned cleanup on unmount. Failed or disposed connections cannot become ready later. Reconnection creates a new connection.
 
 For a same-window integration, attach the command handler before announcing readiness with `integration.bridge.notifyAssistantReady('my-assistant')`.
 

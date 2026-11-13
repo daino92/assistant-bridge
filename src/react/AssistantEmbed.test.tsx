@@ -26,7 +26,7 @@ vi.mock('@/react/federation', () => {
   const FederatedAssistant = ({ onStatus }: FederatedAssistantProps) => {
     useEffect(() => {
       adapters.mount();
-      onStatus('ready');
+      onStatus?.('ready');
 
       return adapters.dispose;
     }, [onStatus]);

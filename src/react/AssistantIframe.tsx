@@ -1,6 +1,7 @@
 import { useEffect, useEffectEvent, useRef, type ComponentPropsWithoutRef } from 'react';
 
 import { createAssistantIframeUrl, type AssistantConnectionOptions } from '@/connections';
+import type { AssistantConnectionStatus } from '@/connections';
 import { useIntegration } from '@/react/context';
 
 export interface AssistantIframeProps
@@ -23,7 +24,7 @@ const AssistantIframe = ({
   const frameRef = useRef<HTMLIFrameElement>(null);
   const src = createAssistantIframeUrl(url, window.location.origin);
 
-  const reportStatus = useEffectEvent(onStatus);
+  const reportStatus = useEffectEvent((status: AssistantConnectionStatus) => onStatus?.(status));
 
   useEffect(() => {
     if (!frameRef.current) {

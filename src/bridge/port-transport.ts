@@ -295,6 +295,7 @@ export const createPortAssistantClient = (
           lifecycleSubscribers.delete(listener);
         };
       },
+      getContext: () => structuredClone(context),
       getInitialContext: () => structuredClone(context),
       subscribeContext: (callback) => {
         subscribers.add(callback);

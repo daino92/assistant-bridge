@@ -8,6 +8,8 @@ export interface HostPageUpdateOptions {
   selection?: 'clear' | 'preserve';
   /** Omitted entities preserve the current summaries. */
   entities?: NonNullable<HostContext['entities']>;
+  /** Omitted destinations preserve the current list; pass `[]` to remove all. */
+  destinations?: NonNullable<HostContext['destinations']>;
 }
 
 type CapabilityResolver = (context: HostContext) => HostCapability[];
@@ -41,7 +43,7 @@ export class HostContextManager {
 
   private capabilityResolver?: CapabilityResolver;
 
-  private lastPage?: Omit<HostPageUpdateOptions, 'entities'>;
+  private lastPage?: Omit<HostPageUpdateOptions, 'entities' | 'destinations'>;
 
   private notifications: HostContext[] = [];
 
@@ -143,7 +145,13 @@ export class HostContextManager {
   }
 
   /** One page update publishes at most one revision, including derived capabilities. */
-  updatePage({ route, page, selection = 'clear', entities }: HostPageUpdateOptions): boolean {
+  updatePage({
+    route,
+    page,
+    selection = 'clear',
+    entities,
+    destinations,
+  }: HostPageUpdateOptions): boolean {
     if (this.disposed) {
       return false;
     }
@@ -167,6 +175,7 @@ export class HostContextManager {
         page,
         ...(pageChanged && selection === 'clear' ? { selection: undefined } : {}),
         ...(entities !== undefined ? { entities } : {}),
+        ...(destinations !== undefined ? { destinations } : {}),
       });
     } catch (error) {
       if (this.context === previousContext && this.lastPage === nextPage) {

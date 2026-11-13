@@ -46,6 +46,7 @@ const createClient = (initial: HostContext = CONTEXT) => {
   );
 
   const client: AssistantBridgeClient = {
+    getContext: () => context,
     getInitialContext: () => context,
     subscribeContext: (listener) => {
       listeners.add(listener);

@@ -1,6 +1,7 @@
 import { useEffect, useEffectEvent, useState, type ComponentType } from 'react';
 
 import { AssistantIframe, type AssistantIframeProps } from '@/react';
+import type { AssistantConnectionStatus } from '@/connections';
 import { useIntegration } from '@/react/context';
 import type { FederatedAssistantProps } from '@/react/federation';
 
@@ -36,7 +37,9 @@ const DeferredFederatedAssistant = ({ loadAdapter, ...props }: DeferredFederated
   const { bridge } = useIntegration();
   const [Adapter, setAdapter] = useState<ComponentType<FederatedAssistantProps> | null>(null);
 
-  const reportStatus = useEffectEvent(props.onStatus);
+  const reportStatus = useEffectEvent((status: AssistantConnectionStatus) =>
+    props.onStatus?.(status),
+  );
 
   const load = useEffectEvent(() => loadAdapter());
 

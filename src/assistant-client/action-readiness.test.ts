@@ -27,6 +27,7 @@ const createBridge = () => {
   const unsubscribe = vi.fn();
 
   const bridge: AssistantBridgeClient = {
+    getContext: () => context,
     getInitialContext: () => context,
     requestHostAction: vi.fn(async () => ({ targetId: 'loaded' })),
     subscribeContext: (listener) => {
@@ -113,7 +114,7 @@ it('cleans up when readiness throws, including synchronous subscription notifica
   const unsubscribe = vi.fn();
 
   bridge.subscribeContext = (listener) => {
-    listener(bridge.getInitialContext());
+    listener(bridge.getContext());
 
     return unsubscribe;
   };
@@ -152,8 +153,8 @@ it('does not treat an unrelated route as completed detail navigation', () => {
   const { bridge } = createBridge();
 
   const state = {
-    context: { ...bridge.getInitialContext(), route: '/other' },
-    previousContext: bridge.getInitialContext(),
+    context: { ...bridge.getContext(), route: '/other' },
+    previousContext: bridge.getContext(),
     args: { id: 'record-012' },
     result: {},
   };

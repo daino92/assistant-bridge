@@ -1,5 +1,5 @@
 export { default as IntegrationProvider } from './IntegrationProvider';
-export { useIntegration } from './context';
+export { useIntegration, useOptionalIntegration } from './context';
 
 export {
   useUiTarget,

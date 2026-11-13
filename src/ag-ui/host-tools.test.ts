@@ -30,6 +30,7 @@ it('requires explicit approval, snapshots arguments and rechecks permissions bef
   const dispatch = vi.fn(async () => ({ status: 'archived' }));
 
   const bridge: AssistantBridgeClient = {
+    getContext: () => context,
     getInitialContext: () => context,
     subscribeContext: () => () => {},
     requestHostAction: dispatch,
@@ -101,6 +102,7 @@ it('refuses approval if business entity context changes while the card is open',
   const dispatch = vi.fn();
 
   const bridge: AssistantBridgeClient = {
+    getContext: () => context,
     getInitialContext: () => context,
     subscribeContext: () => () => {},
     requestHostAction: dispatch,
@@ -143,6 +145,7 @@ it('does not dispatch when a run stops while approval is pending', async () => {
   };
 
   const bridge: AssistantBridgeClient = {
+    getContext: () => context,
     getInitialContext: () => context,
     subscribeContext: () => () => {},
     requestHostAction: dispatch,
@@ -189,6 +192,7 @@ it('advertises only non-confirmation tools and rechecks current permissions/revi
   });
 
   const bridge: AssistantBridgeClient = {
+    getContext: () => context,
     getInitialContext: () => context,
     subscribeContext: () => () => {},
     requestHostAction,
@@ -241,6 +245,7 @@ it('waits for the destination context and publishes its targets, destinations an
   const unsubscribe = vi.fn();
 
   const bridge: AssistantBridgeClient = {
+    getContext: () => context,
     getInitialContext: () => context,
     subscribeContext: (callback) => {
       listener = callback;
@@ -286,7 +291,7 @@ it('cleans up a pending navigation context subscription on cancellation', async 
   const unsubscribe = vi.fn();
 
   const bridge: AssistantBridgeClient = {
-    getInitialContext: () => ({
+    getContext: () => ({
       route: '/',
       page: { title: 'Dashboard', type: 'dashboard' },
       revision: 1,
@@ -299,6 +304,9 @@ it('cleans up a pending navigation context subscription on cancellation', async 
         },
       ],
     }),
+    getInitialContext() {
+      return this.getContext();
+    },
     subscribeContext: vi.fn(() => unsubscribe),
     requestHostAction: async () => ({ path: '/records' }),
   };
@@ -322,7 +330,7 @@ it('fails with a bounded timeout when navigation does not publish the destinatio
   const unsubscribe = vi.fn();
 
   const bridge: AssistantBridgeClient = {
-    getInitialContext: () => ({
+    getContext: () => ({
       route: '/',
       page: { title: 'Dashboard', type: 'dashboard' },
       revision: 1,
@@ -335,6 +343,9 @@ it('fails with a bounded timeout when navigation does not publish the destinatio
         },
       ],
     }),
+    getInitialContext() {
+      return this.getContext();
+    },
     subscribeContext: () => unsubscribe,
     requestHostAction: async () => ({ path: '/records' }),
   };

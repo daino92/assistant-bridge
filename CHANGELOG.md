@@ -9,6 +9,14 @@
   (`() => import('assistant-bridge/react/federation')`). `/react` no longer imports
   the federation adapter, so applications bundle it without `@module-federation/runtime`.
 - `package:check` bundles `/react` with Vite in a consumer that has only React installed.
+- Add `useOptionalIntegration()` to `/react`; it returns `null` outside `IntegrationProvider`.
+- `updatePage` and `useHostPageContext` accept `destinations`, so destinations can follow
+  permission or environment changes without remounting the integration. Omitted destinations
+  are preserved.
+- Add `AssistantBridgeClient.getContext()`. `getInitialContext()` is a deprecated alias.
+  Custom `AssistantBridgeClient` implementations must add `getContext`.
+- `onStatus` is optional in `connectEmbeddedAssistant` and the other connection options.
+- Document `askAbout` for host suggested questions and the entity-structure conventions.
 
 ## 0.1.0-beta.3
 

@@ -53,3 +53,25 @@ it('syncs page and entities without clearing selection on data-only updates or e
   unmount();
   integration.bridge.destroy();
 });
+
+it('publishes destinations that change while the integration stays mounted', () => {
+  const integration = createHostIntegration({
+    actions: [],
+    destinations: [{ path: '/records', label: 'Records' }],
+  });
+
+  const page = { title: 'Records', type: 'records' };
+
+  const { rerender, unmount } = renderHook(
+    ({ destinations }: { destinations: { path: string; label: string }[] }) =>
+      useHostPageContext(integration, { route: '/records', page, destinations }),
+    { initialProps: { destinations: [{ path: '/records', label: 'Records' }] } },
+  );
+
+  rerender({ destinations: [{ path: '/settings', label: 'Settings' }] });
+  expect(integration.contextManager.getSnapshot().destinations).toEqual([
+    { path: '/settings', label: 'Settings' },
+  ]);
+  unmount();
+  integration.dispose();
+});

@@ -3,14 +3,23 @@
 Optional React context from the single `assistant-bridge` package. Import this entry point only in React consumers and supply the optional `react` peer dependency. The root entry remains framework agnostic.
 
 ```tsx
-import { IntegrationProvider, useIntegration } from 'assistant-bridge/react';
+import {
+  IntegrationProvider,
+  useIntegration,
+  useOptionalIntegration,
+} from 'assistant-bridge/react';
 
 // integration is the host-owned, stable result of createHostIntegration().
 <IntegrationProvider integration={integration}>{children}</IntegrationProvider>;
 
 // In a descendant component:
 const { assistantCommands } = useIntegration();
+
+// In a component that may render without a host (before sign-in, standalone):
+const integration = useOptionalIntegration(); // HostIntegration | null
 ```
+
+`useIntegration()` throws outside `IntegrationProvider`. `useOptionalIntegration()` returns `null` there, so a component can render with or without a host and ask the question explicitly.
 
 The provider only shares the supplied integration; it does not create or destroy it. Use `useHostIntegration` for SDK-managed instance lifecycle, or manage a core `createHostIntegration` instance yourself. The host owns routing and action handlers. Hosts typically wrap it to publish route changes via `updatePage` with their own selection policy.
 
@@ -32,7 +41,7 @@ New `actions` arrays/factories are applied after commit, so handlers and availab
 
 When the `actions` factory closes over changing host state, pass a memoized `actionDeps` value (for example `{ host: actionHost }`). While `actionDeps` is set, action registration follows that reference instead of the factory reference, so inline `actions: ({ targets }) => …` factories do not re-register on every render.
 
-Initial route/page and request timeout options are bootstrap settings for the instance. To change those settings, remount the component that owns the hook. Continue publishing current page changes with `integration.updatePage`; route metadata, allowed actions and selection policy remain host-owned.
+Initial route/page, initial destinations and request timeout options are bootstrap settings for the instance. Destinations that depend on the user or environment do not need a remount: pass the current list to `useHostPageContext` (or `integration.updatePage`) and it replaces the published list. Remount only to change the timeouts. Continue publishing current page changes with `integration.updatePage`; route metadata, allowed actions and selection policy remain host-owned.
 
 On final unmount, the hook clears active highlights, marks the assistant unavailable, rejects pending requests and destroys the bridge. Disposal waits one microtask, allowing immediate React Strict Mode effect replay to reuse the live instance. Child target and transport components still perform their own cleanup. Do not manually destroy an integration owned by this hook. The context-only `IntegrationProvider` still accepts manually created instances for consumers that want to manage their own lifecycle.
 

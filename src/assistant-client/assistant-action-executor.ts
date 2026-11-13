@@ -104,7 +104,7 @@ export const createAssistantActionExecutor = (
       try {
         signal?.throwIfAborted();
 
-        let latest = bridge.getInitialContext();
+        let latest = bridge.getContext();
 
         if (!latest.capabilities.some((item) => item.name === name)) {
           throw createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE);
@@ -145,7 +145,7 @@ export const createAssistantActionExecutor = (
             throw createIntegrationError(ERROR_CODES.ACTION_REJECTED);
           }
 
-          const fresh = bridge.getInitialContext();
+          const fresh = bridge.getContext();
 
           if (
             fresh.route !== latest.route ||
