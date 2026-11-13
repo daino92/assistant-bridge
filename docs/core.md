@@ -241,6 +241,46 @@ integration.updatePage({
 
 Use `catalog.pageKeyFromRoute(pathname)`, `catalog.isRoute(context, 'dashboard')`, and `catalog.isPageType(context, 'dashboard')` in navigation guards and action `available` predicates. The helper does not register routes, watch a router or choose entity payloads.
 
+### Paths, permissions and parameters
+
+Entries can also carry their route, the permission they need and their query parameters. The catalog then derives everything navigation needs for one principal:
+
+```ts
+const pages = definePageCatalog({
+  dashboard: { title: 'Dashboard', type: 'dashboard' },
+  content: {
+    title: 'Content',
+    type: 'content',
+    needs: 'content:read',
+    params: z.object({ model: z.uuid().optional() }).strict().optional(),
+    paramsDescription: 'Pass params.model to list one model.',
+  },
+  models: { title: 'Content Models', type: 'models', needs: 'schema:read', match: 'prefix' },
+});
+
+pages.allowed(principal); // ['dashboard', 'content', ...]
+pages.destinationsFor(principal); // for updatePage({ destinations })
+navigateAction(pages.navigation(principal, { navigate })); // allowedRoutes + routes
+```
+
+- `path` overrides the default `/<key>`. `match: 'prefix'` also maps sub-routes (`/models/<id>`) to the page; exact paths win over prefixes.
+- `needs` hides a page from principals without that permission. Pages without `needs` are always allowed. It is not authorization.
+- `params` makes the page a `navigateAction` route with that schema. Use `.optional()` when the page also opens without parameters.
+- `destinations` and `paths` still list every page, for hosts without permissions.
+
+`AssistantHost` in `/react` uses these methods; see [AssistantHost](react.md#assistanthost).
+
+### Router and target helpers
+
+`queryNavigate(navigate, baseQuery)` adapts a router's `navigate(url)` to `navigate(path, params)`. It appends validated parameters as a query string; `baseQuery` (for example the current environment) always wins, so the assistant cannot change it.
+
+```ts
+const go = queryNavigate(routerNavigate, { environment: environmentId });
+go('/content', { model }); // routerNavigate('/content?environment=…&model=…')
+```
+
+`pointOutTargets(registry, groups, { durationMs, scroll })` highlights the first registered target of each group (for example the control for an action, then its menu entry), scrolling only the first one found into view. It returns the IDs it showed.
+
 ## Action authoring helpers (optional)
 
 For `defineAction` handlers that take no parameters, use `emptyPayloadSchema` instead of repeating `z.object({})`.

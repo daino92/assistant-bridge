@@ -56,7 +56,48 @@ const { ref, highlighted } = useUiTarget<HTMLInputElement>('catalog-search', {
 // <input ref={ref} className={highlighted ? 'my-highlight' : undefined} />
 ```
 
-The hook registers the target with the current integration and unregisters it on ID change or unmount. It provides highlighting state, focus, scrolling and selection callbacks. An optional `focusRef` directs focus and scrolling to a nested element. The host owns IDs, selection callbacks and highlight styles.
+The hook registers the target with the current integration and unregisters it on ID change or unmount. It provides highlighting state, focus, scrolling and selection callbacks. An optional `focusRef` directs focus and scrolling to a nested element; `scrollIntoView(element, behavior)` replaces the default `scrollIntoView({ block: 'center' })`, for example to scroll only the nearest container. The host owns IDs, selection callbacks and highlight styles.
+
+Outside `IntegrationProvider` the hook does nothing, so shared components can register targets whether or not a host is mounted. While highlighted, the element carries `data-assistant-highlight` (`HIGHLIGHT_ATTRIBUTE`); style it, or pass `highlight` to `AssistantHost`.
+
+## AssistantHost
+
+One component for a typical host. It creates the integration, publishes route, page, destinations, principal and entities, registers `ui.navigate` from the page catalog plus the host's own actions, and can connect a same-window assistant.
+
+```tsx
+import { queryNavigate } from 'assistant-bridge';
+import { AssistantHost, useAssistantHost, usePageEntities } from 'assistant-bridge/react';
+
+<AssistantHost
+  pages={pages} // definePageCatalog with needs/params
+  router={{ pathname: location.pathname, navigate: queryNavigate(routerNavigate, { environment }) }}
+  principal={{ id: user.id, permissions }}
+  entities={[{ type: 'environment', id: environment, label: environmentName }]}
+  actions={({ targets, navigate }) => createDomainActions({ targets, navigate })}
+  actionDeps={domainDeps}
+  connection="embedded"
+  highlight={{ color: 'var(--brand)' }}
+>
+  {children}
+</AssistantHost>;
+
+// In a page:
+usePageEntities([{ type: 'entry', id: entry.id, label: entry.title }]);
+
+// Anywhere below the host:
+const host = useAssistantHost(); // null outside a host
+await host?.ask('Summarize this entry');
+```
+
+- **Pages and navigation:** `ui.navigate` comes from `pages.navigation(principal, …)`. Destinations follow `pages.destinationsFor(principal)`. Both update when permissions change, without remounting.
+- **Router:** `pathname` selects the page through `pages.pageKeyFromRoute`; routes outside the catalog publish `fallbackPage`. `navigate` receives validated `params` only for pages that declare them. The latest `navigate`, `beforeNavigate` and `actions` are always used, so inline callbacks are fine.
+- **Actions:** the `actions` factory receives `targets`, `principal` and a stable `navigate`. Actions re-register when `actionDeps`, the catalog or the permissions change.
+- **Entities:** `entities` are shared by every page. `usePageEntities` adds a component's entities while it is mounted, merged in mount order and compared by content.
+- **Connection:** `connection="embedded"` connects a same-window assistant and exposes `bridge` and `onReady` as `useAssistantHost().embedded`. The default, `external`, leaves the connection to `AssistantEmbed` or `AssistantIframe`.
+- **Asking:** `ask(prompt)` is `assistantCommands.askAbout(prompt)`; it rejects when no assistant is ready.
+- **Highlight:** `highlight` adds an outline for `[data-assistant-highlight]`, with a reduced-motion fallback.
+
+`AssistantHost` renders `IntegrationProvider`, so `useIntegration`, `useUiTarget` and `AssistantEmbed` work below it. Keep `principal` to permission names; it is not authorization. For full control, compose `useHostIntegration` and `useHostPageContext` as before.
 
 ## Assistant panel behavior
 

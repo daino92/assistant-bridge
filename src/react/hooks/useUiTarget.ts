@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 
-import { useIntegration } from '@/react/context';
+import { useOptionalIntegration } from '@/react/context';
+
+/** Attribute set on a target element while it is highlighted; style it, or use `AssistantHost` `highlight`. */
+export const HIGHLIGHT_ATTRIBUTE = 'data-assistant-highlight';
 
 export interface UiTargetOptions {
   label?: string;
@@ -11,9 +14,15 @@ export interface UiTargetOptions {
   onSetExpanded?: (expanded: boolean) => void;
   onActivateTab?: () => void;
   onSelect?: (value?: string) => void | Promise<void>;
+  /** Replaces the default `element.scrollIntoView({ block: 'center' })`. */
+  scrollIntoView?: (element: HTMLElement, behavior?: ScrollBehavior) => void;
 }
 
-/** Registers host-owned DOM behavior; the host chooses how highlights are styled. */
+/**
+ * Registers host-owned DOM behavior. Outside `IntegrationProvider` it does nothing, so shared
+ * components can register targets whether or not a host is mounted. While highlighted, the
+ * element carries {@link HIGHLIGHT_ATTRIBUTE}; the host chooses how it looks.
+ */
 export const useUiTarget = <T extends HTMLElement = HTMLElement>(
   id: string,
   {
@@ -25,16 +34,17 @@ export const useUiTarget = <T extends HTMLElement = HTMLElement>(
     onSelect,
     label,
     description,
+    scrollIntoView,
   }: UiTargetOptions = {},
 ): { highlighted: boolean; ref: RefObject<T | null> } => {
-  const { targetRegistry } = useIntegration();
+  const targetRegistry = useOptionalIntegration()?.targetRegistry;
   const ref = useRef<T | null>(null);
   const [highlighted, setHighlighted] = useState(false);
 
   useEffect(() => {
     const element = focusRef?.current ?? ref.current;
 
-    if (!element) {
+    if (!element || !targetRegistry) {
       return;
     }
 
@@ -47,7 +57,17 @@ export const useUiTarget = <T extends HTMLElement = HTMLElement>(
       highlight: () => setHighlighted(true),
       clearHighlight: () => setHighlighted(false),
       scrollIntoView: (behavior) => {
-        (focusRef?.current ?? ref.current)?.scrollIntoView({ behavior, block: 'center' });
+        const target = focusRef?.current ?? ref.current;
+
+        if (!target) {
+          return;
+        }
+
+        if (scrollIntoView) {
+          scrollIntoView(target, behavior);
+        } else {
+          target.scrollIntoView({ behavior, block: 'center' });
+        }
       },
       ...(focusable
         ? {
@@ -73,7 +93,12 @@ export const useUiTarget = <T extends HTMLElement = HTMLElement>(
     onSelect,
     label,
     description,
+    scrollIntoView,
   ]);
+
+  useEffect(() => {
+    ref.current?.toggleAttribute(HIGHLIGHT_ATTRIBUTE, highlighted);
+  }, [highlighted]);
 
   return { highlighted, ref };
 };
