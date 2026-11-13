@@ -17,6 +17,12 @@
   Custom `AssistantBridgeClient` implementations must add `getContext`.
 - `onStatus` is optional in `connectEmbeddedAssistant` and the other connection options.
 - Document `askAbout` for host suggested questions and the entity-structure conventions.
+- `navigateAction` accepts `routes` with per-route parameter schemas. The assistant sends
+  `{ path, params }`, the SDK validates `params`, and `navigate(path, params)` lets the host build
+  the URL. `allowedRoutes` is now optional; without `routes` the payload schema is unchanged.
+- Add an optional `HostContext.principal` (`id`, `label`, `permissions`) published through
+  `updatePage`, `useHostPageContext` or `contextManager.setPrincipal`, and the `whenPermitted`
+  availability helper. The principal is assistant-facing data, not authorization.
 
 ## 0.1.0-beta.3
 

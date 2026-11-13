@@ -15,6 +15,7 @@ The framework-independent API of `assistant-bridge`. It has no React, federation
 │  ├─ <a href="#publish-context">contextManager, syncCapabilities</a>
 │  ├─ <a href="#context-commits">Context commits and revisions</a>
 │  ├─ <a href="#define-page-catalog">definePageCatalog</a>
+│  ├─ <a href="#publish-the-signed-in-principal">principal, whenPermitted</a>
 │  ├─ <a href="#map-host-entities">mapHostEntities</a>
 │  └─ <a href="#describe-entity-structure">Describing entity structure</a>
 ├─ Assistant client and commands
@@ -81,6 +82,32 @@ const integration = createHostIntegration({
 The navigation callback is illustrative. In a routed application, supply its router's navigation function so route rendering and context updates stay coordinated. The callback may return a promise: the action result waits for it, and a rejection fails the action, so hosts can apply route preconditions or wait for page data.
 
 After the built-in allowlist (and optional detail pattern) accepts a path, `navigateAction` runs an optional **`beforeNavigate(path)`** hook, then `navigate`. Use it for host business rules without wrapping `navigate`; throw `createIntegrationError(ACTION_NOT_AVAILABLE, reason)` for stable assistant-facing guidance (see _Business reasons on ACTION_NOT_AVAILABLE_).
+
+### Routes with parameters
+
+Pages that keep state in the query string declare `routes`, each with a parameter schema. The assistant then sends `{ path, params }`; the SDK validates `params` against that route's schema before calling `navigate(path, params)`, and the host builds the final URL.
+
+```ts
+navigateAction({
+  allowedRoutes: ['/settings'],
+  routes: {
+    '/content': {
+      description: 'Entries of one model, optionally with one entry open',
+      params: z.object({ model: z.uuid(), entry: z.uuid().optional() }).strict(),
+    },
+  },
+  navigate: (path, params) => router.navigate({ pathname: path, search: toSearch(params) }),
+});
+```
+
+- Paths in `allowedRoutes` and `detailPattern` take no parameters; a payload that adds `params` to them fails with `INVALID_PAYLOAD`.
+- A route path in `routes` requires `params`. Missing or invalid parameters fail with `INVALID_PAYLOAD`, and `navigate` is not called.
+- The published capability lists each route path with its parameter JSON Schema, so the assistant knows what to send. Without `routes`, the payload schema stays `{ path }`.
+- Use `.strict()` schemas so unknown keys are rejected rather than ignored. Never copy unvalidated values into the URL.
+- `beforeNavigate(path, params)` receives the validated parameters.
+- `defaultActionReadiness` compares only the route. If the host publishes the pathname as `route`, a parameter change keeps the same route; supply a `ui.navigate` readiness predicate that checks the published entities or targets when later steps depend on the new page data.
+
+Keep a custom action when opening a page needs more than navigation, for example business checks on the parameters.
 
 The returned integration exposes `bridge`, `contextManager`, `actionRegistry`, `targetRegistry`, `assistantCommands`, and `assistantClient`. Keep those host services on the host side; give assistant application logic only `AssistantBridgeClient`.
 
@@ -251,6 +278,33 @@ defineAction({
   handler: () => ({ ok: true }),
 });
 ```
+
+## Publish the signed-in principal
+
+`HostContext.principal` describes what the signed-in user may do, so the assistant can plan and the host can hide actions:
+
+```ts
+import { whenPermitted } from 'assistant-bridge';
+
+integration.updatePage({
+  route,
+  page,
+  principal: { id: user.id, permissions: ['content:read', 'content:publish'] },
+});
+
+defineAction({
+  name: 'content.publish',
+  description: 'Publish the open entry',
+  schema: z.object({ entryId: z.uuid() }),
+  available: whenPermitted('content:publish'),
+  handler: ({ entryId }) => api.publish(entryId), // the backend still checks the permission
+});
+```
+
+- `principal` is optional. `updatePage` (and `useHostPageContext`) preserve it when omitted; pass `null` to remove it, for example on sign-out. `contextManager.setPrincipal()` updates it alone.
+- Changing permissions recomputes action availability in the same context revision.
+- **It is not authorization.** The principal is published to the assistant as data. Every handler and backend must still enforce permissions; `whenPermitted` only hides unavailable actions.
+- Publish operation names, not roles or personal data. `label` is optional; omit it when the assistant does not need a display name. Limits: 500 permissions of up to 100 characters each.
 
 ## Map host entities
 

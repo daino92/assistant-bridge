@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import { HostContextManager } from '@/host-context';
+import { HostContextManager, whenPermitted } from '@/host-context';
 import { createHostIntegration } from '@/create-host-integration';
 import type { HostContext } from '@/contracts';
 
@@ -242,5 +242,51 @@ it('replaces destinations through updatePage and preserves them when omitted', (
   integration.updatePage({ route: '/', page, destinations: [] });
   expect(integration.contextManager.getSnapshot().destinations).toEqual([]);
   expect(listener).toHaveBeenCalledTimes(2);
+  integration.dispose();
+});
+
+it('publishes, preserves and clears the principal through updatePage', () => {
+  const integration = createHostIntegration({ actions: [] });
+  const page = { title: 'Home', type: 'home' };
+  const principal = { id: 'user-1', label: 'Editor', permissions: ['content:read'] };
+
+  integration.updatePage({ route: '/', page, principal });
+  expect(integration.assistantClient.getContext().principal).toEqual(principal);
+
+  integration.updatePage({ route: '/', page });
+  expect(integration.assistantClient.getContext().principal).toEqual(principal);
+
+  integration.updatePage({ route: '/', page, principal: null });
+  expect(integration.assistantClient.getContext().principal).toBeUndefined();
+  integration.dispose();
+});
+
+it('recomputes action availability when permissions change', () => {
+  const integration = createHostIntegration({
+    actions: [
+      {
+        name: 'content.publish',
+        description: 'Publish',
+        schema: z.object({}),
+        available: whenPermitted('content:publish'),
+        handler: () => ({}),
+      },
+    ],
+  });
+
+  const page = { title: 'Home', type: 'home' };
+
+  const names = () =>
+    integration.contextManager.getSnapshot().capabilities.map((item) => item.name);
+
+  integration.updatePage({ route: '/', page, principal: { id: 'u', permissions: [] } });
+  expect(names()).toEqual([]);
+
+  integration.updatePage({
+    route: '/',
+    page,
+    principal: { id: 'u', permissions: ['content:publish'] },
+  });
+  expect(names()).toEqual(['content.publish']);
   integration.dispose();
 });

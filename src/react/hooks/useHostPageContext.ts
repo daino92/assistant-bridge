@@ -16,9 +16,10 @@ export const useHostPageContext = (
     selection = 'clear',
     entities = EMPTY_ENTITIES,
     destinations,
+    principal,
   }: HostPageContextOptions,
 ) => {
   useEffect(() => {
-    integration.updatePage({ route, page, selection, entities, destinations });
-  }, [integration, route, page, selection, entities, destinations]);
+    integration.updatePage({ route, page, selection, entities, destinations, principal });
+  }, [integration, route, page, selection, entities, destinations, principal]);
 };

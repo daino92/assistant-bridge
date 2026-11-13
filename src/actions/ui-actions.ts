@@ -1,5 +1,5 @@
 import { createIntegrationError, isIntegrationErrorCode } from '@/errors';
-import type { z } from 'zod';
+import { z } from 'zod';
 
 import type { UiTargetRegistry } from '@/capabilities';
 import {
@@ -25,22 +25,86 @@ const targetMiss = (error?: string): never => {
   );
 };
 
-export const navigateAction = (deps: {
-  navigate: (path: string) => void | Promise<void>;
-  allowedRoutes: readonly string[];
+export type NavigateParams = Record<string, unknown>;
+
+/** A route whose state lives in query parameters, validated before the host builds the URL. */
+export interface NavigateRoute {
+  /** Object schema for the route parameters. Prefer `.strict()` so unknown keys are rejected. */
+  params: z.ZodType<NavigateParams>;
+  /** Optional hint for the assistant, for example "Entries of one model". */
+  description?: string;
+}
+
+export interface NavigateActionOptions {
+  /**
+   * Called with validated parameters for `routes`, and with the path only for
+   * `allowedRoutes` / `detailPattern`. The host builds the final URL.
+   */
+  navigate: (path: string, params?: NavigateParams) => void | Promise<void>;
+  /** Exact paths that take no parameters. */
+  allowedRoutes?: readonly string[];
   detailPattern?: RegExp;
+  /** Paths that take structured parameters, keyed by exact path. */
+  routes?: Readonly<Record<string, NavigateRoute>>;
   /** Runs after the route allowlist check and before `navigate`. Throw `createIntegrationError` with optional business `reason`. */
-  beforeNavigate?: (path: string) => void | Promise<void>;
-}): HostActionInput<{ path: string }> => {
+  beforeNavigate?: (path: string, params?: NavigateParams) => void | Promise<void>;
+}
+
+export type NavigatePayload = { path: string; params?: NavigateParams };
+
+const navigateSchema = (
+  routes: Readonly<Record<string, NavigateRoute>>,
+): z.ZodType<NavigatePayload> => {
+  const entries = Object.entries(routes);
+
+  if (!entries.length) {
+    return uiNavigatePayloadSchema;
+  }
+
+  // Route branches come first; the plain branch is strict so stray parameters fail validation.
+  const branches = entries.map(([path, route]) => {
+    const branch = z.object({ path: z.literal(path), params: route.params });
+
+    return route.description ? branch.describe(route.description) : branch;
+  });
+
+  const [first, ...rest]: z.ZodType<NavigatePayload>[] = [
+    ...branches,
+    uiNavigatePayloadSchema.strict(),
+  ];
+
+  return z.union([first, ...rest]);
+};
+
+export const navigateAction = (deps: NavigateActionOptions): HostActionInput<NavigatePayload> => {
+  const routes = deps.routes ?? {};
+  const allowedRoutes = deps.allowedRoutes ?? [];
+
   return {
     name: HOST_ACTION_NAMES.UI_NAVIGATE,
-    description: 'Navigate to an allowed application route',
-    schema: uiNavigatePayloadSchema,
-    async handler({ path }) {
-      const allowed =
-        deps.allowedRoutes.includes(path) || (deps.detailPattern?.test(path) ?? false);
+    description: Object.keys(routes).length
+      ? 'Navigate to an allowed application route. Routes with parameters require `params`.'
+      : 'Navigate to an allowed application route',
+    schema: navigateSchema(routes),
+    async handler({ path, params }) {
+      const route = Object.hasOwn(routes, path) ? routes[path] : undefined;
 
-      if (!allowed) {
+      if (route) {
+        const parsed = route.params.safeParse(params);
+
+        if (!parsed.success) {
+          throw createIntegrationError(ERROR_CODES.INVALID_PAYLOAD);
+        }
+
+        await deps.beforeNavigate?.(path, parsed.data);
+        await deps.navigate(path, parsed.data);
+
+        return { path, params: parsed.data };
+      }
+
+      const allowed = allowedRoutes.includes(path) || (deps.detailPattern?.test(path) ?? false);
+
+      if (!allowed || params !== undefined) {
         throw createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE);
       }
 

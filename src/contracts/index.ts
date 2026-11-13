@@ -40,8 +40,10 @@ export {
 export {
   hostCapabilitySchema,
   hostContextSchema,
+  hostPrincipalSchema,
   type HostCapability,
   type HostContext,
+  type HostPrincipal,
 } from './host-context';
 
 export {

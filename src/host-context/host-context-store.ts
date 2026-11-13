@@ -1,4 +1,4 @@
-import type { HostCapability, HostContext } from '@/contracts';
+import type { HostCapability, HostContext, HostPrincipal } from '@/contracts';
 
 export type HostContextListener = (context: HostContext) => void;
 
@@ -10,6 +10,8 @@ export interface HostPageUpdateOptions {
   entities?: NonNullable<HostContext['entities']>;
   /** Omitted destinations preserve the current list; pass `[]` to remove all. */
   destinations?: NonNullable<HostContext['destinations']>;
+  /** Omitted principal preserves the current one; pass `null` to remove it (for example on sign-out). */
+  principal?: HostPrincipal | null;
 }
 
 type CapabilityResolver = (context: HostContext) => HostCapability[];
@@ -43,7 +45,7 @@ export class HostContextManager {
 
   private capabilityResolver?: CapabilityResolver;
 
-  private lastPage?: Omit<HostPageUpdateOptions, 'entities' | 'destinations'>;
+  private lastPage?: Omit<HostPageUpdateOptions, 'entities' | 'destinations' | 'principal'>;
 
   private notifications: HostContext[] = [];
 
@@ -151,6 +153,7 @@ export class HostContextManager {
     selection = 'clear',
     entities,
     destinations,
+    principal,
   }: HostPageUpdateOptions): boolean {
     if (this.disposed) {
       return false;
@@ -176,6 +179,7 @@ export class HostContextManager {
         ...(pageChanged && selection === 'clear' ? { selection: undefined } : {}),
         ...(entities !== undefined ? { entities } : {}),
         ...(destinations !== undefined ? { destinations } : {}),
+        ...(principal !== undefined ? { principal: principal ?? undefined } : {}),
       });
     } catch (error) {
       if (this.context === previousContext && this.lastPage === nextPage) {
@@ -206,6 +210,10 @@ export class HostContextManager {
 
   setEntities(entities: NonNullable<HostContext['entities']>): void {
     this.commit({ entities });
+  }
+
+  setPrincipal(principal: HostPrincipal | null): void {
+    this.commit({ principal: principal ?? undefined });
   }
 
   dispose(): void {
