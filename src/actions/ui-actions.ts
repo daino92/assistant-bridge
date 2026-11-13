@@ -29,8 +29,11 @@ export type NavigateParams = Record<string, unknown>;
 
 /** A route whose state lives in query parameters, validated before the host builds the URL. */
 export interface NavigateRoute {
-  /** Object schema for the route parameters. Prefer `.strict()` so unknown keys are rejected. */
-  params: z.ZodType<NavigateParams>;
+  /**
+   * Object schema for the route parameters. Prefer `.strict()` so unknown keys are rejected.
+   * Make it `.optional()` when the page also opens without parameters.
+   */
+  params: z.ZodType<NavigateParams | undefined>;
   /** Optional hint for the assistant, for example "Entries of one model". */
   description?: string;
 }
@@ -94,6 +97,14 @@ export const navigateAction = (deps: NavigateActionOptions): HostActionInput<Nav
 
         if (!parsed.success) {
           throw createIntegrationError(ERROR_CODES.INVALID_PAYLOAD);
+        }
+
+        // An optional schema may yield no parameters; navigate like a plain route then.
+        if (parsed.data === undefined) {
+          await deps.beforeNavigate?.(path);
+          await deps.navigate(path);
+
+          return { path };
         }
 
         await deps.beforeNavigate?.(path, parsed.data);

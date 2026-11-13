@@ -1,8 +1,24 @@
 export { default as IntegrationProvider } from './IntegrationProvider';
-export { useIntegration, useOptionalIntegration } from './context';
 
 export {
+  useIntegration,
+  useOptionalIntegration,
+  useAssistantHost,
+  type AssistantHostValue,
+} from './context';
+
+export {
+  default as AssistantHost,
+  type AssistantHighlightOptions,
+  type AssistantHostApi,
+  type AssistantHostProps,
+  type AssistantHostRouter,
+} from './AssistantHost';
+
+export {
+  HIGHLIGHT_ATTRIBUTE,
   useUiTarget,
+  usePageEntities,
   useAssistantPanel,
   useAssistantIframeConnection,
   useAssistantContext,

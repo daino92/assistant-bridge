@@ -17,7 +17,14 @@ pnpm format:check   # Check formatting
 
 ## Releases
 
-Update `version` in `package.json` and `CHANGELOG.md`, then merge to `main`. `.github/workflows/publish.yml` validates the package and publishes new versions with the `beta` tag and provenance. Versions already on npm are skipped.
+Releases follow Git Flow. Merging into `main` does not publish; pushing a release tag does.
+
+1. Create `release/X.Y.Z` (or `release/X.Y.Z-beta.N`) from `develop`. Set `version` in `package.json` and rename `## Unreleased` in `CHANGELOG.md` to the version.
+2. Open a pull request from the release branch into `main` and merge it once CI passes.
+3. Tag the merge commit and push the tag: `git tag -a vX.Y.Z -m vX.Y.Z <merge-commit> && git push origin vX.Y.Z`.
+4. Open a pull request from `main` into `develop` to back-merge the release.
+
+`.github/workflows/publish.yml` runs on `v*` tags. It fails unless the tag equals `v` + `package.json` version and points at a commit on `main`, validates the package and publishes with provenance. Prerelease versions (`-beta.N`) use the npm `beta` dist-tag; stable versions use `latest`. Versions already on npm are skipped.
 
 Publishing uses an npm trusted publisher, so no token is required. Configure it in the npm package settings:
 
