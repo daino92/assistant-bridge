@@ -110,4 +110,30 @@ describe('navigateAction routes with parameters', () => {
       required: ['path'],
     });
   });
+
+  it('navigates without parameters when an optional route schema yields none', async () => {
+    const navigate = vi.fn();
+
+    const integration = createHostIntegration({
+      actions: [
+        navigateAction({
+          navigate,
+          routes: {
+            '/content': {
+              params: z.object({ model: z.uuid().optional() }).strict().optional(),
+            },
+          },
+        }),
+      ],
+    });
+
+    disposers.push(() => integration.dispose());
+    await expect(
+      integration.assistantClient.requestHostAction(HOST_ACTION_NAMES.UI_NAVIGATE, {
+        path: '/content',
+      }),
+    ).resolves.toEqual({ path: '/content' });
+    expect(navigate).toHaveBeenCalledWith('/content');
+    expect(navigate.mock.calls[0]).toHaveLength(1);
+  });
 });
