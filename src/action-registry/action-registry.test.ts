@@ -253,4 +253,68 @@ describe('action JSON Schema', () => {
       'Custom types cannot be represented in JSON Schema',
     );
   });
+
+  describe('exposeErrorMessages', () => {
+    const run = async (exposeErrorMessages: boolean | undefined, error: unknown) => {
+      const registry = new HostActionRegistry();
+
+      registry.register({
+        name: 'test.write',
+        description: 'Test',
+        parametersSchema: z.object({}),
+        requiresConfirmation: false,
+        exposeErrorMessages,
+        handler: () => {
+          throw error;
+        },
+      });
+
+      return registry.execute('test.write', {}, { getContext: () => baseContext });
+    };
+
+    it('passes the message of an ordinary error as a public reason', async () => {
+      await expect(run(true, new Error('Version 3 is stale'))).resolves.toEqual({
+        success: false,
+        error: {
+          code: ERROR_CODES.ACTION_NOT_AVAILABLE,
+          message: 'Version 3 is stale',
+          reason: { code: 'ACTION_FAILED', message: 'Version 3 is stale' },
+        },
+      });
+    });
+
+    it('truncates long messages to the reason limit', async () => {
+      const result = await run(true, new Error('x'.repeat(500)));
+
+      expect(result.success ? undefined : result.error.reason?.message).toHaveLength(300);
+    });
+
+    it('keeps the generic message without the option', async () => {
+      const result = await run(undefined, new Error('SQL detail'));
+
+      expect(result).toEqual({
+        success: false,
+        error: normalizeIntegrationError({ code: ERROR_CODES.EXECUTION_FAILED }),
+      });
+      expect(JSON.stringify(result)).not.toContain('SQL detail');
+    });
+
+    it('keeps integration errors and non-Error values unchanged', async () => {
+      const refused = Object.assign(new Error('Not here'), {
+        code: ERROR_CODES.ACTION_NOT_AVAILABLE,
+      });
+
+      await expect(run(true, refused)).resolves.toMatchObject({
+        error: { code: ERROR_CODES.ACTION_NOT_AVAILABLE },
+      });
+      await expect(run(true, 'raw string')).resolves.toEqual({
+        success: false,
+        error: normalizeIntegrationError({ code: ERROR_CODES.EXECUTION_FAILED }),
+      });
+      await expect(run(true, new Error('   '))).resolves.toEqual({
+        success: false,
+        error: normalizeIntegrationError({ code: ERROR_CODES.EXECUTION_FAILED }),
+      });
+    });
+  });
 });

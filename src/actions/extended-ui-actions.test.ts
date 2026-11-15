@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createUiActions, type UiTargetActionName } from '@/actions';
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import { ERROR_CODES, hostContextSchema } from '@/contracts';
 
 const disposers: Array<() => void> = [];
@@ -29,7 +29,7 @@ describe('extended UI actions', () => {
     async ({ name, payload, invalid, args }) => {
       const callback = vi.fn();
 
-      const integration = createHostIntegration({
+      const integration = createIntegration({
         actions: ({ targets }) =>
           createUiActions({ targets: { registry: targets, enable: [name] } }),
       });
@@ -76,7 +76,7 @@ describe('extended UI actions', () => {
   );
 
   it('clearHighlight cancels the timer and rejects missing targets', async () => {
-    const integration = createHostIntegration({
+    const integration = createIntegration({
       actions: ({ targets }) =>
         createUiActions({ targets: { registry: targets, enable: ['clearHighlight'] } }),
     });
@@ -104,7 +104,7 @@ describe('extended UI actions', () => {
 });
 
 it('ui.select waits for async selection and propagates callback failures', async () => {
-  const integration = createHostIntegration({
+  const integration = createIntegration({
     actions: ({ targets }) =>
       createUiActions({ targets: { registry: targets, enable: ['select'] } }),
   });

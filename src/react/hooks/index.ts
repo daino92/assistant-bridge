@@ -13,13 +13,6 @@ export { useHostIntegration, type UseHostIntegrationOptions } from './useHostInt
 
 export { useHostPageContext, type HostPageContextOptions } from './useHostPageContext';
 
-export {
-  useHostPageContextFromCatalog,
-  type HostPageContextFromCatalogOptions,
-} from './useHostPageContextFromCatalog';
-
-export { useAskAi } from './useAskAi';
-
 export { useActionConfirmation } from './useActionConfirmation';
 
 export {

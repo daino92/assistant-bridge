@@ -1,9 +1,9 @@
 import { MessageChannel } from 'node:worker_threads';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import { ASSISTANT_IFRAME_MESSAGES } from '@/contracts';
-import { connectAssistantIframe, createAssistantIframeUrl } from '@/connections';
+import { connectAssistantIframe, connectHostIframe, createAssistantIframeUrl } from '@/connections';
 
 const cleanups: Array<() => void> = [];
 
@@ -27,7 +27,7 @@ describe('host iframe handshake', () => {
     vi.spyOn(window, 'parent', 'get').mockReturnValue(parent);
 
     const postMessage = vi.spyOn(parent, 'postMessage').mockImplementation(() => {});
-    const integration = createHostIntegration({ actions: [] });
+    const integration = createIntegration({ actions: [] });
     const onClient = vi.fn();
 
     const disconnect = connectAssistantIframe({
@@ -82,7 +82,7 @@ describe('host iframe handshake', () => {
   it('checks exact source and origin, waits for acknowledgement, and reconnects a reloaded frame', async () => {
     vi.stubGlobal('MessageChannel', MessageChannel);
 
-    const integration = createHostIntegration({ actions: [] });
+    const integration = createIntegration({ actions: [] });
     const iframe = document.createElement('iframe');
 
     document.body.append(iframe);
@@ -96,7 +96,12 @@ describe('host iframe handshake', () => {
       });
 
     const onStatus = vi.fn();
-    const dispose = integration.connectIframe({ iframe, url: 'https://chat.example/', onStatus });
+
+    const dispose = connectHostIframe(integration, {
+      iframe,
+      url: 'https://chat.example/',
+      onStatus,
+    });
 
     cleanups.push(
       () => iframe.remove(),

@@ -16,9 +16,4 @@ export const defaultActionReadiness: Readonly<Record<string, ActionReadiness>> =
 
     return typeof payload?.path === 'string' && context.route === payload.path;
   },
-  'ui.openDetails': ({ context, args }) => {
-    const payload = args as { id?: unknown } | null;
-
-    return typeof payload?.id === 'string' && context.route.endsWith('/' + payload.id);
-  },
 };

@@ -1,5 +1,7 @@
 # assistant-bridge/react
 
+> **New host?** Start with [`AssistantHost`](#assistanthost) and the [host quick start](quick-start.md). **New chat?** Start with the [chat quick start](chat-quick-start.md). The provider and hooks below are the lower-level parts those are built from.
+
 Optional React context from the single `assistant-bridge` package. Import this entry point only in React consumers and supply the optional `react` peer dependency. The root entry remains framework agnostic.
 
 ```tsx
@@ -30,7 +32,7 @@ import { IntegrationProvider, useHostIntegration } from 'assistant-bridge/react'
 
 const integration = useHostIntegration({
   onTimeline,
-  actions: ({ targets }) => createHostActions({ navigate, openDetails, targets }),
+  actions: ({ targets }) => createHostActions({ navigate, targets }),
 });
 // <IntegrationProvider integration={integration}>{children}</IntegrationProvider>
 ```
@@ -73,8 +75,7 @@ import { AssistantHost, useAssistantHost, usePageEntities } from 'assistant-brid
   router={{ pathname: location.pathname, navigate: queryNavigate(routerNavigate, { environment }) }}
   principal={{ id: user.id, permissions }}
   entities={[{ type: 'environment', id: environment, label: environmentName }]}
-  actions={({ targets, navigate }) => createDomainActions({ targets, navigate })}
-  actionDeps={domainDeps}
+  actions={({ targets, navigate }) => createDomainActions({ targets, navigate, state })}
   connection="embedded"
   highlight={{ color: 'var(--brand)' }}
 >
@@ -91,10 +92,11 @@ await host?.ask('Summarize this entry');
 
 - **Pages and navigation:** `ui.navigate` comes from `pages.navigation(principal, …)`. Destinations follow `pages.destinationsFor(principal)`. Both update when permissions change, without remounting.
 - **Router:** `pathname` selects the page through `pages.pageKeyFromRoute`; routes outside the catalog publish `fallbackPage`. `navigate` receives validated `params` only for pages that declare them. The latest `navigate`, `beforeNavigate` and `actions` are always used, so inline callbacks are fine.
-- **Actions:** the `actions` factory receives `targets`, `principal` and a stable `navigate`. Actions re-register when `actionDeps`, the catalog or the permissions change.
+- **Actions:** the `actions` factory receives `targets`, `principal` and a stable `navigate`, and runs on every render. Handlers and `available` therefore always use current host state; there is nothing to memoize. Actions re-register only when what the assistant sees changes (names, descriptions, schemas, approval), for example after a permission change. Keep the factory pure: it returns definitions and must not cause side effects.
 - **Entities:** `entities` are shared by every page. `usePageEntities` adds a component's entities while it is mounted, merged in mount order and compared by content.
 - **Connection:** `connection="embedded"` connects a same-window assistant and exposes `bridge` and `onReady` as `useAssistantHost().embedded`. The default, `external`, leaves the connection to `AssistantEmbed` or `AssistantIframe`.
-- **Asking:** `ask(prompt)` is `assistantCommands.askAbout(prompt)`; it rejects when no assistant is ready.
+- **Asking:** `ask(prompt, { selection, metadata })` is `assistantCommands.askAbout`; it rejects when no assistant is ready.
+- **State-based pages:** a host that switches pages by state instead of URL passes `router={{ page, navigate }}`, with the current catalog key and a function that opens a key. `ui.navigate` still validates paths and parameters against the catalog, then calls `navigate(pageKey, params)`.
 - **Highlight:** `highlight` adds an outline for `[data-assistant-highlight]`, with a reduced-motion fallback.
 
 `AssistantHost` renders `IntegrationProvider`, so `useIntegration`, `useUiTarget` and `AssistantEmbed` work below it. Keep `principal` to permission names; it is not authorization. For full control, compose `useHostIntegration` and `useHostPageContext` as before.
@@ -210,7 +212,7 @@ const integration = useAssistantIntegration({
 });
 ```
 
-Use `integration.context` and `integration.isConnected` for host state. Await `integration.executeHostAction(name, payload)` for backend-originated host requests. Render `integration.confirmation` with `approve`/`reject`, or supply `actions.requestConfirmation` for an existing approval UI. AG-UI consumers can pass `integration.bridge` and `integration.requestConfirmation` to their existing session. See the [existing chat integration guide](existing-chat.md) for lifecycle, backend protocol boundaries, and Commercebot/Tell-a-story adapter mappings.
+Use `integration.context` and `integration.isConnected` for host state. Await `integration.executeHostAction(name, payload)` for backend-originated host requests. Render `integration.confirmation` with `approve`/`reject`, or supply `actions.requestConfirmation` for an existing approval UI. Backend adapters (AG-UI or other) can pass `integration.bridge` and `integration.requestConfirmation` to `createAssistantActionExecutor`. See the [existing chat integration guide](existing-chat.md) for lifecycle, backend protocol boundaries, and Commercebot/Tell-a-story adapter mappings.
 
 ## Assistant-side hooks
 
@@ -236,7 +238,7 @@ useAssistantIframeConnection({
 useAssistantCommandHandler(onCommand, onReady);
 ```
 
-`useAssistantIframeConnection` initializes the assistant end of the iframe connection. Supply `hostOrigin` explicitly or let it read the SDK's `hostOrigin` query parameter on initialization. With no origin, or outside an iframe, no connection is established. Disable the hook when a same-window client is supplied. Cleanup removes the handshake listener and disposes the port; an established connection clears the client through `onClient(undefined)`. Changes to command/client callbacks use their latest implementations without reconnecting. The hook has no UI and does not create a host integration.
+`useAssistantIframeConnection` initializes the assistant end of the iframe connection. Supply `hostOrigin` explicitly, or `allowedOrigins` to accept the SDK's `hostOrigin` query parameter only for those origins. The query parameter alone is never trusted. With no trusted origin, or outside an iframe, no connection is established. Disable the hook when a same-window client is supplied. Cleanup removes the handshake listener and disposes the port; an established connection clears the client through `onClient(undefined)`. Changes to command/client callbacks use their latest implementations without reconnecting. The hook has no UI and does not create a host integration.
 
 `useAssistantContext(client)` reads the client's context snapshot, subscribes to changes, unsubscribes when the client changes or the component unmounts, and clears context when the client becomes undefined. It works identically for iframe and directly supplied clients.
 
@@ -255,34 +257,20 @@ useHostPageContext(integration, {
 });
 ```
 
-When the host uses `definePageCatalog`, `useHostPageContextFromCatalog(integration, { catalog, pageKey, selection, entities })` is equivalent to passing `route: catalog.route(pageKey)` and `page: catalog.pageMeta(pageKey)` to `useHostPageContext`, so providers do not repeat those two lines on every page change.
-
-```tsx
-useHostPageContextFromCatalog(integration, {
-  catalog,
-  pageKey: currentPage,
-  selection: 'clear',
-  entities,
-});
-```
-
-Inside `IntegrationProvider`, `useAskAi()` exposes stable `askAbout(prompt, selection?)` and `prefillOnly(text)` callbacks. The host may re-export the hook from its own barrel; it no longer needs a local implementation.
+With a page catalog, `AssistantHost` publishes the page for you. To ask the assistant from a component, use `useAssistantHost()?.ask(prompt, { selection, metadata })`.
 
 `useHostIntegration` now delegates permanent cleanup to `integration.dispose()`. When creating an integration outside this hook, call `dispose()` from the owning application lifecycle. A shared `IntegrationProvider` does not own disposal. The method is idempotent; a disposed instance must not be reused.
 
 ## Action confirmation UI
 
 ```tsx
+import { createAssistantActionExecutor } from 'assistant-bridge';
 import { useActionConfirmation } from 'assistant-bridge/react';
-import { createHostAgentOptions } from 'assistant-bridge/ag-ui';
 
 const { confirmation, requestConfirmation, approve, reject } = useActionConfirmation();
 
-// During run setup; the executor supplies its combined cancellation signal:
-const hostOptions = createHostAgentOptions(bridge, {
-  signal: runController.signal,
-  requestConfirmation,
-});
+// The executor asks through requestConfirmation and supplies its cancellation signal:
+const executor = createAssistantActionExecutor(bridge, { signal, requestConfirmation });
 
 // Render your own card with confirmation, approve and reject.
 ```

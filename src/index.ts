@@ -1,8 +1,4 @@
-export {
-  HostActionRegistry,
-  type ActionExecutionContext,
-  type RegisteredAction,
-} from './action-registry';
+export { type ActionExecutionContext, type RegisteredAction } from './action-registry';
 
 export {
   defineAction,
@@ -15,7 +11,6 @@ export {
   type NavigateParams,
   type NavigatePayload,
   type NavigateRoute,
-  openDetailsAction,
   scrollToAction,
   selectAction,
   clearHighlightAction,
@@ -31,14 +26,12 @@ export {
 export {
   createAssistantBridgeClient,
   createHostAssistantCommands,
-  attachAssistantCommandHandler,
+  type AskOptions,
   type AssistantCommandHandler,
   type AssistantBridgeClient,
   type EmbeddedAssistantOptions,
   type HostAssistantCommands,
 } from './assistant-client';
-
-export { HostBridge, RequestResponseChannel, TypedEventBus } from './bridge';
 
 export {
   UiTargetRegistry,
@@ -59,18 +52,14 @@ export {
   assistantCommandResultSchema,
   assistantPrefillPayloadSchema,
   assistantSubmitPromptPayloadSchema,
-  catalogFilterPayloadSchema,
   hostActionRequestSchema,
   hostActionResultSchema,
   hostCapabilitySchema,
   hostContextSchema,
   hostPrincipalSchema,
-  recordsFilterPayloadSchema,
-  recordsSortPayloadSchema,
   uiFocusPayloadSchema,
   uiHighlightPayloadSchema,
   uiNavigatePayloadSchema,
-  uiOpenDetailsPayloadSchema,
   uiScrollToPayloadSchema,
   uiSelectPayloadSchema,
   uiClearHighlightPayloadSchema,
@@ -104,7 +93,6 @@ export {
 } from './create-host-integration';
 
 export {
-  HostContextManager,
   mapHostEntities,
   definePageCatalog,
   emptyPayloadSchema,
@@ -117,10 +105,7 @@ export {
   type PageCatalogEntry,
 } from './host-context';
 
-export { attachHostPort, createPortAssistantClient } from './bridge';
-
 export {
-  createAssistantConnection,
   connectEmbeddedAssistant,
   connectHostIframe,
   connectAssistantIframe,
@@ -138,13 +123,9 @@ export {
   type ActionExecutionOptions,
 } from './assistant-client';
 
-export {
-  defaultActionReadiness,
-  type ActionReadiness,
-  type ActionReadinessContext,
-} from './assistant-client';
+export { type ActionReadiness, type ActionReadinessContext } from './assistant-client';
 
-export { waitForHostContext, type WaitForHostContextOptions } from './assistant-client';
+export { type WaitForHostContextOptions } from './assistant-client';
 
 export {
   createIntegrationError,
@@ -165,12 +146,6 @@ export {
   type ActionLifecycleStatus,
   type ActionLifecycleListener,
 } from './contracts';
-
-export {
-  reduceActionProgress,
-  finalizeActionProgress,
-  type ActionProgressEntry,
-} from './assistant-client';
 
 export {
   createAssistantCommandDispatcher,

@@ -30,7 +30,6 @@ it('requires explicit approval, snapshots arguments and rechecks permissions bef
 
   const bridge: AssistantBridgeClient = {
     getContext: () => context,
-    getInitialContext: () => context,
     subscribeContext: () => () => {},
     requestHostAction: dispatch,
   };
@@ -102,7 +101,6 @@ it('refuses approval if business entity context changes while the card is open',
 
   const bridge: AssistantBridgeClient = {
     getContext: () => context,
-    getInitialContext: () => context,
     subscribeContext: () => () => {},
     requestHostAction: dispatch,
   };
@@ -141,7 +139,6 @@ it('does not dispatch when a run stops while approval is pending', async () => {
 
   const bridge: AssistantBridgeClient = {
     getContext: () => context,
-    getInitialContext: () => context,
     subscribeContext: () => () => {},
     requestHostAction: dispatch,
   };

@@ -62,7 +62,7 @@ The host owns the surrounding embedding panel. `onOpen` may also select the chat
 ## Connection modes and lifecycle
 
 - **Direct/widget/federation:** pass `bridge` and `onReady` from `connectEmbeddedAssistant` or the federation adapter. Extend an existing widget's mount options to carry these two properties.
-- **Iframe:** omit those properties. The hook uses `iframe.hostOrigin`, or the SDK `hostOrigin` query parameter. The parent must use the SDK host iframe connection. Existing `READY` messages alone do not implement this handshake.
+- **Iframe:** omit those properties. The hook uses `iframe.hostOrigin`, or the SDK `hostOrigin` query parameter when it is listed in `iframe.allowedOrigins`. The parent must use the SDK host iframe connection. Existing `READY` messages alone do not implement this handshake.
 - **Standalone:** without embedding props or an iframe parent/origin, `isConnected` is false. Set `iframe: { enabled: false }` to explicitly disable iframe initialization. The chat can continue using its own backend.
 
 A supplied bridge takes precedence over iframe initialization. `isConnected` describes the host bridge, not the backend socket or model provider. Context is available as `integration.context`; use `integration.bridge?.getContext()` when taking a fresh snapshot for an outbound backend request. Host disconnect clears the exposed bridge/context and cancels approvals. Callback changes do not reconnect the host. Bridge replacement or unmount cancels pending hook-owned action execution and detaches commands; the hook never disposes a host-owned integration instance.
@@ -83,7 +83,7 @@ Backend support is required for dynamic tool discovery and correlated results. S
 
 `executeHostAction` uses the existing SDK executor: host capabilities, payload validation at the host, context revision checks, confirmation, action lifecycle events and readiness handling remain in effect. Render `confirmation` with `approve`/`reject`, or supply an existing approval UI through `actions.requestConfirmation(request, signal)`. A custom approval callback must respect cancellation. `actions` also accepts `signal`, `readiness`, `contextWait` and `onActionLifecycle`; updates apply to new action executions without aborting an existing action on every React render.
 
-For an existing AG-UI chat, continue using `createChatSession` with `integration.bridge` and `integration.requestConfirmation`. The AG-UI adapter already translates capabilities, tools and results. It shares the same approval UI; do not execute a tool a second time through the manual adapter.
+The SDK contains no backend client. An AG-UI, SSE or other backend adapter lives in the chat application and calls `executeHostAction` (or `createAssistantActionExecutor` with `integration.bridge` and `integration.requestConfirmation`) for each host tool call.
 
 ## Candidate mappings
 
