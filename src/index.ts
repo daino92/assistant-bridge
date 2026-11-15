@@ -148,8 +148,6 @@ export {
   type ActionLifecycleListener,
 } from './contracts';
 
-export { type ActionProgressEntry } from './assistant-client';
-
 export {
   createAssistantCommandDispatcher,
   type AssistantCommandCallbacks,

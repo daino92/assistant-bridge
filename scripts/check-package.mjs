@@ -87,7 +87,7 @@ try {
   for (const entry of entries) {
     assert.match(
       entry,
-      /^package\/(?:dist\/|schemas\/|docs\/|package\.json$|README\.md$|CHANGELOG\.md$|LICENSE$)/,
+      /^package\/(?:dist\/|docs\/|package\.json$|README\.md$|CHANGELOG\.md$|LICENSE$)/,
     );
     assert.doesNotMatch(entry, /(?:^|\/)(?:node_modules|src|scripts|\.env)(?:\/|$)|\.test\./);
 
@@ -148,7 +148,7 @@ try {
     'adapters',
     Object.entries(MANIFEST.peerDependencies).map(([name, range]) => `${name}@${range}`),
     `
-    for (const entry of ['react', 'federation', 'react/federation', 'ag-ui']) {
+    for (const entry of ['react', 'federation', 'react/federation']) {
       await import(${packageName} + '/' + entry);
       console.log(entry + ' import OK');
     }

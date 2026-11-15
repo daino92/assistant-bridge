@@ -1,6 +1,6 @@
 # Core API
 
-The framework-independent API of `assistant-bridge`. It has no React, federation or AG-UI imports.
+The framework-independent API of `assistant-bridge`. It has no React or federation imports.
 
 > **React host?** You need only `definePageCatalog`, `defineAction` and `createIntegrationError` from this page, together with `AssistantHost`; see the [host quick start](quick-start.md). The rest of this page is for hosts without React and for cases `AssistantHost` does not cover.
 
@@ -542,11 +542,11 @@ await executeAction('records.updateStatus', {
 
 The executor snapshots arguments, checks current capabilities, requests approval for protected actions, rechecks route/entities after approval, forwards the confirmed flag and waits for host context readiness. Without a confirmation callback protected calls fail without dispatch. Rejection preserves `ACTION_REJECTED`; changed entity context yields `STALE_CONTEXT`. Confirmation rendering remains chat-owned. The SDK confirmation controller handles dismissal on cancellation; custom confirmation callbacks must provide their own cancellation handling. Cancellation prevents later dispatch after approval but cannot undo an already executed mutation.
 
-`ActionConfirmation` and `AssistantActionExecutorOptions` are exported from the core SDK. The `/ag-ui` entry also re-exports `ActionConfirmation`. `createHostAgentOptions` delegates action execution to this executor and retains only AG-UI tool/context mapping. This trusted-client consent boundary does not replace server-side authorization.
+`ActionConfirmation` and `AssistantActionExecutorOptions` are exported from the core SDK. A backend adapter in the chat (AG-UI or any other protocol) should delegate host tool calls to this executor rather than call `requestHostAction` directly. This trusted-client consent boundary does not replace server-side authorization.
 
 ## Action readiness
 
-`createAssistantActionExecutor` and `createHostAgentOptions` accept the same optional readiness configuration:
+`createAssistantActionExecutor` accepts optional readiness configuration:
 
 ```ts
 const executor = createAssistantActionExecutor(bridge, {
@@ -567,7 +567,7 @@ Predicates receive the latest context, the pre-dispatch context, snapshotted arg
 
 By default, `ui.navigate` waits until the published route equals the requested path; override it for custom route formats or additional target requirements. Other actions wait only for the quiet context window. Default navigation rules do not prove that asynchronous data or all UI targets have loaded: supply an explicit predicate when subsequent actions depend on those. Predicates must be synchronous, side-effect free and inspect published context; they cannot query server state asynchronously.
 
-Configuration is supplied where the executor runs, normally in the independent chat application. Functions are not serialized across the iframe/AG-UI protocol. The host publishes the route, targets and entity summaries used by those predicates.
+Configuration is supplied where the executor runs, normally in the independent chat application. Functions are not serialized across the iframe or backend protocol. The host publishes the route, targets and entity summaries used by those predicates.
 
 ## Action confirmations
 
@@ -617,16 +617,12 @@ const unsubscribe = integration.subscribeActionLifecycle((event) => {
 });
 ```
 
-A generic chat can pass `onActionLifecycle` to `createAssistantActionExecutor`; an AG-UI chat passes it to `runWebSocketAgent` together with `executeTool` from `createHostAgentOptions`:
+A chat passes `onActionLifecycle` to `createAssistantActionExecutor` (or per call through `executeAction`'s third argument):
 
 ```ts
-const host = createHostAgentOptions(bridge, { signal, requestConfirmation });
-
-await runWebSocketAgent({
-  ...runOptions,
-  input: { ...runOptions.input, tools: host.tools, context: host.context },
-  executeTool: host.executeTool,
-  getHostState: host.getHostState,
+const executor = createAssistantActionExecutor(bridge, {
+  signal,
+  requestConfirmation,
   onActionLifecycle: (event, details) => {
     updateChatProgress(event, details?.args);
   },
@@ -635,19 +631,15 @@ await runWebSocketAgent({
 
 Events are generated once by the executor and forwarded through the direct/iframe bridge to the host. `AssistantBridgeClient.publishActionLifecycle` and `subscribeActionLifecycle` are optional for custom clients; built-in clients implement both. Custom clients without them still get executor-local callbacks but cannot forward them without implementing these methods. Unsubscribe when your observer ends; `integration.dispose()` clears host observers.
 
-The AG-UI adapter supplies optional execution metadata as the third `executeTool(name, args, execution)` argument: an execution ID, `toolCallId` and lifecycle listener. The SDK executor handles it. Custom execute functions may ignore it, but must delegate or implement that metadata callback to produce lifecycle events. The AG-UI adapter does not generate a second lifecycle. Chat UIs can use `onToolActivity` or `onActionLifecycle`.
+`executeAction(name, args, execution)` accepts optional execution metadata: an execution ID, the backend's `toolCallId` and a lifecycle listener. Backend adapters pass the tool call ID so lifecycle events, approvals and diagnostics correlate with the backend's tool call.
 
-Confirmation requests include the same optional execution ID. Dispatch envelopes and integration timeline entries carry that ID, correlating approval, bridge request/result diagnostics and AG-UI tool calls. `succeeded` means host dispatch and configured context readiness completed. Rejection/failed validation before dispatch never invokes the handler. Abort produces one `cancelled` terminal event even when a confirmation callback ignores the signal; late promise completion does not turn it into success.
+Confirmation requests include the same optional execution ID. Dispatch envelopes and integration timeline entries carry that ID, correlating approval, bridge request/result diagnostics and backend tool calls. `succeeded` means host dispatch and configured context readiness completed. Rejection/failed validation before dispatch never invokes the handler. Abort produces one `cancelled` terminal event even when a confirmation callback ignores the signal; late promise completion does not turn it into success.
 
 `dispatched: true` conservatively means the execution entered its dispatch phase. Cancellation at/after that point does not prove the business operation stopped, failed, or rolled back; inspect current data before retrying a mutation. A failure may also come from post-dispatch readiness. These events are trusted-client telemetry, not authorization, exactly-once business delivery or proof of a database write. The SDK does not retry automatically.
 
 Wire events contain no arguments or return values. Errors use the shared safe catalog. Local listener `details.args` is a separate cloned presentation snapshot, never forwarded or added to diagnostics. Observer exceptions do not change action outcomes. The host validates event shape, sequence and transitions, ignores duplicate/terminal updates, and retains at most 256 execution states for telemetry validation. This bounded history is cleared on disposal; disconnected hosts or states evicted from that window may miss later telemetry. Do not use this stream as an audit database.
 
-This lifecycle belongs to the host/chat bridge, not to the BFF AG-UI/WebSocket/STOMP contract. Visual labels, toasts, history persistence and business decisions remain application-owned.
-
-## Action progress
-
-`createChatSession` (in `/ag-ui`) keeps per-message action progress as `ActionProgressEntry` items. The reducer upserts by `actionExecutionId`, preserves list order, ignores duplicate/older sequences and never resurrects terminal entries. Canonical ID/status/sequence/dispatch/error fields come from the lifecycle event; presentation fields remain consumer-owned. Inputs are not mutated; ignored updates return the original array. Finalization changes only unfinished entries, preserving completed/rejected/cancelled outcomes and the dispatch uncertainty flag. The `stopped` status is also supported for saved chat histories.
+This lifecycle belongs to the host/chat bridge, not to the chat's backend protocol. Visual labels, toasts, history persistence and business decisions remain application-owned.
 
 ## Action schemas
 
@@ -661,7 +653,7 @@ No separate hand-maintained JSON Schema is required. Custom types that Zod canno
 
 Requests that fail (`requestHostAction`, `executeAction`, host commands) reject with an `Error` that also carries `code`, `message` and, where allowed, `reason`. Both `error instanceof Error` and `error.code` work; the message is the safe one described here.
 
-Registry execution, same-window command handlers, request/result channels, iframe transport and AG-UI host tool outcomes use this policy. SDK readiness waits emit `TIMEOUT`; unavailable actions and missing UI targets have explicit codes. `ACTION_REJECTED` is the SDK error code for user rejection. The AG-UI adapter checks codes instead of guessing categories from arbitrary message text. Provider/run errors remain a separate BFF concern; this API normalizes integration failures, not arbitrary provider-specific codes.
+Registry execution, same-window command handlers, request/result channels and the iframe transport use this policy. SDK readiness waits emit `TIMEOUT`; unavailable actions and missing UI targets have explicit codes. `ACTION_REJECTED` is the SDK error code for user rejection. Backend adapters should check codes instead of guessing categories from message text. Provider/run errors remain a separate backend concern; this API normalizes integration failures, not arbitrary provider-specific codes.
 
 Host handlers should throw an error/object with a supported `code`. Handler messages are not part of the public error contract. Inspect `code` for branching and translate it in application UI if needed. Unknown custom codes are intentionally not transported unchanged.
 
@@ -678,8 +670,8 @@ throw createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE, {
 
 The reason code is host-owned (uppercase letters, digits and underscores, up to 64 characters).
 Its message is explicitly public text, limited to 300 characters: never include secrets, raw API
-responses or exception details. Valid reasons survive direct/iframe errors and become structured
-AG-UI tool result content for the model. Other errors and invalid reasons retain safe catalog messages.
+responses or exception details. Valid reasons survive direct/iframe errors, so a chat can pass them to the model as
+the tool result. Other errors and invalid reasons retain safe catalog messages.
 The SDK does not interpret business codes or navigate automatically. No reason is required.
 
 When a handler's own error messages are already safe for the user, such as validation messages from your backend, set `exposeErrorMessages` instead of wrapping every handler:
@@ -753,6 +745,6 @@ integration.dispose();
 
 `useHostIntegration` calls `dispose()` automatically on final unmount while preserving Strict Mode replay behavior. `IntegrationProvider` only shares the instance and does not dispose an externally supplied integration. Component-level connection cleanup remains safe to call before or after the integration is disposed.
 
-`integration.bridge.signal` and optional `AssistantBridgeClient.signal` indicate SDK lifetime termination. Built-in clients provide the signal; custom clients can omit it for compatibility. Readiness waits listen to both caller cancellation and client lifetime. The iframe port sends an internal `disconnect` notification so the chat-side client can reject pending requests and abort its lifetime signal. This is part of the host/chat bridge, not the BFF AG-UI transport contract.
+`integration.bridge.signal` and optional `AssistantBridgeClient.signal` indicate SDK lifetime termination. Built-in clients provide the signal; custom clients can omit it for compatibility. Readiness waits listen to both caller cancellation and client lifetime. The iframe port sends an internal `disconnect` notification so the chat-side client can reject pending requests and abort its lifetime signal. This is part of the host/chat bridge, not the chat's backend protocol.
 
 Disposal does not remove host DOM, unload federation runtime caches, cancel arbitrary already-running handler promises, roll back completed mutations or stop independently owned BFF/model runs. Confirmation UI and per-run cancellation remain owned by the chat application. The SDK prevents later dispatch after an awaited confirmation if its client lifetime ended.

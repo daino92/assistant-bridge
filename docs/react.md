@@ -213,7 +213,7 @@ const integration = useAssistantIntegration({
 });
 ```
 
-Use `integration.context` and `integration.isConnected` for host state. Await `integration.executeHostAction(name, payload)` for backend-originated host requests. Render `integration.confirmation` with `approve`/`reject`, or supply `actions.requestConfirmation` for an existing approval UI. AG-UI consumers can pass `integration.bridge` and `integration.requestConfirmation` to their existing session. See the [existing chat integration guide](existing-chat.md) for lifecycle, backend protocol boundaries, and Commercebot/Tell-a-story adapter mappings.
+Use `integration.context` and `integration.isConnected` for host state. Await `integration.executeHostAction(name, payload)` for backend-originated host requests. Render `integration.confirmation` with `approve`/`reject`, or supply `actions.requestConfirmation` for an existing approval UI. Backend adapters (AG-UI or other) can pass `integration.bridge` and `integration.requestConfirmation` to `createAssistantActionExecutor`. See the [existing chat integration guide](existing-chat.md) for lifecycle, backend protocol boundaries, and Commercebot/Tell-a-story adapter mappings.
 
 ## Assistant-side hooks
 
@@ -265,16 +265,13 @@ With a page catalog, `AssistantHost` publishes the page for you. To ask the assi
 ## Action confirmation UI
 
 ```tsx
+import { createAssistantActionExecutor } from 'assistant-bridge';
 import { useActionConfirmation } from 'assistant-bridge/react';
-import { createHostAgentOptions } from 'assistant-bridge/ag-ui';
 
 const { confirmation, requestConfirmation, approve, reject } = useActionConfirmation();
 
-// During run setup; the executor supplies its combined cancellation signal:
-const hostOptions = createHostAgentOptions(bridge, {
-  signal: runController.signal,
-  requestConfirmation,
-});
+// The executor asks through requestConfirmation and supplies its cancellation signal:
+const executor = createAssistantActionExecutor(bridge, { signal, requestConfirmation });
 
 // Render your own card with confirmation, approve and reject.
 ```

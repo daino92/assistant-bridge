@@ -23,13 +23,10 @@ Zod is installed with the package. Add `zod` to your own dependencies only when 
 | `/react`            | `react@^19.3.0`                       |
 | `/federation`       | `@module-federation/runtime@2.9.2`    |
 | `/react/federation` | Both React and the federation runtime |
-| `/ag-ui`            | None                                  |
 
 React applications also supply their renderer, such as React DOM.
 
 `assistant-bridge/contracts` holds only the wire contract: message and context schemas, command and action names, error codes and `PROTOCOL_VERSION`. Import it when you need the types or need to validate messages yourself without the runtime.
-
-> **Security note:** `@ag-ui/client@^1.0.4` takes Zod as a peer dependency (`^3.25.18 || ^4.0.0`), so it shares the patched Zod 4 this package installs. No package-manager override is needed. Remove any `zod` override added for earlier betas.
 
 ## Minimal example
 
@@ -105,8 +102,7 @@ Start with these. Most hosts and chats need nothing else.
 │  └─ <a href="docs/core.md#integration-errors">createIntegrationError, ERROR_CODES</a>
 └─ Chat
    ├─ <a href="docs/chat-quick-start.md">useAssistantIntegration</a>                   (/react)
-   ├─ <a href="docs/react.md#action-confirmation-ui">useActionConfirmation</a>                     (/react)
-   └─ <a href="docs/ag-ui.md#chat-session">createChatSession</a>                         (/ag-ui, AG-UI backends only)
+   └─ <a href="docs/react.md#action-confirmation-ui">useActionConfirmation</a>                     (/react)
 </pre>
 
 <details>
@@ -135,13 +131,8 @@ Use these only when `AssistantHost` or `useAssistantIntegration` does not fit, f
 │  └─ <a href="docs/react.md#assistant-side-hooks">useAssistantIframeConnection, useAssistantContext, useAssistantCommandHandler</a>
 ├─ assistant-bridge/react/federation
 │  └─ <a href="docs/react.md#ready-made-federated-react-component">FederatedAssistant</a>
-├─ assistant-bridge/federation
-│  └─ <a href="docs/federation.md">connectFederatedAssistant</a>
-└─ assistant-bridge/ag-ui
-   ├─ <a href="docs/ag-ui.md#agent-client">runWebSocketAgent, WebSocketAgent</a>
-   ├─ <a href="docs/ag-ui.md#host-tools-and-context">createHostAgentOptions</a>
-   ├─ <a href="docs/ag-ui.md#chat-run-controller">createChatRunController</a>
-   └─ <a href="docs/ag-ui.md#run-errors">describeRunError, RUN_ERROR_CODES</a>
+└─ assistant-bridge/federation
+   └─ <a href="docs/federation.md">connectFederatedAssistant</a>
 </pre>
 
 </details>
@@ -154,8 +145,6 @@ Use these only when `AssistantHost` or `useAssistantIntegration` does not fit, f
 - [Core API](docs/core.md): actions, context, commands, connections and errors
 - [React](docs/react.md): provider, hooks and ready-made components
 - [Module Federation](docs/federation.md): framework-agnostic remote loading
-- [AG-UI client](docs/ag-ui.md): agent client, STOMP and headless chat
-- [AG-UI protocol](docs/ag-ui-protocol.md): wire contract for compatible backends
 - [Contributing](CONTRIBUTING.md): development, checks and releases
 
 ## License

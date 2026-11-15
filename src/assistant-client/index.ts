@@ -34,12 +34,6 @@ export {
 } from './action-confirmation-controller';
 
 export {
-  reduceActionProgress,
-  finalizeActionProgress,
-  type ActionProgressEntry,
-} from './action-progress';
-
-export {
   createAssistantCommandDispatcher,
   type AssistantCommandCallbacks,
 } from './assistant-command-dispatcher';
