@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Docs: the host quick start and the README now start from `AssistantHost`, and the quick start
+  no longer calls the internal bridge. New chat quick start. Lower-level APIs are grouped as
+  advanced. No API changes.
+
 ## 0.1.0-beta.5
 
 - `definePageCatalog` entries accept `path`, `match: 'prefix'`, `needs` and `params`. New

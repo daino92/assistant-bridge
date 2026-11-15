@@ -1,177 +1,155 @@
 # React host quick start
 
-A minimal host integration using the current SDK API. This example uses React Router and an existing assistant application. It does not implement the chat itself.
+A minimal React host with `AssistantHost`. It uses React Router and an existing assistant application; it does not implement the chat. For the chat side, see the [chat quick start](chat-quick-start.md).
 
-## 1. Dependencies
+A host needs four things:
+
+1. A page catalog.
+2. `AssistantHost` around the app.
+3. The actions the assistant may request.
+4. The chat, embedded.
+
+Everything else (bridge, context store, action registry, request correlation, timeouts and cleanup) stays inside the SDK.
+
+## 1. Install
 
 ```bash
 pnpm add assistant-bridge@beta
 ```
 
-React adapters require `react@^19.3.0`. Federation adapters additionally require
-`@module-federation/runtime@2.9.2`.
+`/react` requires `react@^19.3.0`. Add `zod` to your own dependencies only when your code defines action schemas.
 
-The host also supplies React and React DOM. This example uses React Router.
+## 2. Describe the pages
 
-## 2. Create the provider and declare allowed actions
+`pages.ts`:
 
-`HostIntegrationProvider.tsx`:
+```ts
+import { definePageCatalog } from 'assistant-bridge';
 
-```tsx
-import { useEffect, type ReactNode } from 'react';
-import { createUiActions } from 'assistant-bridge';
-import { IntegrationProvider, useHostIntegration } from 'assistant-bridge/react';
-import { useLocation, useNavigate } from 'react-router-dom';
-
-interface HostIntegrationProviderProps {
-  children: ReactNode;
-}
-
-const HostIntegrationProvider = ({ children }: HostIntegrationProviderProps) => {
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
-  const integration = useHostIntegration({
-    actions: ({ targets }) =>
-      createUiActions({
-        navigation: { navigate, allowedRoutes: ['/', '/catalog'] },
-        targets: { registry: targets, enable: ['highlight', 'focus'] },
-      }),
-  });
-
-  useEffect(() => {
-    integration.updatePage({
-      route: pathname,
-      page: {
-        title: pathname === '/catalog' ? 'Catalog' : 'Dashboard',
-        type: pathname === '/catalog' ? 'catalog-list' : 'dashboard',
-      },
-      selection: 'clear',
-    });
-  }, [integration, pathname]);
-
-  return <IntegrationProvider integration={integration}>{children}</IntegrationProvider>;
-};
-
-export default HostIntegrationProvider;
+export const pages = definePageCatalog({
+  dashboard: { title: 'Dashboard', type: 'dashboard', path: '/' },
+  catalog: { title: 'Catalog', type: 'catalog-list' },
+});
 ```
 
-Only the declared actions are enabled. Add business actions with `defineAction()` alongside `...createUiActions(...)`. Add `details: { open: openDetails }` when the host supplies detail navigation. Keep factories pure: return definitions without executing application behavior.
+Each page gets the path `/<key>` unless it sets `path`. The catalog gives the assistant the page titles, the places it can open and the `ui.navigate` action. See [page catalog](core.md#define-page-catalog) for permissions (`needs`), query parameters (`params`) and sub-routes (`match: 'prefix'`).
 
-`useHostIntegration` owns instance lifetime and cleanup. Do not destroy it manually. The host publishes page changes and decides whether to clear or preserve selection; the SDK does not watch the router.
+## 3. Wrap the app
 
-## 3. Register a UI target and publish selection
+`AssistantProvider.tsx`:
+
+```tsx
+import type { ReactNode } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { AssistantHost } from 'assistant-bridge/react';
+
+import { createActions } from './actions';
+import { pages } from './pages';
+
+const AssistantProvider = ({ children }: { children: ReactNode }) => {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+
+  return (
+    <AssistantHost
+      pages={pages}
+      router={{ pathname, navigate: (path) => navigate(path) }}
+      actions={createActions}
+      highlight
+    >
+      {children}
+    </AssistantHost>
+  );
+};
+
+export default AssistantProvider;
+```
+
+`pages` and `router` are the only required props. `AssistantHost` publishes the current page whenever `pathname` changes, registers `ui.navigate` and your actions, and disposes everything on unmount. Inline callbacks are fine: the latest `navigate` and `actions` are always used.
+
+Optional props you will likely need later:
+
+| Prop                    | Use it for                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------- |
+| `principal`             | The user's permissions, to hide pages and actions they cannot use. Not authorization.       |
+| `entities`              | Data shared by every page, such as the current workspace.                                   |
+| `beforeNavigate`        | Business rules before the assistant opens a page; throw `createIntegrationError` to refuse. |
+| `actionDeps`            | A memoized value your actions depend on; they re-register when it changes.                  |
+| `connection="embedded"` | A chat rendered in the same React tree. See [step 6](#6-embed-the-chat).                    |
+| `highlight`             | A default outline for highlighted targets.                                                  |
+
+The full list is in the [React reference](react.md#assistanthost).
+
+## 4. Declare the actions
+
+`actions.ts`:
+
+```ts
+import { z } from 'zod';
+import { defineAction, type HostActionInput } from 'assistant-bridge';
+import type { AssistantHostApi } from 'assistant-bridge/react';
+
+export const createActions = ({ navigate }: AssistantHostApi): HostActionInput[] => [
+  defineAction({
+    name: 'catalog.search',
+    description: 'Open the catalog filtered by a search term.',
+    schema: z.object({ term: z.string().min(1).max(100) }).strict(),
+    handler: ({ term }) => navigate(`/catalog?search=${encodeURIComponent(term)}`),
+  }),
+];
+```
+
+The assistant can request only the actions you return. The SDK validates every payload against `schema` before your handler runs. Set `requiresConfirmation: true` for changes the user must approve, and `available` to offer an action only on some pages. Your backend still authorizes every operation.
+
+To refuse with a reason the user may see, throw `createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE, { code: 'OFFER_REQUIRED', message: 'Choose an offer first.' })`. Other handler errors reach the assistant as a generic `EXECUTION_FAILED`.
+
+## 5. Mark targets and publish page data
 
 `CatalogPage.tsx`:
 
 ```tsx
-import { useCallback } from 'react';
-import { useIntegration, useUiTarget } from 'assistant-bridge/react';
+import { usePageEntities, useUiTarget } from 'assistant-bridge/react';
 
-const CatalogPage = () => {
-  const { bridge } = useIntegration();
-  const { ref, highlighted } = useUiTarget<HTMLInputElement>('catalog-search');
+const CatalogPage = ({ product }: { product: Product }) => {
+  const { ref } = useUiTarget<HTMLInputElement>('catalog-search', { label: 'Search' });
 
-  const selectItem = useCallback(() => {
-    bridge.publishEntitySelected('catalog', 'product-001');
-  }, [bridge]);
+  usePageEntities([{ type: 'product', id: product.id, label: product.name }]);
 
   return (
     <main>
       <h1>Catalog</h1>
-      <input
-        ref={ref}
-        aria-label="Search catalog"
-        style={{ outline: highlighted ? '2px solid #2563EB' : undefined }}
-      />
-      <button onClick={selectItem}>Select product 001</button>
+      <input ref={ref} aria-label="Search catalog" />
     </main>
   );
 };
-
-export default CatalogPage;
 ```
 
-The assistant can request `ui.focus` or `ui.highlight` with `{ targetId: 'catalog-search' }` while this target is mounted. IDs and highlight styling belong to the host. The hook unregisters the target on unmount. Selection updates are delivered to the assistant as context; they do not submit a prompt.
+- `useUiTarget` lets the assistant point at the control (`ui.highlight`, `ui.scrollTo`, `ui.focus`) while it is mounted. With `highlight` on `AssistantHost`, highlighted elements get an outline; otherwise style `[data-assistant-highlight]` yourself.
+- `usePageEntities` tells the assistant what the page shows, and removes it on unmount. Publish only data the user may see.
 
-## 4. Render the iframe assistant
+Both hooks do nothing outside `AssistantHost`, so shared components can use them unconditionally.
 
-`AssistantPanel.tsx`:
+## 6. Embed the chat
+
+Pick one, depending on where the chat runs.
+
+**Same React tree.** Set `connection="embedded"` on `AssistantHost` and pass the connection to the chat:
 
 ```tsx
-import { AssistantEmbed, useAssistantPanel } from 'assistant-bridge/react';
+import { useAssistantHost } from 'assistant-bridge/react';
 
-const AssistantPanel = () => {
-  const { open, openPanel, closePanel, status, onStatus, attempt, reconnect } = useAssistantPanel();
+const ChatSlot = () => {
+  const embedded = useAssistantHost()?.embedded;
 
-  return (
-    <>
-      <button onClick={openPanel}>Open assistant</button>
-      <section hidden={!open} aria-label="Assistant panel">
-        <button onClick={closePanel}>Close assistant</button>
-        <p role="status">{status}</p>
-        <AssistantEmbed
-          config={{
-            mode: 'iframe',
-            iframe: {
-              url: 'http://localhost:5174/',
-              title: 'Assistant',
-              style: { width: '100%', height: 600, border: 0 },
-            },
-          }}
-          onStatus={onStatus}
-          attempt={attempt}
-        />
-        {status === 'error' && <button onClick={reconnect}>Reconnect</button>}
-      </section>
-    </>
-  );
+  return embedded ? <Chat bridge={embedded.bridge} onReady={embedded.onReady} /> : null;
 };
-
-export default AssistantPanel;
 ```
 
-The assistant stays mounted when the panel is hidden, so it can receive commands. `useAssistantPanel` handles visibility commands and retry state; the component handles the iframe handshake and connection cleanup. The host supplies its own layout and loading/error UI. Replace the local URL with your deployed chat URL for production.
-
-## 5. Compose the host
-
-`App.tsx` (assuming these files are exported through the host's folder barrels):
+**Separate application, Module Federation:**
 
 ```tsx
-import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
+import { AssistantEmbed } from 'assistant-bridge/react';
 
-import { HostIntegrationProvider } from '@/app/providers';
-import { AssistantPanel } from '@/components';
-import { CatalogPage } from '@/features';
-
-const App = () => {
-  return (
-    <BrowserRouter>
-      <HostIntegrationProvider>
-        <nav>
-          <Link to="/">Dashboard</Link>
-          <Link to="/catalog">Catalog</Link>
-        </nav>
-        <Routes>
-          <Route path="/" element={<h1>Dashboard</h1>} />
-          <Route path="/catalog" element={<CatalogPage />} />
-        </Routes>
-        <AssistantPanel />
-      </HostIntegrationProvider>
-    </BrowserRouter>
-  );
-};
-
-export default App;
-```
-
-Mount `App` using the host's normal React entry point. The provider must be inside the router and above both target components and the assistant.
-
-## Alternative: Module Federation
-
-Keep the provider, routes, targets, panel hook and component import. Change only the `AssistantEmbed` configuration:
-
-```tsx
-// Inside the same panel, using attempt and onStatus from useAssistantPanel():
 <AssistantEmbed
   config={{
     mode: 'federation',
@@ -179,28 +157,55 @@ Keep the provider, routes, targets, panel hook and component import. Change only
       runtimeName: 'host_app',
       remoteName: 'assistant_chat',
       exposedModule: 'EmbeddedAssistant',
-      entry: 'http://localhost:5174/remoteEntry.js',
+      entry: 'https://chat.example.com/remoteEntry.js',
     },
     loadAdapter: () => import('assistant-bridge/react/federation'),
   }}
-  attempt={attempt}
-  onStatus={onStatus}
+  onStatus={setStatus}
+/>;
+```
+
+The host also installs `@module-federation/runtime@2.9.2` and configures its build plugin; `runtimeName` must match it. See [federation](federation.md).
+
+**Separate application, other origin (iframe):**
+
+```tsx
+<AssistantEmbed
+  config={{ mode: 'iframe', iframe: { url: 'https://chat.example.com/', title: 'Assistant' } }}
+  onStatus={setStatus}
 />
 ```
 
-The host must also supply `@module-federation/runtime` and initialize federation through its build plugin with compatible shared React dependencies. The `runtimeName` must match the host plugin name, and the remote name and exposure must match the assistant build.
+The SDK performs the origin-checked handshake. `onStatus` receives `loading`, `ready` or `error`, so the host can show its own loading and error UI. For an open/close panel with a retry button, see `useAssistantPanel` and [unified embedding](react.md#unified-assistant-embedding).
 
-`AssistantEmbed` calls `loadAdapter` only when federation mode is selected. The import lives in host code, so `assistant-bridge/react` never references the federation runtime: a host that only uses iframes builds without `@module-federation/runtime`. The federation adapter expects a default React component accepting `EmbeddedAssistantOptions`; it supplies the restricted bridge client and command readiness callback. The remote must implement that contract. See [unified embedding](react.md#unified-assistant-embedding) for retry and timeout behavior.
+## 7. Ask the assistant from the host
 
-## Responsibility cheat sheet
+```tsx
+import { useAssistantHost } from 'assistant-bridge/react';
 
-| Host supplies                                         | SDK handles                                          |
-| ----------------------------------------------------- | ---------------------------------------------------- |
-| Allowed actions, routes and business callbacks        | Payload validation, dispatch and request correlation |
-| Current page and selection policy                     | Context publication and capability synchronization   |
-| Target IDs, DOM elements and styles                   | Target registration and action dispatch to targets   |
-| Chat URL or federation configuration                  | Connection readiness, timeouts and cleanup           |
-| Panel layout, loading/error messages and retry button | Visibility command subscriptions and retry state     |
-| A compatible assistant application                    | Host/assistant communication contracts               |
+const AskButton = () => {
+  const host = useAssistantHost();
 
-For host-to-assistant commands such as `askAbout()` and `prefillAndOpen()`, see the [Core API](core.md#send-commands-from-the-host). For lifecycle details and assistant-side hooks, see the [React reference](react.md).
+  return (
+    <button onClick={() => void host?.ask('Summarize this page').catch(showError)}>
+      Ask the assistant
+    </button>
+  );
+};
+```
+
+`ask` opens the chat and submits the prompt. It rejects when no assistant is connected.
+
+## Responsibilities
+
+| Host supplies                              | SDK handles                                             |
+| ------------------------------------------ | ------------------------------------------------------- |
+| Pages, router callbacks and business rules | Page context, destinations and `ui.navigate`            |
+| Actions, schemas and handlers              | Payload validation, availability, approval and timeouts |
+| Target IDs, elements and styles            | Target registration and highlight/scroll/focus          |
+| Panel layout, loading and error UI         | Connection handshake, readiness and cleanup             |
+| A compatible chat application              | The host/assistant contract                             |
+
+## Without React, or with full control
+
+`AssistantHost` is built from `createHostIntegration`, `useHostIntegration` and `useHostPageContext`. Use them directly only when you need behavior `AssistantHost` does not offer; see the [Core API](core.md) and [React reference](react.md#managed-host-integration).

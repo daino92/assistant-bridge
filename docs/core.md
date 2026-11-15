@@ -2,6 +2,8 @@
 
 The framework-independent API of `assistant-bridge`. It has no React, federation or AG-UI imports.
 
+> **React host?** You need only `definePageCatalog`, `defineAction` and `createIntegrationError` from this page, together with `AssistantHost`; see the [host quick start](quick-start.md). The rest of this page is for hosts without React and for cases `AssistantHost` does not cover.
+
 <pre>
 ├─ Overview
 │  └─ <a href="#building-blocks">HostActionRegistry, HostContextManager, UiTargetRegistry, HostBridge, TypedEventBus, RequestResponseChannel</a>

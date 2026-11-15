@@ -30,26 +30,47 @@ React applications also supply their renderer, such as React DOM.
 
 ## Minimal example
 
-```ts
-import { createHostIntegration } from 'assistant-bridge';
+A React host describes its pages, wraps the app and declares what the assistant may do:
 
-const integration = createHostIntegration({
-  actions: [],
+```tsx
+import { z } from 'zod';
+import { defineAction, definePageCatalog } from 'assistant-bridge';
+import { AssistantHost } from 'assistant-bridge/react';
+
+const pages = definePageCatalog({
+  dashboard: { title: 'Dashboard', type: 'dashboard', path: '/' },
+  catalog: { title: 'Catalog', type: 'catalog-list' },
 });
 
-integration.updatePage({
-  route: '/dashboard',
-  page: { title: 'Dashboard', type: 'dashboard' },
-});
+const App = () => {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
 
-// Give the assistant only integration.assistantClient.
-// Register host actions explicitly before allowing assistant-driven changes.
-
-// When the host integration is no longer needed:
-integration.dispose();
+  return (
+    <AssistantHost
+      pages={pages}
+      router={{ pathname, navigate: (path) => navigate(path) }}
+      actions={() => [
+        defineAction({
+          name: 'catalog.search',
+          description: 'Open the catalog filtered by a search term.',
+          schema: z.object({ term: z.string().min(1) }),
+          handler: ({ term }) => navigate(`/catalog?search=${encodeURIComponent(term)}`),
+        }),
+      ]}
+    >
+      <Routes>{/* … */}</Routes>
+    </AssistantHost>
+  );
+};
 ```
 
-For a complete integration with an iframe or Module Federation, see the [quick start](docs/quick-start.md).
+The assistant now sees the current page, can open catalog pages through `ui.navigate`, and can request `catalog.search`. The SDK validates every request before the handler runs and cleans up on unmount.
+
+Next steps:
+
+- [Host quick start](docs/quick-start.md): targets, page data, permissions and embedding the chat.
+- [Chat quick start](docs/chat-quick-start.md): the chat side.
 
 ## How it works
 
@@ -69,10 +90,31 @@ Assistant-to-host actions and host-to-assistant commands use protocol version `1
 
 ## API overview
 
+Start with these. Most hosts and chats need nothing else.
+
+<pre>
+├─ Host
+│  ├─ <a href="docs/react.md#assistanthost">AssistantHost, useAssistantHost</a>              (/react)
+│  ├─ <a href="docs/core.md#define-page-catalog">definePageCatalog</a>
+│  ├─ <a href="docs/core.md#define-host-actions">defineAction</a>
+│  ├─ <a href="docs/react.md#ui-targets">useUiTarget, usePageEntities</a>              (/react)
+│  ├─ <a href="docs/react.md#unified-assistant-embedding">AssistantEmbed</a>                            (/react)
+│  └─ <a href="docs/core.md#integration-errors">createIntegrationError, ERROR_CODES</a>
+└─ Chat
+   ├─ <a href="docs/chat-quick-start.md">useAssistantIntegration</a>                   (/react)
+   ├─ <a href="docs/react.md#action-confirmation-ui">useActionConfirmation</a>                     (/react)
+   └─ <a href="docs/ag-ui.md#chat-session">createChatSession</a>                         (/ag-ui, AG-UI backends only)
+</pre>
+
+<details>
+<summary>Advanced: lower-level building blocks</summary>
+
+Use these only when `AssistantHost` or `useAssistantIntegration` does not fit, for example in a host without React. They are the parts those two are built from, and they are more likely to change before 1.0.
+
 <pre>
 ├─ assistant-bridge (core)
 │  ├─ <a href="docs/core.md#create-the-host-integration">createHostIntegration</a>
-│  ├─ <a href="docs/core.md#define-host-actions">defineAction, createUiActions</a>
+│  ├─ <a href="docs/core.md#compose-common-ui-actions">createUiActions</a>
 │  ├─ <a href="docs/core.md#update-the-page">updatePage, mapHostEntities</a>
 │  ├─ <a href="docs/core.md#use-the-client-inside-the-assistant">AssistantBridgeClient</a>
 │  ├─ <a href="docs/core.md#send-commands-from-the-host">assistantCommands</a>
@@ -81,18 +123,13 @@ Assistant-to-host actions and host-to-assistant commands use protocol version `1
 │  ├─ <a href="docs/core.md#execute-actions-from-the-assistant">createAssistantActionExecutor</a>
 │  ├─ <a href="docs/core.md#action-confirmations">createActionConfirmationController</a>
 │  ├─ <a href="docs/core.md#action-lifecycle">subscribeActionLifecycle</a>
-│  ├─ <a href="docs/core.md#integration-errors">createIntegrationError</a>
 │  └─ <a href="docs/core.md#dispose-the-integration">integration.dispose</a>
 ├─ assistant-bridge/react
-│  ├─ <a href="docs/react.md#assistanthost">AssistantHost, useAssistantHost, usePageEntities</a>
 │  ├─ <a href="docs/react.md">IntegrationProvider, useIntegration, useOptionalIntegration</a>
 │  ├─ <a href="docs/react.md#managed-host-integration">useHostIntegration</a>
-│  ├─ <a href="docs/react.md#ui-targets">useUiTarget</a>
 │  ├─ <a href="docs/react.md#assistant-panel-behavior">useAssistantPanel</a>
-│  ├─ <a href="docs/react.md#unified-assistant-embedding">AssistantEmbed</a>
 │  ├─ <a href="docs/react.md#ready-made-iframe-component">AssistantIframe</a>
-│  ├─ <a href="docs/react.md#assistant-side-hooks">useAssistantIframeConnection, useAssistantContext, useAssistantCommandHandler</a>
-│  └─ <a href="docs/react.md#action-confirmation-ui">useActionConfirmation</a>
+│  └─ <a href="docs/react.md#assistant-side-hooks">useAssistantIframeConnection, useAssistantContext, useAssistantCommandHandler</a>
 ├─ assistant-bridge/react/federation
 │  └─ <a href="docs/react.md#ready-made-federated-react-component">FederatedAssistant</a>
 ├─ assistant-bridge/federation
@@ -101,13 +138,16 @@ Assistant-to-host actions and host-to-assistant commands use protocol version `1
    ├─ <a href="docs/ag-ui.md#agent-client">runWebSocketAgent, WebSocketAgent</a>
    ├─ <a href="docs/ag-ui.md#host-tools-and-context">createHostAgentOptions</a>
    ├─ <a href="docs/ag-ui.md#chat-run-controller">createChatRunController</a>
-   ├─ <a href="docs/ag-ui.md#chat-session">createChatSession</a>
    └─ <a href="docs/ag-ui.md#run-errors">describeRunError, RUN_ERROR_CODES</a>
 </pre>
 
+</details>
+
 ## Documentation
 
-- [Quick start](docs/quick-start.md): minimal React host integration
+- [Host quick start](docs/quick-start.md): a React host with `AssistantHost`
+- [Chat quick start](docs/chat-quick-start.md): the chat side of the connection
+- [Existing chat](docs/existing-chat.md): adapting a chat that has its own backend protocol
 - [Core API](docs/core.md): actions, context, commands, connections and errors
 - [React](docs/react.md): provider, hooks and ready-made components
 - [Module Federation](docs/federation.md): framework-agnostic remote loading
