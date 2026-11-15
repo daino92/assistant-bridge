@@ -30,8 +30,20 @@ export interface AssistantBridgeClient {
   ): Promise<unknown>;
 }
 
+/** Options for {@link HostAssistantCommands.askAbout}. */
+export interface AskOptions {
+  /** Entity the question is about; published to the assistant before the prompt. */
+  selection?: HostContext['selection'];
+  /** Extra data for the assistant, for example the text of the section the user asked about. */
+  metadata?: Record<string, unknown>;
+}
+
 export interface HostAssistantCommands {
-  askAbout(prompt: string, selection?: HostContext['selection']): Promise<unknown>;
+  /**
+   * Opens the assistant and submits the prompt. The second argument is either the selection
+   * (the original signature) or {@link AskOptions}.
+   */
+  askAbout(prompt: string, options?: AskOptions | HostContext['selection']): Promise<unknown>;
   prefillAndOpen(text: string): Promise<unknown>;
   open(): Promise<unknown>;
   close(): Promise<unknown>;
@@ -61,16 +73,29 @@ export const createAssistantBridgeClient = (bridge: HostBridge): AssistantBridge
   };
 };
 
+const toAskOptions = (options?: AskOptions | HostContext['selection']): AskOptions => {
+  if (!options) {
+    return {};
+  }
+
+  // A selection always has `type` and `id`; AskOptions has neither.
+  return 'type' in options && 'id' in options ? { selection: options } : options;
+};
+
 export const createHostAssistantCommands = (bridge: HostBridge): HostAssistantCommands => {
   const commands: HostAssistantCommands = {
-    askAbout: async (prompt, selection) => {
+    askAbout: async (prompt, options) => {
+      const { selection, metadata } = toAskOptions(options);
+
       if (selection) {
         bridge.publishEntitySelected(selection.type, selection.id);
       }
 
       await commands.open();
 
+      // The host's own fields win, so metadata cannot misreport the context revision.
       return commands.submitPrompt(prompt, {
+        ...metadata,
         contextRevision: bridge.getContextSnapshot()().revision,
         selection,
       });

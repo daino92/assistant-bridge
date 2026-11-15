@@ -428,7 +428,16 @@ await integration.assistantCommands.askAbout('Explain this item', { type: 'catal
 await integration.assistantCommands.prefillAndOpen('Review current selection');
 ```
 
-`askAbout` publishes an optional selection, opens the assistant, then submits the prompt with the current context revision. `prefillAndOpen` opens before prefilling. Use `askAbout(prompt)` for suggested-question links instead of chaining `open()` and `submitPrompt()` yourself; it also works outside React.
+`askAbout` publishes an optional selection, opens the assistant, then submits the prompt with the current context revision. Pass extra data for the assistant as `metadata`:
+
+```ts
+await integration.assistantCommands.askAbout('Why this offer?', {
+  selection: { type: 'offer', id },
+  metadata: { questionContext: offerSummary },
+});
+```
+
+The metadata reaches the receiver's `submitPrompt` handler next to `contextRevision` and `selection`, which the host sets and metadata cannot override. The second argument may still be a selection alone. `prefillAndOpen` opens before prefilling. Use `askAbout(prompt)` for suggested-question links instead of chaining `open()` and `submitPrompt()` yourself; it also works outside React.
 
 Suggested questions are host data. Filter them in host code by page and by what the signed-in user may do, then pass the chosen prompt to `askAbout`. The assistant does not need to know which suggestions were hidden. Both commands reject when no receiver is ready (for example when the assistant is disabled), so handle the rejection where the user clicked.
 
@@ -677,6 +686,21 @@ Its message is explicitly public text, limited to 300 characters: never include 
 responses or exception details. Valid reasons survive direct/iframe errors and become structured
 AG-UI tool result content for the model. Other errors and invalid reasons retain safe catalog messages.
 The SDK does not interpret business codes or navigate automatically. No reason is required.
+
+When a handler's own error messages are already safe for the user, such as validation messages from your backend, set `exposeErrorMessages` instead of wrapping every handler:
+
+```ts
+defineAction({
+  name: 'cms.publishEntry',
+  description: 'Publish an entry.',
+  schema: publishSchema,
+  requiresConfirmation: true,
+  exposeErrorMessages: true,
+  handler: ({ entryId }) => api.publish(entryId), // a thrown Error's message reaches the assistant
+});
+```
+
+An ordinary `Error` then becomes `ACTION_NOT_AVAILABLE` with reason code `ACTION_FAILED` and the error message (trimmed, at most 300 characters). Errors created with `createIntegrationError`, non-`Error` values and empty messages are handled as before. Without the option, handler messages never leave the host.
 
 ## Diagnostics, timeouts and failures
 

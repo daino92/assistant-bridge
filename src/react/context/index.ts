@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 
-import type { EmbeddedAssistantOptions } from '@/assistant-client';
+import type { AskOptions, EmbeddedAssistantOptions } from '@/assistant-client';
 import type { HostContext } from '@/contracts';
 import type { HostIntegration } from '@/create-host-integration';
 
@@ -21,8 +21,11 @@ export const useIntegration = (): HostIntegration => {
 
 export interface AssistantHostValue {
   integration: HostIntegration;
-  /** Opens the assistant and submits the prompt; rejects when no assistant is ready. */
-  ask: (prompt: string) => Promise<unknown>;
+  /**
+   * Opens the assistant and submits the prompt, with optional selection and metadata;
+   * rejects when no assistant is ready.
+   */
+  ask: (prompt: string, options?: AskOptions) => Promise<unknown>;
   /** Same-window connection when `connection="embedded"`, otherwise `null`. */
   embedded: EmbeddedAssistantOptions | null;
   /** Publishes the entities of one mounted page component; `null` removes them. */

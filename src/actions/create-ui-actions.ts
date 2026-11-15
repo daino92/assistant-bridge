@@ -44,6 +44,7 @@ export interface CreateUiActionsOptions {
     registry: UiTargetRegistry;
     enable: readonly UiTargetActionName[];
   };
+  /** @deprecated Demo `ui.openDetails` for fixed entity types; it will be removed in a future beta. Use `defineAction`. */
   details?: {
     open: Parameters<typeof openDetailsAction>[0]['openDetails'];
   };

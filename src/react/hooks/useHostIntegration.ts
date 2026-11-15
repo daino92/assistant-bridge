@@ -56,6 +56,7 @@ const registerActions = (managed: ManagedIntegration, actions: HostActionInput[]
       parametersSchema: action.schema,
       requiresConfirmation: action.requiresConfirmation ?? false,
       isAvailable: action.available,
+      exposeErrorMessages: action.exposeErrorMessages,
       handler: action.handler,
     });
   }

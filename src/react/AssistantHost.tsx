@@ -8,11 +8,22 @@ import {
   type ReactNode,
 } from 'react';
 
-import { navigateAction, type HostActionInput, type NavigateActionOptions } from '@/actions';
-import type { EmbeddedAssistantOptions } from '@/assistant-client';
+import {
+  navigateAction,
+  type HostActionInput,
+  type NavigateActionOptions,
+  type NavigateParams,
+} from '@/actions';
+import type { AskOptions, EmbeddedAssistantOptions } from '@/assistant-client';
 import type { UiTargetRegistry } from '@/capabilities';
 import { connectEmbeddedAssistant } from '@/connections';
-import type { HostContext, HostPrincipal, IntegrationTimelineEntry } from '@/contracts';
+import {
+  ERROR_CODES,
+  type HostContext,
+  type HostPrincipal,
+  type IntegrationTimelineEntry,
+} from '@/contracts';
+import { createIntegrationError } from '@/errors';
 import type { PageCatalog } from '@/host-context';
 import IntegrationProvider from '@/react/IntegrationProvider';
 import { AssistantHostContext, type AssistantHostValue } from '@/react/context';
@@ -22,13 +33,24 @@ import { HIGHLIGHT_ATTRIBUTE } from '@/react/hooks/useUiTarget';
 
 type HostEntities = NonNullable<HostContext['entities']>;
 
-/** The host router, reduced to what the assistant needs. */
-export interface AssistantHostRouter {
+/** A URL router, reduced to what the assistant needs. */
+export interface AssistantHostPathRouter {
   /** Current route (pathname only; keep query state out of it). */
   pathname: string;
   /** Opens a catalog path with validated parameters; see `queryNavigate`. */
   navigate: NavigateActionOptions['navigate'];
 }
+
+/** A host that switches pages by state instead of URL. */
+export interface AssistantHostPageRouter<TKey extends string> {
+  /** Key of the current page in the catalog. */
+  page: TKey;
+  /** Opens a catalog page, with validated parameters for pages that declare them. */
+  navigate: (page: TKey, params?: NavigateParams) => void | Promise<void>;
+}
+
+export type AssistantHostRouter<TKey extends string = string> =
+  AssistantHostPathRouter | AssistantHostPageRouter<TKey>;
 
 /** Passed to the `actions` factory. */
 export interface AssistantHostApi {
@@ -45,7 +67,8 @@ export interface AssistantHighlightOptions {
 export interface AssistantHostProps<TKey extends string> {
   /** Pages, their permissions and parameters; drives destinations and `ui.navigate`. */
   pages: PageCatalog<TKey>;
-  router: AssistantHostRouter;
+  /** `{ pathname, navigate }` for URL routers, or `{ page, navigate }` for state-based pages. */
+  router: AssistantHostRouter<NoInfer<TKey>>;
   /** The signed-in user's permissions. Not authorization: handlers and backends still check. */
   principal?: HostPrincipal | null;
   /** Domain actions. `ui.navigate` is added from `pages`. */
@@ -115,10 +138,31 @@ const AssistantHost = <TKey extends string>({
 }: AssistantHostProps<TKey>) => {
   // Router callbacks often change identity per render; actions call the latest ones.
   // A layout effect, because action registration also runs in one.
-  const latest = useRef({ navigate: router.navigate, beforeNavigate, actions });
+  const navigateTo = useMemo<NavigateActionOptions['navigate']>(() => {
+    if (!('page' in router)) {
+      return router.navigate;
+    }
+
+    const open = router.navigate;
+
+    // Paths come from the catalog, so every allowed path maps back to a page key.
+    return (path, params) => {
+      const key = pages.pageKeyFromRoute(path);
+
+      if (!key) {
+        throw createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE);
+      }
+
+      return params === undefined ? open(key) : open(key, params);
+    };
+  }, [pages, router]);
+
+  const pathname = 'page' in router ? pages.route(router.page) : router.pathname;
+
+  const latest = useRef({ navigate: navigateTo, beforeNavigate, actions });
 
   useLayoutEffect(() => {
-    latest.current = { navigate: router.navigate, beforeNavigate, actions };
+    latest.current = { navigate: navigateTo, beforeNavigate, actions };
   });
 
   const navigate = useCallback<NavigateActionOptions['navigate']>(
@@ -140,11 +184,11 @@ const AssistantHost = <TKey extends string>({
     [pages, permissionsKey, actionDeps],
   );
 
-  const pageKey = pages.pageKeyFromRoute(router.pathname);
+  const pageKey = pages.pageKeyFromRoute(pathname);
   const page = pageKey ? pages.pageMeta(pageKey) : fallbackPage;
 
   const integration = useHostIntegration({
-    initialRoute: router.pathname,
+    initialRoute: pathname,
     initialPage: page,
     commandTimeoutMs,
     actionTimeoutMs,
@@ -198,7 +242,7 @@ const AssistantHost = <TKey extends string>({
   );
 
   useHostPageContext(integration, {
-    route: router.pathname,
+    route: pathname,
     page: publishedPage,
     entities: allEntities,
     destinations,
@@ -223,7 +267,8 @@ const AssistantHost = <TKey extends string>({
   }, [connection, embeddedTimeoutMs, integration]);
 
   const ask = useCallback(
-    (prompt: string) => integration.assistantCommands.askAbout(prompt),
+    (prompt: string, options?: AskOptions) =>
+      integration.assistantCommands.askAbout(prompt, options),
     [integration],
   );
 

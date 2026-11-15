@@ -12,6 +12,8 @@ export {
   type AssistantHighlightOptions,
   type AssistantHostApi,
   type AssistantHostProps,
+  type AssistantHostPageRouter,
+  type AssistantHostPathRouter,
   type AssistantHostRouter,
 } from './AssistantHost';
 
@@ -28,7 +30,9 @@ export {
   useHostIntegration,
   type UseHostIntegrationOptions,
   useHostPageContext,
+  /** @deprecated Use `AssistantHost`, which publishes the page from the catalog. It will be removed in a future beta. */
   useHostPageContextFromCatalog,
+  /** @deprecated Use `useAssistantHost().ask`. It will be removed in a future beta. */
   useAskAi,
   useActionConfirmation,
   type HostPageContextOptions,

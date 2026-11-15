@@ -96,4 +96,34 @@ describe('assistant connection lifecycle', () => {
       ASSISTANT_COMMAND_NAMES.PREFILL,
     ]);
   });
+
+  it('passes metadata with askAbout options, and keeps the host revision', async () => {
+    const { integration, connection } = connect();
+    const handler = vi.fn((_request: AssistantCommandRequest) => 'ok');
+
+    connection.onReady(handler);
+
+    const selection = { type: 'record', id: '123' };
+
+    await integration.assistantCommands.askAbout('Explain this', {
+      selection,
+      metadata: { questionContext: 'Section text', contextRevision: -1 },
+    });
+
+    expect(handler.mock.calls[1][0].payload).toEqual({
+      prompt: 'Explain this',
+      metadata: {
+        questionContext: 'Section text',
+        selection,
+        contextRevision: integration.contextManager.getSnapshot().revision,
+      },
+    });
+
+    await integration.assistantCommands.askAbout('Plain question', {});
+
+    expect(handler.mock.calls[3][0].payload).toEqual({
+      prompt: 'Plain question',
+      metadata: { contextRevision: integration.contextManager.getSnapshot().revision },
+    });
+  });
 });

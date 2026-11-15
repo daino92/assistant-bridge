@@ -7,6 +7,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./contracts": {
+      "types": "./dist/contracts/public.d.ts",
+      "default": "./dist/contracts/public.js"
+    },
     "./react": {
       "types": "./dist/react/index.d.ts",
       "default": "./dist/react/index.js"

@@ -1,6 +1,7 @@
 export {
   createAssistantBridgeClient,
   createHostAssistantCommands,
+  type AskOptions,
   type AssistantBridgeClient,
   type EmbeddedAssistantOptions,
   type HostAssistantCommands,

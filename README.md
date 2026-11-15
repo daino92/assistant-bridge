@@ -19,12 +19,15 @@ Zod is installed with the package. Add `zod` to your own dependencies only when 
 | Entry point         | Additional peer dependencies          |
 | ------------------- | ------------------------------------- |
 | Core                | None                                  |
+| `/contracts`        | None (Zod only; no runtime)           |
 | `/react`            | `react@^19.3.0`                       |
 | `/federation`       | `@module-federation/runtime@2.9.2`    |
 | `/react/federation` | Both React and the federation runtime |
 | `/ag-ui`            | None                                  |
 
 React applications also supply their renderer, such as React DOM.
+
+`assistant-bridge/contracts` holds only the wire contract: message and context schemas, command and action names, error codes and `PROTOCOL_VERSION`. Import it when you need the types or need to validate messages yourself without the runtime.
 
 > **Security note:** `@ag-ui/client@^1.0.4` takes Zod as a peer dependency (`^3.25.18 || ^4.0.0`), so it shares the patched Zod 4 this package installs. No package-manager override is needed. Remove any `zod` override added for earlier betas.
 

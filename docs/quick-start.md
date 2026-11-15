@@ -65,6 +65,8 @@ const AssistantProvider = ({ children }: { children: ReactNode }) => {
 export default AssistantProvider;
 ```
 
+If your app switches pages by state rather than URL, pass `router={{ page: currentPageKey, navigate: openPage }}` instead; `openPage` receives a catalog key.
+
 `pages` and `router` are the only required props. `AssistantHost` publishes the current page whenever `pathname` changes, registers `ui.navigate` and your actions, and disposes everything on unmount. Inline callbacks are fine: the latest `navigate` and `actions` are always used.
 
 Optional props you will likely need later:
@@ -101,7 +103,7 @@ export const createActions = ({ navigate }: AssistantHostApi): HostActionInput[]
 
 The assistant can request only the actions you return. The SDK validates every payload against `schema` before your handler runs. Set `requiresConfirmation: true` for changes the user must approve, and `available` to offer an action only on some pages. Your backend still authorizes every operation.
 
-To refuse with a reason the user may see, throw `createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE, { code: 'OFFER_REQUIRED', message: 'Choose an offer first.' })`. Other handler errors reach the assistant as a generic `EXECUTION_FAILED`.
+To refuse with a reason the user may see, throw `createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE, { code: 'OFFER_REQUIRED', message: 'Choose an offer first.' })`. Other handler errors reach the assistant as a generic `EXECUTION_FAILED`, unless the action sets `exposeErrorMessages: true` because its error messages are safe for the user.
 
 ## 5. Mark targets and publish page data
 
@@ -194,7 +196,7 @@ const AskButton = () => {
 };
 ```
 
-`ask` opens the chat and submits the prompt. It rejects when no assistant is connected.
+`ask` opens the chat and submits the prompt. It rejects when no assistant is connected. Pass extra data as `host.ask(prompt, { metadata: { questionContext } })`.
 
 ## Responsibilities
 
