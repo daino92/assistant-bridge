@@ -1,7 +1,7 @@
 import { createIntegrationError } from '@/errors';
 import { attachAssistantCommandHandler, type EmbeddedAssistantOptions } from '@/assistant-client';
 import type { HostBridge } from '@/bridge';
-import type { HostIntegration } from '@/create-host-integration';
+import { internalsOf, type HostIntegration } from '@/create-host-integration';
 import { ERROR_CODES, type IntegrationDiagnostic } from '@/contracts';
 
 export type AssistantConnectionStatus = 'loading' | 'ready' | 'error';
@@ -130,7 +130,8 @@ export const connectEmbeddedAssistant = (
   options: AssistantConnectionOptions,
   timeoutDiagnostic?: IntegrationDiagnostic,
 ) => {
-  const connection = createAssistantConnection(integration.bridge, options, timeoutDiagnostic);
+  const { bridge } = internalsOf(integration);
+  const connection = createAssistantConnection(bridge, options, timeoutDiagnostic);
   let currentReceiver: symbol | undefined;
 
   const onReady: EmbeddedAssistantOptions['onReady'] = (handler) => {
@@ -138,7 +139,7 @@ export const connectEmbeddedAssistant = (
       return () => {};
     }
 
-    const detach = attachAssistantCommandHandler(integration.bridge, handler);
+    const detach = attachAssistantCommandHandler(bridge, handler);
     const receiver = Symbol();
 
     currentReceiver = receiver;

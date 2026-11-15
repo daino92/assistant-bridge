@@ -125,25 +125,16 @@ To use your own approval UI, pass `actions: { requestConfirmation: (request, sig
 
 ## 6. Iframe chats
 
-Without `bridge`, the hook waits for the iframe handshake from the parent window. The host's `AssistantEmbed` (iframe mode) adds `embedded=1` and `hostOrigin` to the chat URL, and the SDK accepts messages only from that exact origin and the parent window.
-
-Accept only host origins you trust:
+Without `bridge`, the hook can connect to a parent window through the iframe handshake. The host's `AssistantEmbed` (iframe mode) adds `embedded=1` and `hostOrigin` to the chat URL. List the host origins the chat trusts:
 
 ```ts
-const ALLOWED_HOSTS = ['https://app.example.com'];
-
-const hostOrigin = new URLSearchParams(location.search).get('hostOrigin') ?? undefined;
-
 useAssistantIntegration({
   commands,
-  iframe: {
-    enabled: hostOrigin !== undefined && ALLOWED_HOSTS.includes(hostOrigin),
-    hostOrigin,
-  },
+  iframe: { allowedOrigins: ['https://app.example.com'] },
 });
 ```
 
-Set `iframe: { enabled: false }` for a standalone chat with no host.
+The chat connects only when the `hostOrigin` in its URL is in that list, and then accepts messages only from that exact origin and the parent window. Without `allowedOrigins` (or an explicit `iframe.hostOrigin`) it does not connect: otherwise any page could frame the chat and act as its host. Set `iframe: { enabled: false }` for a standalone chat.
 
 ## Backend protocols
 

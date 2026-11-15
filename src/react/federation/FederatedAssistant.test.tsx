@@ -2,7 +2,7 @@ import { type ComponentType, type ReactNode } from 'react';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import type { EmbeddedAssistantOptions } from '@/assistant-client';
 import { IntegrationProvider } from '@/react';
 import { FederatedAssistant } from '@/react/federation';
@@ -28,7 +28,7 @@ afterEach(() => {
 });
 
 const setup = () => {
-  const integration = createHostIntegration({ actions: [] });
+  const integration = createIntegration({ actions: [] });
 
   cleanups.push(() => integration.bridge.destroy());
 

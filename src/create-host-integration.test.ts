@@ -4,11 +4,14 @@ import { z } from 'zod';
 import { ERROR_CODES } from '@/contracts';
 import { connectEmbeddedAssistant } from '@/connections';
 import { attachAssistantCommandHandler, waitForHostContext } from '@/assistant-client';
-import { createHostIntegration } from './create-host-integration';
+import { createHostIntegration, createIntegration, internalsOf } from './create-host-integration';
 
-describe('createHostIntegration', () => {
+const createIntegrationBus = (integration: Parameters<typeof internalsOf>[0]) =>
+  internalsOf(integration).bridge.bus;
+
+describe('createIntegration', () => {
   it('updates page context, clears highlights and applies the explicit selection policy', () => {
-    const integration = createHostIntegration({ actions: [] });
+    const integration = createIntegration({ actions: [] });
     const clearHighlight = vi.fn();
 
     integration.targetRegistry.register({
@@ -46,7 +49,7 @@ describe('createHostIntegration', () => {
   it('runs only the actions supplied by the host', async () => {
     const navigate = vi.fn();
 
-    const integration = createHostIntegration({
+    const integration = createIntegration({
       actions: [
         {
           name: 'ui.navigate',
@@ -85,7 +88,7 @@ describe('createHostIntegration', () => {
 });
 
 it('publishes named targets and destinations while limiting capabilities to the current page', () => {
-  const integration = createHostIntegration({
+  const integration = createIntegration({
     destinations: [{ path: '/records', label: 'Records' }],
     actions: [
       {
@@ -130,7 +133,7 @@ it('publishes named targets and destinations while limiting capabilities to the 
 it('disposes once, clears target timers/listeners and refuses reuse', async () => {
   vi.useFakeTimers();
 
-  const integration = createHostIntegration({ actions: [] });
+  const integration = createIntegration({ actions: [] });
   const clearHighlight = vi.fn();
   const listener = vi.fn();
 
@@ -177,7 +180,7 @@ it('disposes once, clears target timers/listeners and refuses reuse', async () =
 });
 
 it('rejects pending actions, commands and readiness waits immediately on disposal', async () => {
-  const integration = createHostIntegration({
+  const integration = createIntegration({
     actions: [
       {
         name: 'pending',
@@ -212,7 +215,7 @@ it('rejects pending actions, commands and readiness waits immediately on disposa
 it('closes owned embedded connections and cancels loading deadlines', async () => {
   vi.useFakeTimers();
 
-  const integration = createHostIntegration({ actions: [] });
+  const integration = createIntegration({ actions: [] });
   const onStatus = vi.fn();
   const connection = connectEmbeddedAssistant(integration, { onStatus, timeoutMs: 100 });
 
@@ -241,7 +244,7 @@ it('delivers an exposed handler message to the assistant, and hides others', asy
     throw new Error(message);
   };
 
-  const integration = createHostIntegration({
+  const integration = createIntegration({
     actions: [
       {
         name: 'cms.publish',
@@ -284,4 +287,35 @@ it('delivers an exposed handler message to the assistant, and hides others', asy
   expect(hidden).toMatchObject({ code: ERROR_CODES.EXECUTION_FAILED });
   expect(JSON.stringify(hidden)).not.toContain('10.0.0.5');
   integration.dispose();
+});
+
+it('keeps the bridge, context store and action registry out of the public type', () => {
+  const integration = createHostIntegration({ actions: [] });
+
+  // @ts-expect-error The bridge is internal.
+  expect(integration.bridge).toBeDefined();
+  // @ts-expect-error The context store is internal.
+  expect(integration.contextManager).toBeDefined();
+  // @ts-expect-error The action registry is internal.
+  expect(integration.actionRegistry).toBeDefined();
+  expect(integration.targetRegistry).toBeDefined();
+  integration.dispose();
+});
+
+it('publishes and clears a selection through setSelection', () => {
+  const integration = createHostIntegration({ actions: [] });
+  const selected = vi.fn();
+  const detach = createIntegrationBus(integration).on('host.entity.selected', selected);
+
+  integration.setSelection({ type: 'offer', id: 'o-1' });
+  expect(integration.assistantClient.getContext().selection).toEqual({ type: 'offer', id: 'o-1' });
+  expect(selected).toHaveBeenCalledWith(
+    expect.objectContaining({ entityType: 'offer', entityId: 'o-1' }),
+  );
+
+  integration.setSelection(null);
+  expect(integration.assistantClient.getContext().selection).toBeUndefined();
+  detach();
+  integration.dispose();
+  expect(() => integration.setSelection(null)).toThrow();
 });

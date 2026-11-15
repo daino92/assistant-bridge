@@ -2,8 +2,10 @@ import { useEffect, useLayoutEffect, useRef } from 'react';
 
 import {
   createHostIntegration,
+  internalsOf,
   type CreateHostIntegrationOptions,
   type HostIntegration,
+  type IntegrationInternals,
 } from '@/create-host-integration';
 import type { HostActionInput } from '@/actions';
 import type { IntegrationTimelineEntry } from '@/contracts';
@@ -14,7 +16,7 @@ export type UseHostIntegrationOptions = CreateHostIntegrationOptions & {
 };
 
 interface ManagedIntegration {
-  integration: HostIntegration;
+  integration: IntegrationInternals;
   actions: CreateHostIntegrationOptions['actions'];
   actionDeps: unknown;
   actionNames: Set<string>;
@@ -109,7 +111,7 @@ export const useHostIntegration = (options: UseHostIntegrationOptions): HostInte
     });
 
     managedRef.current = {
-      integration,
+      integration: internalsOf(integration),
       lifecycle,
       actions: options.actions,
       actionDeps: options.actionDeps,

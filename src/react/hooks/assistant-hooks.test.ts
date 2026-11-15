@@ -113,7 +113,7 @@ describe('assistant-side React hooks', () => {
     expect(disconnect).toHaveBeenCalledOnce();
   });
 
-  it('skips standalone initialization without an origin and reads the embedding query on mount', () => {
+  it('skips standalone initialization and trusts the embedding query only from allowed origins', () => {
     const options = { onCommand: vi.fn(), onClient: vi.fn() };
     const standalone = renderHook(() => useAssistantIframeConnection(options));
 
@@ -125,11 +125,23 @@ describe('assistant-side React hooks', () => {
     url.searchParams.set('hostOrigin', 'https://host.example');
     window.history.replaceState(null, '', url);
 
+    // Any page can frame the chat and name itself in the query: ignored without a list.
+    renderHook(() => useAssistantIframeConnection(options)).unmount();
+    renderHook(() =>
+      useAssistantIframeConnection({ ...options, allowedOrigins: ['https://other.example'] }),
+    ).unmount();
+    expect(connect).not.toHaveBeenCalled();
+
     const disconnect = vi.fn();
 
     connect.mockReturnValue(disconnect);
 
-    const embedded = renderHook(() => useAssistantIframeConnection(options));
+    const embedded = renderHook(() =>
+      useAssistantIframeConnection({
+        ...options,
+        allowedOrigins: ['https://other.example', 'https://host.example'],
+      }),
+    );
 
     expect(connect.mock.calls[0][0].hostOrigin).toBe('https://host.example');
     embedded.unmount();

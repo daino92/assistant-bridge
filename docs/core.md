@@ -14,7 +14,7 @@ The framework-independent API of `assistant-bridge`. It has no React or federati
 │  └─ <a href="#compose-common-ui-actions">createUiActions</a>
 ├─ Host context
 │  ├─ <a href="#update-the-page">integration.updatePage</a>
-│  ├─ <a href="#publish-context">contextManager, syncCapabilities</a>
+│  ├─ <a href="#publish-context">integration.setSelection</a>
 │  ├─ <a href="#context-commits">Context commits and revisions</a>
 │  ├─ <a href="#define-page-catalog">definePageCatalog</a>
 │  ├─ <a href="#publish-the-signed-in-principal">principal, whenPermitted</a>
@@ -22,11 +22,11 @@ The framework-independent API of `assistant-bridge`. It has no React or federati
 │  └─ <a href="#describe-entity-structure">Describing entity structure</a>
 ├─ Assistant client and commands
 │  ├─ <a href="#use-the-client-inside-the-assistant">AssistantBridgeClient</a>
-│  ├─ <a href="#send-commands-from-the-host">assistantCommands, attachAssistantCommandHandler</a>
+│  ├─ <a href="#send-commands-from-the-host">assistantCommands, connectEmbeddedAssistant</a>
 │  ├─ <a href="#send-commands-from-the-host">askAbout, prefillAndOpen</a>
 │  └─ <a href="#dispatch-assistant-commands">createAssistantCommandDispatcher</a>
 ├─ Connections
-│  ├─ <a href="#connect-an-iframe">connectIframe, connectAssistantIframe, createAssistantIframeUrl</a>
+│  ├─ <a href="#connect-an-iframe">connectHostIframe, connectAssistantIframe, createAssistantIframeUrl</a>
 │  └─ <a href="#connect-a-same-window-assistant">connectEmbeddedAssistant</a>
 ├─ Action execution
 │  ├─ <a href="#execute-actions-from-the-assistant">createAssistantActionExecutor</a>
@@ -54,7 +54,7 @@ The bridge, registries, event bus and port transport are internal. Use them thro
 
 The SDK does not provide a chat interface, model provider, backend, conversation storage, or host-specific business logic. Both real and simulated assistants can use the same client interface.
 
-`attachAssistantCommandHandler` connects a same-window command receiver to the host bridge. `AssistantCommandHandler` and `EmbeddedAssistantOptions` define the framework-independent embedding contract.
+`connectEmbeddedAssistant` connects a same-window command receiver to the integration. `AssistantCommandHandler` and `EmbeddedAssistantOptions` define the framework-independent embedding contract.
 
 ## Create the host integration
 
@@ -106,7 +106,7 @@ navigateAction({
 
 Keep a custom action when opening a page needs more than navigation, for example business checks on the parameters.
 
-The returned integration exposes `bridge`, `contextManager`, `actionRegistry`, `targetRegistry`, `assistantCommands`, and `assistantClient`. Keep those host services on the host side; give assistant application logic only `AssistantBridgeClient`.
+The returned integration exposes `updatePage`, `setSelection`, `targetRegistry`, `assistantCommands`, `assistantClient`, `subscribeActionLifecycle` and `dispose`. The bridge, context store and action registry are internal. Give the assistant only `assistantClient`.
 
 ## Define host actions
 
@@ -192,20 +192,17 @@ This updates context, clears active highlights and refreshes capabilities. Selec
 ## Publish context
 
 ```ts
-integration.contextManager.setRoute('/catalog', {
-  title: 'Catalog',
-  type: 'catalog-list',
-});
+integration.updatePage({ route: '/catalog', page: { title: 'Catalog', type: 'catalog-list' } });
 
-// Updates selection and also emits host.entity.selected.
-integration.bridge.publishEntitySelected('catalog', 'product-001');
+// Publishes the selection and emits host.entity.selected; it does not submit a prompt.
+integration.setSelection({ type: 'catalog', id: 'product-001' });
 
-integration.contextManager.clearSelection();
+integration.setSelection(null);
 ```
 
 Context includes `route`, `page`, optional `selection`, registered `capabilities`, and an incrementing `revision`. Publish route and selection changes from the host; the SDK does not observe the router or DOM itself.
 
-If actions are registered or removed after initialization, call `integration.bridge.syncCapabilities()` to refresh the published capabilities. The capability list describes registered actions; context-specific `available` checks still run during execution.
+`createHostIntegration` registers its actions once. To change actions while the host runs (for example after a permission change), use `AssistantHost` or `useHostIntegration` in React; they re-register and republish capabilities. Context-specific `available` checks still run during execution.
 
 ## Context commits
 
@@ -215,7 +212,7 @@ The core `HostContextManager` owns value equality and revision generation for al
 
 Inputs, snapshots and each subscriber notification are deeply cloned, including page, selection, destinations, targets, entities and nested capability schemas. Mutating a returned snapshot or an input after assignment cannot alter stored state or another subscriber's notification. Reentrant updates are queued so subscribers observe revisions in order.
 
-Repeated identical `updatePage` calls preserve current selection/highlights. Selection policy applies when route, page metadata or policy changes. Use `contextManager.clearSelection()` for an explicit same-page selection reset. Core `updatePage` preserves entities and destinations when omitted; pass `destinations: []` to remove all destinations. Destinations describe where the assistant may navigate, so update them when permissions change, and keep the `ui.navigate` allowlist in sync (rebuild actions through `actionDeps`). the React `useHostPageContext` hook supplies an empty array by default to clear old page summaries. Hosts still own routing policy, entity mapping and action availability rules.
+Repeated identical `updatePage` calls preserve current selection/highlights. Selection policy applies when route, page metadata or policy changes. Use `setSelection(null)` for an explicit same-page selection reset. Core `updatePage` preserves entities and destinations when omitted; pass `destinations: []` to remove all destinations. Destinations describe where the assistant may navigate, so update them when permissions change, and keep the `ui.navigate` allowlist in sync (`AssistantHost` derives both from the page catalog). the React `useHostPageContext` hook supplies an empty array by default to clear old page summaries. Hosts still own routing policy, entity mapping and action availability rules.
 
 ## Define page catalog
 
@@ -345,7 +342,7 @@ defineAction({
 });
 ```
 
-- `principal` is optional. `updatePage` (and `useHostPageContext`) preserve it when omitted; pass `null` to remove it, for example on sign-out. `contextManager.setPrincipal()` updates it alone.
+- `principal` is optional. `updatePage` (and `useHostPageContext`) preserve it when omitted; pass `null` to remove it, for example on sign-out.
 - Changing permissions recomputes action availability in the same context revision.
 - **It is not authorization.** The principal is published to the assistant as data. Every handler and backend must still enforce permissions; `whenPermitted` only hides unavailable actions.
 - Publish operation names, not roles or personal data. `label` is optional; omit it when the assistant does not need a display name. Limits: 500 permissions of up to 100 characters each.
@@ -419,7 +416,7 @@ await integration.assistantCommands.close();
 
 The receiver must implement these commands and return correlated results. The SDK does not create or open a panel itself. `submitPrompt()` completion means the receiver returned a command result; it does not inherently mean response streaming has finished.
 
-For a same-window receiver, use `attachAssistantCommandHandler(integration.bridge, handler)`. It validates command envelopes and emits correlated results from the handler's return value or rejection. The handler must validate command-specific payloads and reject unsupported commands. The returned function detaches the receiver; the host also calls `notifyAssistantUnmounted()` when disconnecting.
+For a same-window receiver, use `connectEmbeddedAssistant(integration)` and pass its `onReady` to the assistant, which registers its command handler there. The SDK validates command envelopes and emits correlated results from the handler's return value or rejection. The handler must validate command-specific payloads and reject unsupported commands.
 
 For an iframe receiver, `connectAssistantIframe` (or `useAssistantIntegration`) forwards command requests to its `onCommand` callback and creates the result envelope from its return value or rejection.
 
@@ -476,7 +473,7 @@ A separately built assistant does not require an iframe. The iframe adds runtime
 For iframe embedding, create the URL with `createAssistantIframeUrl(url, window.location.origin)`, render it in the host's iframe and connect:
 
 ```ts
-const disconnect = integration.connectIframe({
+const disconnect = connectHostIframe(integration, {
   iframe,
   url: assistantUrl,
   onStatus: (status) => console.log(status),
@@ -510,13 +507,11 @@ Both applications import `ASSISTANT_IFRAME_MESSAGES` from the SDK for the brand-
 
 The port adapters validate envelopes, correlate requests, forward context and commands, enforce a fixed 10-second port request timeout, and reject pending requests when disposed. The port layer currently converts remote failures into `Error` messages; structured error codes are not preserved end-to-end through that adapter.
 
-The high-level iframe connection APIs own the window handshake and exact origin/source checks. The host owns iframe rendering, visibility and the reconnect button. The port adapters are internal; use `connectIframe` / `connectAssistantIframe` (or `AssistantEmbed` and `useAssistantIntegration` in React). See [assistant-side React hooks](react.md#assistant-side-hooks) for the assistant connection.
+The high-level iframe connection APIs own the window handshake and exact origin/source checks. The host owns iframe rendering, visibility and the reconnect button. The port adapters are internal; use `connectHostIframe` / `connectAssistantIframe` (or `AssistantEmbed` and `useAssistantIntegration` in React). See [assistant-side React hooks](react.md#assistant-side-hooks) for the assistant connection.
 
 ## Connect a same-window assistant
 
 For a directly supplied component or mount API, `connectEmbeddedAssistant(integration, { onStatus })` returns `bridge` and `onReady` properties, plus `dispose()` and `fail()`. `onStatus` is optional; omit it when the host does not show connection state. Its default 10-second timeout covers both loading and receiver registration. Call `onReady(handler)` only once the command receiver is usable, and run the returned cleanup on unmount. Failed or disposed connections cannot become ready later. Reconnection creates a new connection.
-
-For a same-window integration, attach the command handler before announcing readiness with `integration.bridge.notifyAssistantReady('my-assistant')`.
 
 A Module Federation remote must expose a component that accepts EmbeddedAssistantOptions: a bridge client and an onReady(handler) callback that returns cleanup. The SDK connection adapter registers the command handler and marks the assistant ready; the assistant invokes cleanup on unmount. No MessagePort is used in this mode.
 
@@ -719,11 +714,8 @@ Request payload summaries read `Payload omitted`. Failure summaries use generic 
 
 Consumers can forward structured diagnostics from `onTimeline` to their own UI or logging service. The SDK does not persist a timeline.
 
-- High-level connection APIs manage readiness, availability, receiver cleanup and connection timeouts. Dispose them when removing the assistant. The following low-level operations remain available for custom adapters.
-- Call `bridge.notifyAssistantReady(id)` only after the command receiver is usable.
-- Call `bridge.setAssistantAvailable(false)` for temporary unavailability; pending host commands are rejected.
-- Call `bridge.notifyAssistantUnmounted()` when removing the receiver.
-- Unsubscribe context/event listeners and dispose both port adapters when disconnecting.
+- The connection APIs (`connectEmbeddedAssistant`, `connectHostIframe`, `connectAssistantIframe`, `AssistantEmbed`) manage readiness, availability, receiver cleanup and connection timeouts. Dispose them when removing the assistant; pending host commands are then rejected.
+- Unsubscribe context and lifecycle listeners when disconnecting.
 - Call `integration.dispose()` when the host integration is permanently disposed. It owns SDK cleanup; host components still own their DOM and rendering lifecycle.
 
 Host bridge action and command timeouts default to 10 seconds and can be configured using `actionTimeoutMs` and `commandTimeoutMs` in `createHostIntegration`. These options do not change the port adapter's separate fixed timeout. Timing out a request does not cancel or roll back an action handler that has already started.
@@ -745,6 +737,6 @@ integration.dispose();
 
 `useHostIntegration` calls `dispose()` automatically on final unmount while preserving Strict Mode replay behavior. `IntegrationProvider` only shares the instance and does not dispose an externally supplied integration. Component-level connection cleanup remains safe to call before or after the integration is disposed.
 
-`integration.bridge.signal` and optional `AssistantBridgeClient.signal` indicate SDK lifetime termination. Built-in clients provide the signal; custom clients can omit it for compatibility. Readiness waits listen to both caller cancellation and client lifetime. The iframe port sends an internal `disconnect` notification so the chat-side client can reject pending requests and abort its lifetime signal. This is part of the host/chat bridge, not the chat's backend protocol.
+`AssistantBridgeClient.signal` (optional on custom clients) indicates that the integration ended. Built-in clients provide the signal; custom clients can omit it for compatibility. Readiness waits listen to both caller cancellation and client lifetime. The iframe port sends an internal `disconnect` notification so the chat-side client can reject pending requests and abort its lifetime signal. This is part of the host/chat bridge, not the chat's backend protocol.
 
 Disposal does not remove host DOM, unload federation runtime caches, cancel arbitrary already-running handler promises, roll back completed mutations or stop independently owned BFF/model runs. Confirmation UI and per-run cancellation remain owned by the chat application. The SDK prevents later dispatch after an awaited confirmation if its client lifetime ended.

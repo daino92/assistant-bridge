@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { connectEmbeddedAssistant } from '@/connections';
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import { ASSISTANT_COMMAND_NAMES, ERROR_CODES, type AssistantCommandRequest } from '@/contracts';
 
 const cleanups: Array<() => void> = [];
@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 const connect = (timeoutMs = 1000) => {
-  const integration = createHostIntegration({ actions: [] });
+  const integration = createIntegration({ actions: [] });
   const onStatus = vi.fn();
   const connection = connectEmbeddedAssistant(integration, { onStatus, timeoutMs });
 
@@ -26,7 +26,7 @@ const connect = (timeoutMs = 1000) => {
 
 describe('assistant connection lifecycle', () => {
   it('connects without an onStatus callback', async () => {
-    const integration = createHostIntegration({ actions: [] });
+    const integration = createIntegration({ actions: [] });
     const connection = connectEmbeddedAssistant(integration, { timeoutMs: 1000 });
 
     cleanups.push(() => integration.bridge.destroy(), connection.dispose);

@@ -238,7 +238,7 @@ useAssistantIframeConnection({
 useAssistantCommandHandler(onCommand, onReady);
 ```
 
-`useAssistantIframeConnection` initializes the assistant end of the iframe connection. Supply `hostOrigin` explicitly or let it read the SDK's `hostOrigin` query parameter on initialization. With no origin, or outside an iframe, no connection is established. Disable the hook when a same-window client is supplied. Cleanup removes the handshake listener and disposes the port; an established connection clears the client through `onClient(undefined)`. Changes to command/client callbacks use their latest implementations without reconnecting. The hook has no UI and does not create a host integration.
+`useAssistantIframeConnection` initializes the assistant end of the iframe connection. Supply `hostOrigin` explicitly, or `allowedOrigins` to accept the SDK's `hostOrigin` query parameter only for those origins. The query parameter alone is never trusted. With no trusted origin, or outside an iframe, no connection is established. Disable the hook when a same-window client is supplied. Cleanup removes the handshake listener and disposes the port; an established connection clears the client through `onClient(undefined)`. Changes to command/client callbacks use their latest implementations without reconnecting. The hook has no UI and does not create a host integration.
 
 `useAssistantContext(client)` reads the client's context snapshot, subscribes to changes, unsubscribes when the client changes or the component unmounts, and clears context when the client becomes undefined. It works identically for iframe and directly supplied clients.
 

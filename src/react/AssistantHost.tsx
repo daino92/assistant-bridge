@@ -24,6 +24,7 @@ import {
   type IntegrationTimelineEntry,
 } from '@/contracts';
 import { toParametersSchema } from '@/action-registry/action-registry';
+import { internalsOf } from '@/create-host-integration';
 import { createIntegrationError } from '@/errors';
 import type { PageCatalog } from '@/host-context';
 import IntegrationProvider from '@/react/IntegrationProvider';
@@ -268,7 +269,7 @@ const AssistantHost = <TKey extends string>({
       shapeRef.current = next;
       setShape(next);
     } else {
-      integration.bridge.syncCapabilities();
+      internalsOf(integration).bridge.syncCapabilities();
     }
   });
 
