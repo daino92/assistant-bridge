@@ -13,6 +13,11 @@
 - Failed requests, actions and commands reject with an `Error` carrying `code`, `message` and
   `reason`, instead of a plain object. Code that checks `error instanceof Error` now sees the
   safe message, including public reasons.
+- **Breaking:** `AssistantHost` no longer takes `actionDeps`. The `actions` factory runs on every
+  render and registered actions delegate to its latest definitions, so handlers and `available`
+  always see current host state. Actions re-register only when their published shape changes
+  (names, descriptions, schemas, approval). Capability JSON Schemas are cached per Zod schema.
+  `useHostIntegration` keeps `actionDeps`.
 - **Breaking:** removed the `assistant-bridge/ag-ui` entry (WebSocket/STOMP agent client, run
   controller, chat session, run errors, protocol schemas and the `schemas/` files) and the
   `reduceActionProgress` / `finalizeActionProgress` helpers it used. Talking to a backend belongs to

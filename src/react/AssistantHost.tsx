@@ -23,6 +23,7 @@ import {
   type HostPrincipal,
   type IntegrationTimelineEntry,
 } from '@/contracts';
+import { toParametersSchema } from '@/action-registry/action-registry';
 import { createIntegrationError } from '@/errors';
 import type { PageCatalog } from '@/host-context';
 import IntegrationProvider from '@/react/IntegrationProvider';
@@ -71,10 +72,11 @@ export interface AssistantHostProps<TKey extends string> {
   router: AssistantHostRouter<NoInfer<TKey>>;
   /** The signed-in user's permissions. Not authorization: handlers and backends still check. */
   principal?: HostPrincipal | null;
-  /** Domain actions. `ui.navigate` is added from `pages`. */
+  /**
+   * Domain actions; `ui.navigate` is added from `pages`. Called on every render, so handlers and
+   * `available` always see current host state. Keep it pure: return definitions only.
+   */
   actions?: (api: AssistantHostApi) => HostActionInput[];
-  /** Memoized value the `actions` factory depends on; actions re-register when it changes. */
-  actionDeps?: unknown;
   /** Host rules before navigation; throw `createIntegrationError` to refuse. */
   beforeNavigate?: NavigateActionOptions['beforeNavigate'];
   /** Entities shared by every page (for example the current workspace). */
@@ -97,6 +99,18 @@ export interface AssistantHostProps<TKey extends string> {
 }
 
 const FALLBACK_PAGE: HostContext['page'] = { title: 'Page', type: 'other' };
+
+/** What the assistant sees of the actions; registration follows it, not handler identity. */
+const shapeOf = (actions: HostActionInput[]): string =>
+  JSON.stringify(
+    actions.map((action) => [
+      action.name,
+      action.description,
+      action.requiresConfirmation ?? false,
+      action.exposeErrorMessages ?? false,
+      toParametersSchema(action.schema),
+    ]),
+  );
 
 const EMPTY_ENTITIES: HostEntities = [];
 
@@ -124,7 +138,6 @@ const AssistantHost = <TKey extends string>({
   router,
   principal = null,
   actions,
-  actionDeps,
   beforeNavigate,
   entities = EMPTY_ENTITIES,
   fallbackPage = FALLBACK_PAGE,
@@ -176,13 +189,53 @@ const AssistantHost = <TKey extends string>({
     [],
   );
 
-  const permissionsKey = JSON.stringify(principal?.permissions ?? null);
+  // The current definitions of every action, from the latest render.
+  const current = useRef(new Map<string, HostActionInput>());
+  const shapeRef = useRef('');
+  // Changes only when the published shape of the actions changes; that re-registers them.
+  const [shape, setShape] = useState('');
 
-  // Re-register actions when permissions, the catalog or host dependencies change.
-  const registration = useMemo(
-    () => ({ pages, permissionsKey, actionDeps }),
-    [pages, permissionsKey, actionDeps],
-  );
+  const buildActions = (targets: UiTargetRegistry): HostActionInput[] => {
+    const navigation = pages.navigation(principal, { navigate, beforeNavigate: guard });
+
+    const hasPages =
+      navigation.allowedRoutes?.length || Object.keys(navigation.routes ?? {}).length;
+
+    return [
+      ...(hasPages ? [navigateAction(navigation) as HostActionInput] : []),
+      ...(latest.current.actions?.({ targets, principal, navigate }) ?? []),
+    ];
+  };
+
+  // Registered actions delegate to the current definitions, so a handler never closes over
+  // stale host state and nothing re-registers when only handlers or `available` change.
+  const delegate = (action: HostActionInput): HostActionInput => ({
+    name: action.name,
+    description: action.description,
+    schema: action.schema,
+    requiresConfirmation: action.requiresConfirmation,
+    exposeErrorMessages: action.exposeErrorMessages,
+    available: (context) => {
+      const definition = current.current.get(action.name);
+
+      return definition ? (definition.available?.(context) ?? true) : false;
+    },
+    handler: (payload, context) => {
+      const definition = current.current.get(action.name);
+
+      if (!definition) {
+        throw createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE);
+      }
+
+      return definition.handler(payload, context);
+    },
+  });
+
+  const remember = (definitions: HostActionInput[]): string => {
+    current.current = new Map(definitions.map((action) => [action.name, action]));
+
+    return shapeOf(definitions);
+  };
 
   const pageKey = pages.pageKeyFromRoute(pathname);
   const page = pageKey ? pages.pageMeta(pageKey) : fallbackPage;
@@ -193,18 +246,30 @@ const AssistantHost = <TKey extends string>({
     commandTimeoutMs,
     actionTimeoutMs,
     onTimeline,
-    actionDeps: registration,
+    actionDeps: shape,
     actions: ({ targets }) => {
-      const navigation = pages.navigation(principal, { navigate, beforeNavigate: guard });
+      const definitions = buildActions(targets);
 
-      const hasPages =
-        navigation.allowedRoutes?.length || Object.keys(navigation.routes ?? {}).length;
+      shapeRef.current = remember(definitions);
 
-      return [
-        ...(hasPages ? [navigateAction(navigation) as HostActionInput] : []),
-        ...(latest.current.actions?.({ targets, principal, navigate }) ?? []),
-      ];
+      return definitions.map(delegate);
     },
+  });
+
+  // After every render: refresh the current definitions, re-register when their shape changed,
+  // otherwise republish capabilities (availability can follow host state outside the context).
+  // It runs on every render on purpose. It sets state only when the shape differs, and the
+  // next render computes the same shape, so it settles after one extra render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    const next = remember(buildActions(integration.targetRegistry));
+
+    if (next !== shapeRef.current) {
+      shapeRef.current = next;
+      setShape(next);
+    } else {
+      integration.bridge.syncCapabilities();
+    }
   });
 
   const [pageEntities, setPageEntities] = useState<ReadonlyMap<symbol, HostEntities>>(

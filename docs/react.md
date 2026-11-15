@@ -75,8 +75,7 @@ import { AssistantHost, useAssistantHost, usePageEntities } from 'assistant-brid
   router={{ pathname: location.pathname, navigate: queryNavigate(routerNavigate, { environment }) }}
   principal={{ id: user.id, permissions }}
   entities={[{ type: 'environment', id: environment, label: environmentName }]}
-  actions={({ targets, navigate }) => createDomainActions({ targets, navigate })}
-  actionDeps={domainDeps}
+  actions={({ targets, navigate }) => createDomainActions({ targets, navigate, state })}
   connection="embedded"
   highlight={{ color: 'var(--brand)' }}
 >
@@ -93,7 +92,7 @@ await host?.ask('Summarize this entry');
 
 - **Pages and navigation:** `ui.navigate` comes from `pages.navigation(principal, …)`. Destinations follow `pages.destinationsFor(principal)`. Both update when permissions change, without remounting.
 - **Router:** `pathname` selects the page through `pages.pageKeyFromRoute`; routes outside the catalog publish `fallbackPage`. `navigate` receives validated `params` only for pages that declare them. The latest `navigate`, `beforeNavigate` and `actions` are always used, so inline callbacks are fine.
-- **Actions:** the `actions` factory receives `targets`, `principal` and a stable `navigate`. Actions re-register when `actionDeps`, the catalog or the permissions change.
+- **Actions:** the `actions` factory receives `targets`, `principal` and a stable `navigate`, and runs on every render. Handlers and `available` therefore always use current host state; there is nothing to memoize. Actions re-register only when what the assistant sees changes (names, descriptions, schemas, approval), for example after a permission change. Keep the factory pure: it returns definitions and must not cause side effects.
 - **Entities:** `entities` are shared by every page. `usePageEntities` adds a component's entities while it is mounted, merged in mount order and compared by content.
 - **Connection:** `connection="embedded"` connects a same-window assistant and exposes `bridge` and `onReady` as `useAssistantHost().embedded`. The default, `external`, leaves the connection to `AssistantEmbed` or `AssistantIframe`.
 - **Asking:** `ask(prompt, { selection, metadata })` is `assistantCommands.askAbout`; it rejects when no assistant is ready.
