@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Add `assistant-bridge/contracts`: schemas, names, error codes and `PROTOCOL_VERSION`, with Zod
+  as the only dependency. It omits the deprecated demo schemas.
+- `AssistantHost` accepts `router={{ page, navigate }}` for hosts that switch pages by state;
+  `navigate` receives a catalog key.
+- `askAbout` and `useAssistantHost().ask` accept `{ selection, metadata }`. The host's
+  `contextRevision` and `selection` cannot be overridden. A selection alone still works.
+- `defineAction` accepts `exposeErrorMessages`: a handler's ordinary `Error` reaches the
+  assistant as `ACTION_NOT_AVAILABLE` with reason `ACTION_FAILED` and its message.
+- Deprecated, to be removed in a future beta: the root exports `HostBridge`, `TypedEventBus`,
+  `RequestResponseChannel`, `HostActionRegistry`, `HostContextManager`, `attachHostPort`,
+  `createPortAssistantClient`, `createAssistantConnection`, `defaultActionReadiness`,
+  `waitForHostContext`, `reduceActionProgress` and `finalizeActionProgress`; the demo schemas
+  `catalogFilterPayloadSchema`, `recordsFilterPayloadSchema`, `recordsSortPayloadSchema` and
+  `uiOpenDetailsPayloadSchema`, `openDetailsAction`, the `details` option of `createUiActions`
+  and the demo names in `HOST_ACTION_NAMES`; `useHostPageContextFromCatalog` and `useAskAi`.
 - Docs: the host quick start and the README now start from `AssistantHost`, and the quick start
   no longer calls the internal bridge. New chat quick start. Lower-level APIs are grouped as
   advanced. No API changes.

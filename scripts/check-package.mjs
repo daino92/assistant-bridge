@@ -104,6 +104,22 @@ try {
     }
   }
 
+  // `/contracts` is the dependency-free layer: Zod and its own files only.
+  for (const entry of entries.filter((item) => item.startsWith('package/dist/contracts/'))) {
+    if (!entry.endsWith('.js') && !entry.endsWith('.d.ts')) {
+      continue;
+    }
+
+    for (const [, specifier] of readEntry(entry).matchAll(
+      /(?:from\s*|import\s*\()\s*['"]([^'"]+)['"]/g,
+    )) {
+      assert.ok(
+        specifier === 'zod' || /^\.\/[\w.-]+$/.test(specifier),
+        `${entry} imports ${specifier}; /contracts may import only zod and its own files`,
+      );
+    }
+  }
+
   const packageName = JSON.stringify(MANIFEST.name);
 
   checkConsumer(
@@ -121,6 +137,10 @@ try {
     assert.ok(integration.assistantClient);
     integration.dispose();
     console.log('Core works without optional peers');
+    const contracts = await import(${packageName} + '/contracts');
+    assert.equal(typeof contracts.PROTOCOL_VERSION, 'string');
+    assert.ok(contracts.hostContextSchema.safeParse({}).success === false);
+    console.log('contracts import OK');
   `,
   );
 

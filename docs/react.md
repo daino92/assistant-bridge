@@ -96,7 +96,8 @@ await host?.ask('Summarize this entry');
 - **Actions:** the `actions` factory receives `targets`, `principal` and a stable `navigate`. Actions re-register when `actionDeps`, the catalog or the permissions change.
 - **Entities:** `entities` are shared by every page. `usePageEntities` adds a component's entities while it is mounted, merged in mount order and compared by content.
 - **Connection:** `connection="embedded"` connects a same-window assistant and exposes `bridge` and `onReady` as `useAssistantHost().embedded`. The default, `external`, leaves the connection to `AssistantEmbed` or `AssistantIframe`.
-- **Asking:** `ask(prompt)` is `assistantCommands.askAbout(prompt)`; it rejects when no assistant is ready.
+- **Asking:** `ask(prompt, { selection, metadata })` is `assistantCommands.askAbout`; it rejects when no assistant is ready.
+- **State-based pages:** a host that switches pages by state instead of URL passes `router={{ page, navigate }}`, with the current catalog key and a function that opens a key. `ui.navigate` still validates paths and parameters against the catalog, then calls `navigate(pageKey, params)`.
 - **Highlight:** `highlight` adds an outline for `[data-assistant-highlight]`, with a reduced-motion fallback.
 
 `AssistantHost` renders `IntegrationProvider`, so `useIntegration`, `useUiTarget` and `AssistantEmbed` work below it. Keep `principal` to permission names; it is not authorization. For full control, compose `useHostIntegration` and `useHostPageContext` as before.

@@ -1,4 +1,5 @@
 export {
+  /** @deprecated Internal building block; it will no longer be exported from the root in a future beta. Use `createHostIntegration` or `AssistantHost`. */
   HostActionRegistry,
   type ActionExecutionContext,
   type RegisteredAction,
@@ -15,6 +16,7 @@ export {
   type NavigateParams,
   type NavigatePayload,
   type NavigateRoute,
+  /** @deprecated Demo action for fixed entity types; it will be removed in a future beta. Use `defineAction`. */
   openDetailsAction,
   scrollToAction,
   selectAction,
@@ -32,13 +34,21 @@ export {
   createAssistantBridgeClient,
   createHostAssistantCommands,
   attachAssistantCommandHandler,
+  type AskOptions,
   type AssistantCommandHandler,
   type AssistantBridgeClient,
   type EmbeddedAssistantOptions,
   type HostAssistantCommands,
 } from './assistant-client';
 
-export { HostBridge, RequestResponseChannel, TypedEventBus } from './bridge';
+export {
+  /** @deprecated Internal building block; it will no longer be exported from the root in a future beta. Use `createHostIntegration` or `AssistantHost`. */
+  HostBridge,
+  /** @deprecated Internal building block; it will no longer be exported from the root in a future beta. Use `createHostIntegration` or `AssistantHost`. */
+  RequestResponseChannel,
+  /** @deprecated Internal building block; it will no longer be exported from the root in a future beta. Use `createHostIntegration` or `AssistantHost`. */
+  TypedEventBus,
+} from './bridge';
 
 export {
   UiTargetRegistry,
@@ -59,17 +69,21 @@ export {
   assistantCommandResultSchema,
   assistantPrefillPayloadSchema,
   assistantSubmitPromptPayloadSchema,
+  /** @deprecated Demo schema; it will be removed in a future beta. Define your own schema with `defineAction`. */
   catalogFilterPayloadSchema,
   hostActionRequestSchema,
   hostActionResultSchema,
   hostCapabilitySchema,
   hostContextSchema,
   hostPrincipalSchema,
+  /** @deprecated Demo schema; it will be removed in a future beta. Define your own schema with `defineAction`. */
   recordsFilterPayloadSchema,
+  /** @deprecated Demo schema; it will be removed in a future beta. Define your own schema with `defineAction`. */
   recordsSortPayloadSchema,
   uiFocusPayloadSchema,
   uiHighlightPayloadSchema,
   uiNavigatePayloadSchema,
+  /** @deprecated Demo schema; it will be removed in a future beta. Define your own schema with `defineAction`. */
   uiOpenDetailsPayloadSchema,
   uiScrollToPayloadSchema,
   uiSelectPayloadSchema,
@@ -104,6 +118,7 @@ export {
 } from './create-host-integration';
 
 export {
+  /** @deprecated Internal building block; it will no longer be exported from the root in a future beta. Use `createHostIntegration` or `AssistantHost`. */
   HostContextManager,
   mapHostEntities,
   definePageCatalog,
@@ -117,9 +132,15 @@ export {
   type PageCatalogEntry,
 } from './host-context';
 
-export { attachHostPort, createPortAssistantClient } from './bridge';
+export {
+  /** @deprecated Internal transport; it will no longer be exported from the root in a future beta. Use `AssistantEmbed` or `connectHostIframe`. */
+  attachHostPort,
+  /** @deprecated Internal transport; it will no longer be exported from the root in a future beta. Use `useAssistantIntegration` or `connectAssistantIframe`. */
+  createPortAssistantClient,
+} from './bridge';
 
 export {
+  /** @deprecated Internal; it will no longer be exported in a future beta. Use `connectEmbeddedAssistant` or `AssistantHost` with `connection="embedded"`. */
   createAssistantConnection,
   connectEmbeddedAssistant,
   connectHostIframe,
@@ -139,12 +160,17 @@ export {
 } from './assistant-client';
 
 export {
+  /** @deprecated Internal default of the action executor; it will no longer be exported in a future beta. */
   defaultActionReadiness,
   type ActionReadiness,
   type ActionReadinessContext,
 } from './assistant-client';
 
-export { waitForHostContext, type WaitForHostContextOptions } from './assistant-client';
+export {
+  /** @deprecated Internal to the action executor; it will no longer be exported in a future beta. */
+  waitForHostContext,
+  type WaitForHostContextOptions,
+} from './assistant-client';
 
 export {
   createIntegrationError,
@@ -167,7 +193,9 @@ export {
 } from './contracts';
 
 export {
+  /** @deprecated Internal to `createChatSession`; it will no longer be exported in a future beta. */
   reduceActionProgress,
+  /** @deprecated Internal to `createChatSession`; it will no longer be exported in a future beta. */
   finalizeActionProgress,
   type ActionProgressEntry,
 } from './assistant-client';

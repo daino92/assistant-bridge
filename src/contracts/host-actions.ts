@@ -110,7 +110,10 @@ export const HOST_ACTION_NAMES = {
   UI_SET_CHECKED: 'ui.setChecked',
   UI_SET_VALUE: 'ui.setValue',
   UI_OPEN_DETAILS: 'ui.openDetails',
+  /** @deprecated Demo action name; it will be removed in a future beta. */
   CATALOG_FILTER: 'catalog.filter',
+  /** @deprecated Demo action name; it will be removed in a future beta. */
   RECORDS_FILTER: 'records.filter',
+  /** @deprecated Demo action name; it will be removed in a future beta. */
   RECORDS_SORT: 'records.sort',
 } as const;

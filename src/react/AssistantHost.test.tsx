@@ -202,4 +202,42 @@ describe('hooks outside AssistantHost', () => {
     render(<Outside />);
     expect(host).toBeNull();
   });
+
+  it('works with a state-based page router', async () => {
+    const navigate = vi.fn();
+    const principal = { id: 'u', permissions: ['content:read'] };
+
+    const view = (page: 'dashboard' | 'content') => (
+      <AssistantHost pages={PAGES} router={{ page, navigate }} principal={principal}>
+        <Capture />
+      </AssistantHost>
+    );
+
+    const { rerender } = render(view('dashboard'));
+
+    await waitFor(() => expect(context().page).toEqual({ title: 'Dashboard', type: 'dashboard' }));
+    expect(context().route).toBe('/dashboard');
+
+    await request({ path: '/content', params: { model: MODEL } });
+    expect(navigate).toHaveBeenLastCalledWith('content', { model: MODEL });
+    await request({ path: '/dashboard' });
+    expect(navigate).toHaveBeenLastCalledWith('dashboard');
+
+    rerender(view('content'));
+    await waitFor(() => expect(context().route).toBe('/content'));
+    expect(context().page).toEqual({ title: 'Content', type: 'content' });
+  });
+
+  it('rejects ask with options when no assistant is connected', async () => {
+    render(
+      <AssistantHost pages={PAGES} router={{ pathname: '/dashboard', navigate: vi.fn() }}>
+        <Capture />
+      </AssistantHost>,
+    );
+
+    await waitFor(() => expect(host).not.toBeNull());
+    await expect(
+      host!.ask('Why?', { metadata: { questionContext: 'Offer' } }),
+    ).rejects.toMatchObject({ code: 'RECEIVER_UNAVAILABLE' });
+  });
 });

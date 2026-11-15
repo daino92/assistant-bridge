@@ -235,3 +235,45 @@ it('closes owned embedded connections and cancels loading deadlines', async () =
     vi.useRealTimers();
   }
 });
+
+it('delivers an exposed handler message to the assistant, and hides others', async () => {
+  const fail = (message: string) => () => {
+    throw new Error(message);
+  };
+
+  const integration = createHostIntegration({
+    actions: [
+      {
+        name: 'cms.publish',
+        description: 'Publish',
+        schema: z.object({}),
+        exposeErrorMessages: true,
+        handler: fail('Entry 12 changed since you opened it.'),
+      },
+      {
+        name: 'cms.hidden',
+        description: 'Hidden',
+        schema: z.object({}),
+        handler: fail('connection to 10.0.0.5 refused'),
+      },
+    ],
+  });
+
+  integration.bridge.notifyAssistantReady('assistant');
+
+  await expect(integration.assistantClient.requestHostAction('cms.publish', {})).rejects.toEqual(
+    expect.objectContaining({
+      code: ERROR_CODES.ACTION_NOT_AVAILABLE,
+      message: 'Entry 12 changed since you opened it.',
+      reason: { code: 'ACTION_FAILED', message: 'Entry 12 changed since you opened it.' },
+    }),
+  );
+
+  const hidden = await integration.assistantClient
+    .requestHostAction('cms.hidden', {})
+    .catch((error: unknown) => error);
+
+  expect(hidden).toMatchObject({ code: ERROR_CODES.EXECUTION_FAILED });
+  expect(JSON.stringify(hidden)).not.toContain('10.0.0.5');
+  integration.dispose();
+});
