@@ -203,6 +203,103 @@ describe('hooks outside AssistantHost', () => {
     expect(host).toBeNull();
   });
 
+  it('runs the latest handler and availability without actionDeps or re-registration', async () => {
+    let renders = 0;
+
+    const view = (state: { customer: string; open: boolean }, description = 'Open') => (
+      <AssistantHost
+        pages={PAGES}
+        router={{ pathname: '/dashboard', navigate: vi.fn() }}
+        actions={() => {
+          renders += 1;
+
+          return [
+            defineAction({
+              name: 'customers.current',
+              description,
+              schema: z.object({}),
+              // Host state outside HostContext decides availability.
+              available: () => state.open,
+              handler: () => ({ customer: state.customer }),
+            }),
+          ];
+        }}
+      >
+        <Capture />
+      </AssistantHost>
+    );
+
+    const names = () => context().capabilities.map((item) => item.name);
+    const run = () => host!.integration.assistantClient.requestHostAction('customers.current', {});
+
+    const { rerender } = render(view({ customer: 'Maria', open: true }));
+
+    await waitFor(() => expect(names()).toContain('customers.current'));
+    await expect(run()).resolves.toEqual({ customer: 'Maria' });
+
+    // Only the handler's state changed: same registration, same revision, latest state.
+    const revision = context().revision;
+
+    rerender(view({ customer: 'Serafim', open: true }));
+    await expect(run()).resolves.toEqual({ customer: 'Serafim' });
+    expect(context().revision).toBe(revision);
+
+    // Availability follows host state that is not part of the published context.
+    rerender(view({ customer: 'Serafim', open: false }));
+    await waitFor(() => expect(names()).not.toContain('customers.current'));
+    await expect(run()).rejects.toMatchObject({ code: 'ACTION_NOT_AVAILABLE' });
+
+    // A new description is a new shape: the action re-registers and republishes.
+    rerender(view({ customer: 'Serafim', open: true }, 'Open the current customer'));
+    await waitFor(() =>
+      expect(
+        context().capabilities.find((item) => item.name === 'customers.current')?.description,
+      ).toBe('Open the current customer'),
+    );
+
+    // The factory runs about once per render, not in a loop.
+    const settled = renders;
+
+    rerender(view({ customer: 'Serafim', open: true }, 'Open the current customer'));
+    expect(renders - settled).toBeLessThanOrEqual(2);
+  });
+
+  it('refuses an action the latest factory no longer returns', async () => {
+    const view = (withAction: boolean) => (
+      <AssistantHost
+        pages={PAGES}
+        router={{ pathname: '/dashboard', navigate: vi.fn() }}
+        actions={() =>
+          withAction
+            ? [
+                defineAction({
+                  name: 'cms.temp',
+                  description: 'Temp',
+                  schema: z.object({}),
+                  handler: () => 'ran',
+                }),
+              ]
+            : []
+        }
+      >
+        <Capture />
+      </AssistantHost>
+    );
+
+    const { rerender } = render(view(true));
+
+    await waitFor(() =>
+      expect(context().capabilities.map((item) => item.name)).toContain('cms.temp'),
+    );
+    rerender(view(false));
+    await waitFor(() =>
+      expect(context().capabilities.map((item) => item.name)).not.toContain('cms.temp'),
+    );
+    await expect(
+      host!.integration.assistantClient.requestHostAction('cms.temp', {}),
+    ).rejects.toMatchObject({ code: expect.stringMatching(/UNKNOWN_ACTION|ACTION_NOT_AVAILABLE/) });
+  });
+
   it('works with a state-based page router', async () => {
     const navigate = vi.fn();
     const principal = { id: 'u', permissions: ['content:read'] };

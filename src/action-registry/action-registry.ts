@@ -48,6 +48,26 @@ const toStructuredError = (error: unknown, exposeMessage: boolean): StructuredEr
   });
 };
 
+const parameterSchemas = new WeakMap<z.ZodType, Record<string, unknown>>();
+
+/**
+ * JSON Schema published for an action's parameters, cached per Zod schema object, so
+ * republishing capabilities on every host render stays cheap.
+ */
+export const toParametersSchema = (schema: z.ZodType): Record<string, unknown> => {
+  let converted = parameterSchemas.get(schema);
+
+  if (!converted) {
+    converted = z.toJSONSchema(schema, { io: 'input', target: 'draft-7' }) as Record<
+      string,
+      unknown
+    >;
+    parameterSchemas.set(schema, converted);
+  }
+
+  return converted;
+};
+
 export class HostActionRegistry {
   private actions = new Map<string, RegisteredAction>();
 
@@ -78,7 +98,7 @@ export class HostActionRegistry {
       .map((a) => ({
         name: a.name,
         description: a.description,
-        parametersSchema: z.toJSONSchema(a.parametersSchema, { io: 'input', target: 'draft-7' }),
+        parametersSchema: toParametersSchema(a.parametersSchema),
         requiresConfirmation: a.requiresConfirmation,
       }));
   }

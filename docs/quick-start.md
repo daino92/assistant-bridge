@@ -67,7 +67,7 @@ export default AssistantProvider;
 
 If your app switches pages by state rather than URL, pass `router={{ page: currentPageKey, navigate: openPage }}` instead; `openPage` receives a catalog key.
 
-`pages` and `router` are the only required props. `AssistantHost` publishes the current page whenever `pathname` changes, registers `ui.navigate` and your actions, and disposes everything on unmount. Inline callbacks are fine: the latest `navigate` and `actions` are always used.
+`pages` and `router` are the only required props. `AssistantHost` publishes the current page whenever `pathname` changes, registers `ui.navigate` and your actions, and disposes everything on unmount. Inline callbacks are fine: the latest `navigate` and `actions` are always used, so handlers can read current app state directly.
 
 Optional props you will likely need later:
 
@@ -76,7 +76,6 @@ Optional props you will likely need later:
 | `principal`             | The user's permissions, to hide pages and actions they cannot use. Not authorization.       |
 | `entities`              | Data shared by every page, such as the current workspace.                                   |
 | `beforeNavigate`        | Business rules before the assistant opens a page; throw `createIntegrationError` to refuse. |
-| `actionDeps`            | A memoized value your actions depend on; they re-register when it changes.                  |
 | `connection="embedded"` | A chat rendered in the same React tree. See [step 6](#6-embed-the-chat).                    |
 | `highlight`             | A default outline for highlighted targets.                                                  |
 
