@@ -17,15 +17,11 @@ export type {
 
 export {
   HOST_ACTION_NAMES,
-  catalogFilterPayloadSchema,
   hostActionRequestSchema,
   hostActionResultSchema,
-  recordsFilterPayloadSchema,
-  recordsSortPayloadSchema,
   uiFocusPayloadSchema,
   uiHighlightPayloadSchema,
   uiNavigatePayloadSchema,
-  uiOpenDetailsPayloadSchema,
   uiScrollToPayloadSchema,
   uiSelectPayloadSchema,
   uiClearHighlightPayloadSchema,

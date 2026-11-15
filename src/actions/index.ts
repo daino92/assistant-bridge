@@ -11,7 +11,6 @@ export {
   focusAction,
   highlightAction,
   navigateAction,
-  openDetailsAction,
   scrollToAction,
   selectAction,
   clearHighlightAction,

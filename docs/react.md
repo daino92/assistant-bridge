@@ -32,7 +32,7 @@ import { IntegrationProvider, useHostIntegration } from 'assistant-bridge/react'
 
 const integration = useHostIntegration({
   onTimeline,
-  actions: ({ targets }) => createHostActions({ navigate, openDetails, targets }),
+  actions: ({ targets }) => createHostActions({ navigate, targets }),
 });
 // <IntegrationProvider integration={integration}>{children}</IntegrationProvider>
 ```
@@ -258,18 +258,7 @@ useHostPageContext(integration, {
 });
 ```
 
-When the host uses `definePageCatalog`, `useHostPageContextFromCatalog(integration, { catalog, pageKey, selection, entities })` is equivalent to passing `route: catalog.route(pageKey)` and `page: catalog.pageMeta(pageKey)` to `useHostPageContext`, so providers do not repeat those two lines on every page change.
-
-```tsx
-useHostPageContextFromCatalog(integration, {
-  catalog,
-  pageKey: currentPage,
-  selection: 'clear',
-  entities,
-});
-```
-
-Inside `IntegrationProvider`, `useAskAi()` exposes stable `askAbout(prompt, selection?)` and `prefillOnly(text)` callbacks. The host may re-export the hook from its own barrel; it no longer needs a local implementation.
+With a page catalog, `AssistantHost` publishes the page for you. To ask the assistant from a component, use `useAssistantHost()?.ask(prompt, { selection, metadata })`.
 
 `useHostIntegration` now delegates permanent cleanup to `integration.dispose()`. When creating an integration outside this hook, call `dispose()` from the owning application lifecycle. A shared `IntegrationProvider` does not own disposal. The method is idempotent; a disposed instance must not be reused.
 

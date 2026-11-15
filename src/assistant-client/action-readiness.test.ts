@@ -2,7 +2,6 @@ import { afterEach, expect, it, vi } from 'vitest';
 
 import {
   createAssistantActionExecutor,
-  defaultActionReadiness,
   waitForHostContext,
   type AssistantBridgeClient,
 } from '@/assistant-client';
@@ -28,7 +27,6 @@ const createBridge = () => {
 
   const bridge: AssistantBridgeClient = {
     getContext: () => context,
-    getInitialContext: () => context,
     requestHostAction: vi.fn(async () => ({ targetId: 'loaded' })),
     subscribeContext: (listener) => {
       listeners.add(listener);
@@ -147,23 +145,4 @@ it('cancels a pending quiet window and does not subscribe for an already-aborted
     waitForHostContext(bridge, () => true, { signal: controller.signal }),
   ).rejects.toThrow();
   expect(subscribe).not.toHaveBeenCalled();
-});
-
-it('does not treat an unrelated route as completed detail navigation', () => {
-  const { bridge } = createBridge();
-
-  const state = {
-    context: { ...bridge.getContext(), route: '/other' },
-    previousContext: bridge.getContext(),
-    args: { id: 'record-012' },
-    result: {},
-  };
-
-  expect(defaultActionReadiness['ui.openDetails'](state)).toBe(false);
-  expect(
-    defaultActionReadiness['ui.openDetails']({
-      ...state,
-      context: { ...state.context, route: '/records/record-012' },
-    }),
-  ).toBe(true);
 });

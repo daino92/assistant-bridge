@@ -18,8 +18,6 @@ export interface AssistantBridgeClient {
   subscribeActionLifecycle?: (callback: (event: ActionLifecycleEvent) => void) => () => void;
   /** Returns the latest published host context. */
   getContext(): HostContext;
-  /** @deprecated Returns the latest context, not the first one. Use {@link AssistantBridgeClient.getContext}. */
-  getInitialContext(): HostContext;
   subscribeContext(callback: (context: HostContext) => void): () => void;
   requestHostAction(
     action: string,
@@ -61,7 +59,6 @@ export const createAssistantBridgeClient = (bridge: HostBridge): AssistantBridge
     subscribeActionLifecycle: (callback) =>
       bridge.signal.aborted ? () => {} : bridge.bus.on('action.lifecycle', callback),
     getContext: () => contextManager(),
-    getInitialContext: () => contextManager(),
     subscribeContext: (callback) =>
       bridge.signal.aborted
         ? () => {}

@@ -30,13 +30,8 @@ export {
   useHostIntegration,
   type UseHostIntegrationOptions,
   useHostPageContext,
-  /** @deprecated Use `AssistantHost`, which publishes the page from the catalog. It will be removed in a future beta. */
-  useHostPageContextFromCatalog,
-  /** @deprecated Use `useAssistantHost().ask`. It will be removed in a future beta. */
-  useAskAi,
   useActionConfirmation,
   type HostPageContextOptions,
-  type HostPageContextFromCatalogOptions,
   type UiTargetOptions,
   type UseAssistantIframeConnectionOptions,
 } from './hooks';

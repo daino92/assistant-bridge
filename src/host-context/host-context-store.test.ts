@@ -208,10 +208,6 @@ it('isolates context notifications between direct assistant clients', () => {
   integration.updatePage({ route: '/records', page: { title: 'Records', type: 'records' } });
   expect(listener.mock.calls[0][0].page.title).toBe('Records');
   expect(integration.assistantClient.getContext().page.title).toBe('Records');
-  // Deprecated alias keeps returning the latest context.
-  expect(integration.assistantClient.getInitialContext()).toEqual(
-    integration.assistantClient.getContext(),
-  );
   integration.dispose();
 });
 
