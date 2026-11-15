@@ -1,4 +1,4 @@
-import { createIntegrationError, normalizeIntegrationError } from '@/errors';
+import { createIntegrationError, normalizeIntegrationError, toIntegrationError } from '@/errors';
 import type { HostActionRegistry } from '@/action-registry';
 import {
   actionLifecycleEventSchema,
@@ -382,7 +382,7 @@ export class HostBridge {
         requestId,
       );
 
-      throw normalizeIntegrationError({ code: ERROR_CODES.RECEIVER_UNAVAILABLE });
+      throw toIntegrationError({ code: ERROR_CODES.RECEIVER_UNAVAILABLE });
     }
 
     const request: AssistantCommandRequest = {

@@ -2,7 +2,7 @@ import { expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import { HostContextManager, whenPermitted } from '@/host-context';
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import type { HostContext } from '@/contracts';
 
 const INITIAL: Omit<HostContext, 'revision'> = {
@@ -86,7 +86,7 @@ it('does not bump revisions or notify for equal values, including JSON key order
 });
 
 it('publishes route, selection, entities and derived availability as one coherent revision', () => {
-  const integration = createHostIntegration({
+  const integration = createIntegration({
     actions: [
       {
         name: 'records.test',
@@ -127,7 +127,7 @@ it('publishes route, selection, entities and derived availability as one coheren
 });
 
 it('does not clear selection or highlights for an entity-only update outside React', () => {
-  const integration = createHostIntegration({ actions: [] });
+  const integration = createIntegration({ actions: [] });
 
   integration.updatePage({ route: '/records', page: { title: 'Records', type: 'records' } });
   integration.contextManager.setSelection({ type: 'record', id: 'one' });
@@ -198,7 +198,7 @@ it('keeps page policy consistent when a subscriber synchronously navigates again
 });
 
 it('isolates context notifications between direct assistant clients', () => {
-  const integration = createHostIntegration({ actions: [] });
+  const integration = createIntegration({ actions: [] });
   const listener = vi.fn();
 
   integration.assistantClient.subscribeContext((context) => {
@@ -208,15 +208,11 @@ it('isolates context notifications between direct assistant clients', () => {
   integration.updatePage({ route: '/records', page: { title: 'Records', type: 'records' } });
   expect(listener.mock.calls[0][0].page.title).toBe('Records');
   expect(integration.assistantClient.getContext().page.title).toBe('Records');
-  // Deprecated alias keeps returning the latest context.
-  expect(integration.assistantClient.getInitialContext()).toEqual(
-    integration.assistantClient.getContext(),
-  );
   integration.dispose();
 });
 
 it('replaces destinations through updatePage and preserves them when omitted', () => {
-  const integration = createHostIntegration({
+  const integration = createIntegration({
     actions: [],
     initialRoute: '/',
     destinations: [{ path: '/records', label: 'Records' }],
@@ -246,7 +242,7 @@ it('replaces destinations through updatePage and preserves them when omitted', (
 });
 
 it('publishes, preserves and clears the principal through updatePage', () => {
-  const integration = createHostIntegration({ actions: [] });
+  const integration = createIntegration({ actions: [] });
   const page = { title: 'Home', type: 'home' };
   const principal = { id: 'user-1', label: 'Editor', permissions: ['content:read'] };
 
@@ -262,7 +258,7 @@ it('publishes, preserves and clears the principal through updatePage', () => {
 });
 
 it('recomputes action availability when permissions change', () => {
-  const integration = createHostIntegration({
+  const integration = createIntegration({
     actions: [
       {
         name: 'content.publish',

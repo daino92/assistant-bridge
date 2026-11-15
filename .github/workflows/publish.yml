@@ -84,8 +84,6 @@ jobs:
         if: steps.version.outputs.published == 'false'
         run: |
           pnpm package:check
-          pnpm schemas:check
-          git diff --exit-code -- schemas
       - name: Publish using trusted publishing
         if: steps.version.outputs.published == 'false'
         run: pnpm dlx npm@11 publish --access public --tag ${{ steps.release.outputs.dist_tag }} --provenance

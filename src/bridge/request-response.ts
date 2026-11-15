@@ -1,4 +1,4 @@
-import { normalizeIntegrationError } from '@/errors';
+import { toIntegrationError } from '@/errors';
 import { ERROR_CODES, type StructuredError } from '@/contracts';
 import type { TypedEventBus } from '@/bridge';
 
@@ -55,7 +55,7 @@ export class RequestResponseChannel<
       if (parsed.success) {
         entry.resolve(parsed.data);
       } else {
-        entry.reject(normalizeIntegrationError(parsed.error));
+        entry.reject(toIntegrationError(parsed.error));
       }
     });
   }
@@ -66,13 +66,13 @@ export class RequestResponseChannel<
 
     return new Promise((resolve, reject) => {
       if (this.disposed) {
-        reject(normalizeIntegrationError({ code: ERROR_CODES.RECEIVER_UNAVAILABLE }));
+        reject(toIntegrationError({ code: ERROR_CODES.RECEIVER_UNAVAILABLE }));
 
         return;
       }
 
       if (this.pending.has(requestId)) {
-        reject(normalizeIntegrationError({ code: ERROR_CODES.EXECUTION_FAILED }));
+        reject(toIntegrationError({ code: ERROR_CODES.EXECUTION_FAILED }));
 
         return;
       }
@@ -86,7 +86,7 @@ export class RequestResponseChannel<
 
         entry.settled = true;
         this.pending.delete(requestId);
-        reject(normalizeIntegrationError({ code: ERROR_CODES.TIMEOUT }));
+        reject(toIntegrationError({ code: ERROR_CODES.TIMEOUT }));
       }, timeout);
 
       this.pending.set(requestId, {
@@ -118,7 +118,7 @@ export class RequestResponseChannel<
     if (result.success) {
       entry.resolve(result.data);
     } else {
-      entry.reject(normalizeIntegrationError(result.error));
+      entry.reject(toIntegrationError(result.error));
     }
 
     return true;
@@ -132,7 +132,7 @@ export class RequestResponseChannel<
 
       entry.settled = true;
       clearTimeout(entry.timeoutId);
-      entry.reject(normalizeIntegrationError(error));
+      entry.reject(toIntegrationError(error));
     }
 
     this.pending.clear();

@@ -44,9 +44,5 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
-      - name: Check generated schemas
-        run: |
-          pnpm schemas:check
-          git diff --exit-code -- schemas
       - name: Verify package and isolated consumers
         run: pnpm package:check

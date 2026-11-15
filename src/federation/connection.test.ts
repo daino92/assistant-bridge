@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import type { IntegrationTimelineEntry } from '@/contracts';
 
 import { connectFederatedAssistant } from '@/federation';
@@ -31,7 +31,7 @@ afterEach(() => {
 const connect = (runtimeName = 'test-runtime', attempt = 0) => {
   const timeline: IntegrationTimelineEntry[] = [];
 
-  const integration = createHostIntegration({
+  const integration = createIntegration({
     actions: [],
     onTimeline: (entry) => timeline.push(entry),
   });

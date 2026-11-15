@@ -12,6 +12,8 @@ export {
   type AssistantHighlightOptions,
   type AssistantHostApi,
   type AssistantHostProps,
+  type AssistantHostPageRouter,
+  type AssistantHostPathRouter,
   type AssistantHostRouter,
 } from './AssistantHost';
 
@@ -28,11 +30,8 @@ export {
   useHostIntegration,
   type UseHostIntegrationOptions,
   useHostPageContext,
-  useHostPageContextFromCatalog,
-  useAskAi,
   useActionConfirmation,
   type HostPageContextOptions,
-  type HostPageContextFromCatalogOptions,
   type UiTargetOptions,
   type UseAssistantIframeConnectionOptions,
 } from './hooks';
