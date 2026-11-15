@@ -659,6 +659,8 @@ No separate hand-maintained JSON Schema is required. Custom types that Zod canno
 
 `normalizeIntegrationError(error)` returns only `{ code, message }`: recognized SDK codes are preserved and messages come from a shared safe catalog. Unknown codes, untyped exceptions, string rejections and misleading code names embedded in message text fall back to `EXECUTION_FAILED`. Raw handler messages, stacks and extra fields are not forwarded. `createIntegrationError(ERROR_CODES.TIMEOUT)` creates a standard `Error` carrying the same safe code/message; `isIntegrationErrorCode(value)` checks supported codes.
 
+Requests that fail (`requestHostAction`, `executeAction`, host commands) reject with an `Error` that also carries `code`, `message` and, where allowed, `reason`. Both `error instanceof Error` and `error.code` work; the message is the safe one described here.
+
 Registry execution, same-window command handlers, request/result channels, iframe transport and AG-UI host tool outcomes use this policy. SDK readiness waits emit `TIMEOUT`; unavailable actions and missing UI targets have explicit codes. `ACTION_REJECTED` is the SDK error code for user rejection. The AG-UI adapter checks codes instead of guessing categories from arbitrary message text. Provider/run errors remain a separate BFF concern; this API normalizes integration failures, not arbitrary provider-specific codes.
 
 Host handlers should throw an error/object with a supported `code`. Handler messages are not part of the public error contract. Inspect `code` for branching and translate it in application UI if needed. Unknown custom codes are intentionally not transported unchanged.

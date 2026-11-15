@@ -40,6 +40,16 @@ export const normalizeIntegrationError = (error: unknown): StructuredError => {
   return { code, message: reason?.message ?? ERROR_MESSAGES[code], ...(reason ? { reason } : {}) };
 };
 
+/**
+ * The normalized error as an `Error`, so consumers can use `instanceof Error` and `message`
+ * as well as `code` and `reason`. Every rejection the SDK hands to a consumer uses this.
+ */
+export const toIntegrationError = (error: unknown): Error & StructuredError => {
+  const detail = normalizeIntegrationError(error);
+
+  return Object.assign(new Error(detail.message), detail);
+};
+
 export const createIntegrationError = (
   code: ErrorCode,
   reason?: BusinessReason,

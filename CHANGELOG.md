@@ -10,6 +10,9 @@
   `contextRevision` and `selection` cannot be overridden. A selection alone still works.
 - `defineAction` accepts `exposeErrorMessages`: a handler's ordinary `Error` reaches the
   assistant as `ACTION_NOT_AVAILABLE` with reason `ACTION_FAILED` and its message.
+- Failed requests, actions and commands reject with an `Error` carrying `code`, `message` and
+  `reason`, instead of a plain object. Code that checks `error instanceof Error` now sees the
+  safe message, including public reasons.
 - **Breaking:** removed APIs that only demos or internals used:
   - Root exports of internal parts: `HostBridge`, `TypedEventBus`, `RequestResponseChannel`,
     `HostActionRegistry`, `HostContextManager`, `attachHostPort`, `createPortAssistantClient`,

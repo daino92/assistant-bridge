@@ -269,6 +269,14 @@ it('delivers an exposed handler message to the assistant, and hides others', asy
     }),
   );
 
+  // Rejections are Error instances, so `instanceof Error` and `message` work too.
+  const exposed = await integration.assistantClient
+    .requestHostAction('cms.publish', {})
+    .catch((error: unknown) => error);
+
+  expect(exposed).toBeInstanceOf(Error);
+  expect((exposed as Error).message).toBe('Entry 12 changed since you opened it.');
+
   const hidden = await integration.assistantClient
     .requestHostAction('cms.hidden', {})
     .catch((error: unknown) => error);
