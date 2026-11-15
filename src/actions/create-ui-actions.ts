@@ -2,7 +2,6 @@ import {
   focusAction,
   highlightAction,
   navigateAction,
-  openDetailsAction,
   scrollToAction,
   selectAction,
   clearHighlightAction,
@@ -44,10 +43,6 @@ export interface CreateUiActionsOptions {
     registry: UiTargetRegistry;
     enable: readonly UiTargetActionName[];
   };
-  /** @deprecated Demo `ui.openDetails` for fixed entity types; it will be removed in a future beta. Use `defineAction`. */
-  details?: {
-    open: Parameters<typeof openDetailsAction>[0]['openDetails'];
-  };
 }
 
 /** Returns definitions only; omitted groups enable no actions. */
@@ -74,10 +69,6 @@ export const createUiActions = (options: CreateUiActionsOptions = {}): HostActio
     for (const name of new Set(options.targets.enable)) {
       actions.push(targetActionFactories[name](options.targets.registry));
     }
-  }
-
-  if (options.details) {
-    actions.push(openDetailsAction({ openDetails: options.details.open }));
   }
 
   return actions;

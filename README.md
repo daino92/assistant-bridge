@@ -80,7 +80,7 @@ Next steps:
 ```mermaid
 flowchart LR
     Assistant[Assistant UI and response logic] --> Client[AssistantBridgeClient]
-    Client --> Bridge[HostBridge]
+    Client --> Bridge[Host bridge]
     Bridge --> Registry[Action registry and Zod validation]
     Registry --> Host[Host-owned action handlers]
     Host --> Context[Host context]

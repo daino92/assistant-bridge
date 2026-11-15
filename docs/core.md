@@ -6,11 +6,11 @@ The framework-independent API of `assistant-bridge`. It has no React, federation
 
 <pre>
 ├─ Overview
-│  └─ <a href="#building-blocks">HostActionRegistry, HostContextManager, UiTargetRegistry, HostBridge, TypedEventBus, RequestResponseChannel</a>
+│  └─ <a href="#building-blocks">createHostIntegration, UiTargetRegistry, AssistantBridgeClient</a>
 ├─ Host setup
 │  ├─ <a href="#create-the-host-integration">createHostIntegration</a>
 │  ├─ <a href="#define-host-actions">defineAction</a>
-│  ├─ <a href="#define-host-actions">navigateAction, highlightAction, scrollToAction, focusAction, selectAction, openDetailsAction</a>
+│  ├─ <a href="#define-host-actions">navigateAction, highlightAction, scrollToAction, focusAction, selectAction</a>
 │  └─ <a href="#compose-common-ui-actions">createUiActions</a>
 ├─ Host context
 │  ├─ <a href="#update-the-page">integration.updatePage</a>
@@ -27,14 +27,12 @@ The framework-independent API of `assistant-bridge`. It has no React, federation
 │  └─ <a href="#dispatch-assistant-commands">createAssistantCommandDispatcher</a>
 ├─ Connections
 │  ├─ <a href="#connect-an-iframe">connectIframe, connectAssistantIframe, createAssistantIframeUrl</a>
-│  ├─ <a href="#connect-an-iframe">attachHostPort, createPortAssistantClient</a>
 │  └─ <a href="#connect-a-same-window-assistant">connectEmbeddedAssistant</a>
 ├─ Action execution
 │  ├─ <a href="#execute-actions-from-the-assistant">createAssistantActionExecutor</a>
-│  ├─ <a href="#action-readiness">defaultActionReadiness, waitForHostContext</a>
+│  ├─ <a href="#action-readiness">Action readiness</a>
 │  ├─ <a href="#action-confirmations">createActionConfirmationController</a>
 │  ├─ <a href="#action-lifecycle">subscribeActionLifecycle</a>
-│  ├─ <a href="#action-progress">reduceActionProgress, finalizeActionProgress</a>
 │  └─ <a href="#action-schemas">Zod to JSON Schema capabilities</a>
 └─ Errors and lifecycle
    ├─ <a href="#integration-errors">createIntegrationError, normalizeIntegrationError, isIntegrationErrorCode</a>
@@ -45,17 +43,14 @@ The framework-independent API of `assistant-bridge`. It has no React, federation
 
 ## Building blocks
 
-| API                                            | Responsibility                                                                                      |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `createHostIntegration`                        | Creates and connects the bridge, action registry, context manager, target registry, and client APIs |
-| `AssistantBridgeClient`                        | Assistant-facing access to host context and action requests                                         |
-| `HostAssistantCommands`                        | Host-facing commands: open, close, focus, prefill, and submit prompt                                |
-| `HostActionRegistry`                           | Validates action payloads with Zod, checks availability, and executes registered handlers           |
-| `HostContextManager`                           | Publishes route, page, selection, capabilities, and revision updates                                |
-| `UiTargetRegistry`                             | Resolves host-owned targets for highlighting, scrolling, focusing, and selecting                    |
-| `HostBridge`                                   | Coordinates requests, results, readiness, context events, and integration timeline entries          |
-| `TypedEventBus` / `RequestResponseChannel`     | Typed in-memory events and correlated request/result handling                                       |
-| `attachHostPort` / `createPortAssistantClient` | Adapt the bridge to a private `MessagePort`, used by the iframe integration                         |
+| API                     | Responsibility                                                                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `createHostIntegration` | Creates the integration: action validation and execution, published context, UI targets and the client APIs |
+| `AssistantBridgeClient` | Assistant-facing access to host context and action requests                                                 |
+| `HostAssistantCommands` | Host-facing commands: open, close, focus, prefill, and submit prompt                                        |
+| `UiTargetRegistry`      | Resolves host-owned targets for highlighting, scrolling, focusing, and selecting                            |
+
+The bridge, registries, event bus and port transport are internal. Use them through the returned `HostIntegration`; they are not exported.
 
 The SDK does not provide a chat interface, model provider, backend, conversation storage, or host-specific business logic. Both real and simulated assistants can use the same client interface.
 
@@ -118,7 +113,15 @@ The returned integration exposes `bridge`, `contextManager`, `actionRegistry`, `
 Use `defineAction` for application-specific behavior. Its Zod schema validates incoming payloads before the handler runs; `available` can restrict execution to an appropriate host context.
 
 ```ts
-import { defineAction, recordsFilterPayloadSchema } from 'assistant-bridge';
+import { z } from 'zod';
+import { defineAction } from 'assistant-bridge';
+
+const recordsFilterSchema = z
+  .object({
+    search: z.string().max(100).optional(),
+    status: z.enum(['active', 'pending', 'archived', 'all']).optional(),
+  })
+  .strict();
 
 // Include this action in createHostIntegration({ actions: [...] }).
 // applyFilters is supplied by the host and updates its own state.
@@ -131,7 +134,7 @@ const createRecordsFilterAction = (
   defineAction({
     name: 'records.filter',
     description: 'Filter the host records table',
-    schema: recordsFilterPayloadSchema,
+    schema: recordsFilterSchema,
     available: (context) => context.route.startsWith('/records'),
     handler: (payload) => {
       applyFilters(payload);
@@ -142,7 +145,7 @@ const createRecordsFilterAction = (
 
 An action name or exported schema does not register a handler automatically. The host must supply the action explicitly.
 
-Built-in action factories are `navigateAction`, `highlightAction`, `scrollToAction`, `focusAction`, `selectAction`, and `openDetailsAction`. UI-target actions operate on targets registered by the host. The action factory callback provides the shared registry:
+Built-in action factories are `navigateAction`, `highlightAction`, `scrollToAction`, `focusAction` and `selectAction`, plus the other UI-target actions listed in `UI_TARGET_ACTIONS`. UI-target actions operate on targets registered by the host. The action factory callback provides the shared registry:
 
 ```ts
 import { createHostIntegration, focusAction, highlightAction } from 'assistant-bridge';
@@ -163,15 +166,14 @@ const actions = [
   ...createUiActions({
     navigation: { navigate, allowedRoutes: ALLOWED_ROUTES, detailPattern: DETAIL_ROUTE },
     targets: { registry: targets, enable: UI_TARGET_ACTIONS },
-    details: { open: openDetails },
   }),
   // Add host-specific actions with defineAction(...).
 ];
 ```
 
-`createUiActions` returns `HostActionInput[]` without registering or executing anything. Pass the result to `createHostIntegration` or `useHostIntegration`. Omitted groups enable no actions; `{}` returns an empty list. Target action names are explicitly selected and duplicate selections are included once, in their first-occurrence order. **`UI_TARGET_ACTIONS`** lists every built-in UI-target tool so hosts can enable the full set without repeating names; slice or replace it for a tighter surface. Navigation is emitted first, then selected target actions, then details. Pass **`beforeNavigate`** inside `navigation` for the same guard hook as `navigateAction`.
+`createUiActions` returns `HostActionInput[]` without registering or executing anything. Pass the result to `createHostIntegration` or `useHostIntegration`. Omitted groups enable no actions; `{}` returns an empty list. Target action names are explicitly selected and duplicate selections are included once, in their first-occurrence order. **`UI_TARGET_ACTIONS`** lists every built-in UI-target tool so hosts can enable the full set without repeating names; slice or replace it for a tighter surface. Navigation is emitted first, then selected target actions. Pass **`beforeNavigate`** inside `navigation` for the same guard hook as `navigateAction`.
 
-`CreateUiActionsOptions` and `UiTargetActionName` are exported for typed configuration. The helper delegates to the individual action factories, preserving their schemas, route checks and errors. Those factories remain available separately. Hosts still own allowed routes, detail URL mapping, target IDs and business handlers; the helper adds no catalog/records store access or implicit permissions.
+`CreateUiActionsOptions` and `UiTargetActionName` are exported for typed configuration. The helper delegates to the individual action factories, preserving their schemas, route checks and errors. Those factories remain available separately. Hosts still own allowed routes, target IDs and business handlers; the helper adds no catalog/records store access or implicit permissions.
 
 ## Update the page
 
@@ -397,7 +399,7 @@ const connectAssistant = (
 };
 ```
 
-`getContext()` returns the latest available snapshot. `getInitialContext()` is a deprecated alias with the same behavior. `subscribeContext()` receives subsequent changes and returns an unsubscribe function. An action request resolves to the handler's returned data or rejects on failure.
+`getContext()` returns the latest available snapshot. `subscribeContext()` receives subsequent changes and returns an unsubscribe function. An action request resolves to the handler's returned data or rejects on failure.
 
 The optional revision is a **minimum host revision**, not an exact-match check. The registry rejects a request when the host revision is lower than the supplied revision; a newer host context is accepted.
 
@@ -419,7 +421,7 @@ The receiver must implement these commands and return correlated results. The SD
 
 For a same-window receiver, use `attachAssistantCommandHandler(integration.bridge, handler)`. It validates command envelopes and emits correlated results from the handler's return value or rejection. The handler must validate command-specific payloads and reject unsupported commands. The returned function detaches the receiver; the host also calls `notifyAssistantUnmounted()` when disconnecting.
 
-For an iframe receiver, the port adapter forwards command requests to the `onCommand` callback passed to `createPortAssistantClient` and creates the result envelope from its return value or rejection.
+For an iframe receiver, `connectAssistantIframe` (or `useAssistantIntegration`) forwards command requests to its `onCommand` callback and creates the result envelope from its return value or rejection.
 
 Host command helpers combine these commands:
 
@@ -502,13 +504,13 @@ Both applications import `ASSISTANT_IFRAME_MESSAGES` from the SDK for the brand-
 
 1. The chat announces readiness to its configured host origin.
 2. The host checks the message's exact `origin` and `source` against the intended iframe.
-3. The host creates a `MessageChannel`, calls `attachHostPort(port1, integration.bridge)`, and transfers `port2` with a context snapshot to the verified iframe origin.
-4. The chat verifies the parent origin/source, validates the context, and calls `createPortAssistantClient(port2, context, onCommand)`.
+3. The host creates a private `MessageChannel`, attaches one port to its integration and transfers the other with a context snapshot to the verified iframe origin.
+4. The chat verifies the parent origin/source, validates the context and wraps its port in an `AssistantBridgeClient`.
 5. After the chat acknowledges the connection, the host marks the assistant ready. Application logic uses the returned `client` as `AssistantBridgeClient`.
 
 The port adapters validate envelopes, correlate requests, forward context and commands, enforce a fixed 10-second port request timeout, and reject pending requests when disposed. The port layer currently converts remote failures into `Error` messages; structured error codes are not preserved end-to-end through that adapter.
 
-The high-level iframe connection APIs own the window handshake and exact origin/source checks. The host owns iframe rendering, visibility and the reconnect button. Low-level `attachHostPort` remains available, but callers using it directly must perform their own window checks. See [assistant-side React hooks](react.md#assistant-side-hooks) for the assistant connection.
+The high-level iframe connection APIs own the window handshake and exact origin/source checks. The host owns iframe rendering, visibility and the reconnect button. The port adapters are internal; use `connectIframe` / `connectAssistantIframe` (or `AssistantEmbed` and `useAssistantIntegration` in React). See [assistant-side React hooks](react.md#assistant-side-hooks) for the assistant connection.
 
 ## Connect a same-window assistant
 
@@ -563,9 +565,9 @@ const executor = createAssistantActionExecutor(bridge, {
 
 Predicates receive the latest context, the pre-dispatch context, snapshotted arguments and the action result. They run after a successful dispatch, immediately against the current snapshot and again on context notifications. Returning true starts a quiet window; every notification resets that window. Timeout defaults to 3000 ms, quiet window to 50 ms. Cancellation, timeout and predicate/subscription errors clean up timers/listeners. A readiness failure does not roll back a completed action and must not trigger automatic mutation retries.
 
-`defaultActionReadiness` provides rules for `ui.navigate` (exact requested route) and `ui.openDetails` (route ending in the requested entity ID); override either for custom route formats or additional target requirements. Other actions wait only for the quiet context window. Default navigation rules do not prove that asynchronous data or all UI targets have loaded: supply an explicit predicate when subsequent actions depend on those. Predicates must be synchronous, side-effect free and inspect published context; they cannot query server state asynchronously.
+By default, `ui.navigate` waits until the published route equals the requested path; override it for custom route formats or additional target requirements. Other actions wait only for the quiet context window. Default navigation rules do not prove that asynchronous data or all UI targets have loaded: supply an explicit predicate when subsequent actions depend on those. Predicates must be synchronous, side-effect free and inspect published context; they cannot query server state asynchronously.
 
-`waitForHostContext(bridge, predicate, { signal, timeoutMs, settleMs })` is also exported for direct use. Configuration is supplied where the executor runs, normally in the independent chat application. Functions are not serialized across the iframe/AG-UI protocol. The host publishes the route, targets and entity summaries used by those predicates.
+Configuration is supplied where the executor runs, normally in the independent chat application. Functions are not serialized across the iframe/AG-UI protocol. The host publishes the route, targets and entity summaries used by those predicates.
 
 ## Action confirmations
 
@@ -645,16 +647,7 @@ This lifecycle belongs to the host/chat bridge, not to the BFF AG-UI/WebSocket/S
 
 ## Action progress
 
-The core SDK exports `reduceActionProgress`, `finalizeActionProgress` and `ActionProgressEntry`. Consumers keep their own labels and storage:
-
-```ts
-const actions = reduceActionProgress(previousActions, event, {
-  label: describeAction(event.action),
-});
-const finalActions = finalizeActionProgress(actions, 'stopped'); // or failed
-```
-
-The reducer upserts by `actionExecutionId`, preserves list order, ignores duplicate/older sequences and never resurrects terminal entries. Canonical ID/status/sequence/dispatch/error fields come from the lifecycle event; presentation fields remain consumer-owned. Inputs are not mutated; ignored updates return the original array. Finalization changes only unfinished entries, preserving completed/rejected/cancelled outcomes and the dispatch uncertainty flag. The `stopped` status is also supported for saved chat histories.
+`createChatSession` (in `/ag-ui`) keeps per-message action progress as `ActionProgressEntry` items. The reducer upserts by `actionExecutionId`, preserves list order, ignores duplicate/older sequences and never resurrects terminal entries. Canonical ID/status/sequence/dispatch/error fields come from the lifecycle event; presentation fields remain consumer-owned. Inputs are not mutated; ignored updates return the original array. Finalization changes only unfinished entries, preserving completed/rejected/cancelled outcomes and the dispatch uncertainty flag. The `stopped` status is also supported for saved chat histories.
 
 ## Action schemas
 
@@ -758,6 +751,6 @@ integration.dispose();
 
 `useHostIntegration` calls `dispose()` automatically on final unmount while preserving Strict Mode replay behavior. `IntegrationProvider` only shares the instance and does not dispose an externally supplied integration. Component-level connection cleanup remains safe to call before or after the integration is disposed.
 
-`HostBridge.signal` and optional `AssistantBridgeClient.signal` indicate SDK lifetime termination. Built-in clients provide the signal; custom clients can omit it for compatibility. Readiness waits listen to both caller cancellation and client lifetime. The iframe port sends an internal `disconnect` notification so the chat-side client can reject pending requests and abort its lifetime signal. This is part of the host/chat bridge, not the BFF AG-UI transport contract.
+`integration.bridge.signal` and optional `AssistantBridgeClient.signal` indicate SDK lifetime termination. Built-in clients provide the signal; custom clients can omit it for compatibility. Readiness waits listen to both caller cancellation and client lifetime. The iframe port sends an internal `disconnect` notification so the chat-side client can reject pending requests and abort its lifetime signal. This is part of the host/chat bridge, not the BFF AG-UI transport contract.
 
 Disposal does not remove host DOM, unload federation runtime caches, cancel arbitrary already-running handler promises, roll back completed mutations or stop independently owned BFF/model runs. Confirmation UI and per-run cancellation remain owned by the chat application. The SDK prevents later dispatch after an awaited confirmation if its client lifetime ended.

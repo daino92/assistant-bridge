@@ -8,7 +8,6 @@ import {
   uiFocusPayloadSchema,
   uiHighlightPayloadSchema,
   uiNavigatePayloadSchema,
-  uiOpenDetailsPayloadSchema,
   uiScrollToPayloadSchema,
   uiSelectPayloadSchema,
   uiClearHighlightPayloadSchema,
@@ -202,21 +201,6 @@ export const selectAction = (
       }
 
       return { targetId, value };
-    },
-  };
-};
-
-export const openDetailsAction = (deps: {
-  openDetails: (entityType: 'catalog' | 'record', id: string) => void;
-}): HostActionInput<z.infer<typeof uiOpenDetailsPayloadSchema>> => {
-  return {
-    name: HOST_ACTION_NAMES.UI_OPEN_DETAILS,
-    description: 'Open entity detail page',
-    schema: uiOpenDetailsPayloadSchema,
-    handler({ entityType, id }) {
-      deps.openDetails(entityType, id);
-
-      return { entityType, id };
     },
   };
 };

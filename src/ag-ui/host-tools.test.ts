@@ -31,7 +31,6 @@ it('requires explicit approval, snapshots arguments and rechecks permissions bef
 
   const bridge: AssistantBridgeClient = {
     getContext: () => context,
-    getInitialContext: () => context,
     subscribeContext: () => () => {},
     requestHostAction: dispatch,
   };
@@ -103,7 +102,6 @@ it('refuses approval if business entity context changes while the card is open',
 
   const bridge: AssistantBridgeClient = {
     getContext: () => context,
-    getInitialContext: () => context,
     subscribeContext: () => () => {},
     requestHostAction: dispatch,
   };
@@ -146,7 +144,6 @@ it('does not dispatch when a run stops while approval is pending', async () => {
 
   const bridge: AssistantBridgeClient = {
     getContext: () => context,
-    getInitialContext: () => context,
     subscribeContext: () => () => {},
     requestHostAction: dispatch,
   };
@@ -193,7 +190,6 @@ it('advertises only non-confirmation tools and rechecks current permissions/revi
 
   const bridge: AssistantBridgeClient = {
     getContext: () => context,
-    getInitialContext: () => context,
     subscribeContext: () => () => {},
     requestHostAction,
   };
@@ -246,7 +242,6 @@ it('waits for the destination context and publishes its targets, destinations an
 
   const bridge: AssistantBridgeClient = {
     getContext: () => context,
-    getInitialContext: () => context,
     subscribeContext: (callback) => {
       listener = callback;
 
@@ -304,9 +299,6 @@ it('cleans up a pending navigation context subscription on cancellation', async 
         },
       ],
     }),
-    getInitialContext() {
-      return this.getContext();
-    },
     subscribeContext: vi.fn(() => unsubscribe),
     requestHostAction: async () => ({ path: '/records' }),
   };
@@ -343,9 +335,6 @@ it('fails with a bounded timeout when navigation does not publish the destinatio
         },
       ],
     }),
-    getInitialContext() {
-      return this.getContext();
-    },
     subscribeContext: () => unsubscribe,
     requestHostAction: async () => ({ path: '/records' }),
   };
