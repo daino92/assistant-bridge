@@ -145,18 +145,9 @@ useAssistantIntegration({
 
 Set `iframe: { enabled: false }` for a standalone chat with no host.
 
-## AG-UI chats
+## Backend protocols
 
-A chat that talks to an AG-UI backend can use `createChatSession` from `assistant-bridge/ag-ui` instead of steps 4 and 5. It sends the host context and tools, and runs host actions through the same approval flow:
-
-```ts
-session.submit(prompt, {
-  bridge: integration.bridge,
-  requestConfirmation: integration.requestConfirmation,
-});
-```
-
-See [AG-UI client](ag-ui.md).
+The SDK does not talk to your backend. Whatever the protocol (AG-UI, SSE, WebSocket), the chat sends the host context and capabilities in its own format (step 4) and runs each requested host action with `executeHostAction` (step 5).
 
 ## Responsibilities
 

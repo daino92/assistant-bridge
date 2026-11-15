@@ -13,6 +13,12 @@
 - Failed requests, actions and commands reject with an `Error` carrying `code`, `message` and
   `reason`, instead of a plain object. Code that checks `error instanceof Error` now sees the
   safe message, including public reasons.
+- **Breaking:** removed the `assistant-bridge/ag-ui` entry (WebSocket/STOMP agent client, run
+  controller, chat session, run errors, protocol schemas and the `schemas/` files) and the
+  `reduceActionProgress` / `finalizeActionProgress` helpers it used. Talking to a backend belongs to
+  the chat application; the SDK now covers only the host/assistant connection. The package no
+  longer depends on `@ag-ui/client`, `@ag-ui/core`, `@stomp/stompjs` or `rxjs`. Chats run host
+  tool calls with `createAssistantActionExecutor` or `useAssistantIntegration().executeHostAction`.
 - **Breaking:** removed APIs that only demos or internals used:
   - Root exports of internal parts: `HostBridge`, `TypedEventBus`, `RequestResponseChannel`,
     `HostActionRegistry`, `HostContextManager`, `attachHostPort`, `createPortAssistantClient`,

@@ -83,7 +83,7 @@ Backend support is required for dynamic tool discovery and correlated results. S
 
 `executeHostAction` uses the existing SDK executor: host capabilities, payload validation at the host, context revision checks, confirmation, action lifecycle events and readiness handling remain in effect. Render `confirmation` with `approve`/`reject`, or supply an existing approval UI through `actions.requestConfirmation(request, signal)`. A custom approval callback must respect cancellation. `actions` also accepts `signal`, `readiness`, `contextWait` and `onActionLifecycle`; updates apply to new action executions without aborting an existing action on every React render.
 
-For an existing AG-UI chat, continue using `createChatSession` with `integration.bridge` and `integration.requestConfirmation`. The AG-UI adapter already translates capabilities, tools and results. It shares the same approval UI; do not execute a tool a second time through the manual adapter.
+The SDK contains no backend client. An AG-UI, SSE or other backend adapter lives in the chat application and calls `executeHostAction` (or `createAssistantActionExecutor` with `integration.bridge` and `integration.requestConfirmation`) for each host tool call.
 
 ## Candidate mappings
 
