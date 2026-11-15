@@ -1,5 +1,7 @@
 # assistant-bridge/react
 
+> **New host?** Start with [`AssistantHost`](#assistanthost) and the [host quick start](quick-start.md). **New chat?** Start with the [chat quick start](chat-quick-start.md). The provider and hooks below are the lower-level parts those are built from.
+
 Optional React context from the single `assistant-bridge` package. Import this entry point only in React consumers and supply the optional `react` peer dependency. The root entry remains framework agnostic.
 
 ```tsx
