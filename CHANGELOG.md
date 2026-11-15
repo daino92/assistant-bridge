@@ -13,6 +13,16 @@
 - Failed requests, actions and commands reject with an `Error` carrying `code`, `message` and
   `reason`, instead of a plain object. Code that checks `error instanceof Error` now sees the
   safe message, including public reasons.
+- **Breaking (security):** iframe chats no longer trust the `hostOrigin` query parameter on
+  their own. Pass `allowedOrigins` to `useAssistantIframeConnection` or
+  `useAssistantIntegration({ iframe })`; the parameter is used only when listed. An explicit
+  `hostOrigin` works as before. Before, any page could frame the chat and act as its host.
+- The package declares `sideEffects: false`. A host that does not embed an iframe or a federation
+  remote no longer bundles that code.
+- **Breaking:** `HostIntegration` no longer exposes `bridge`, `contextManager` or
+  `actionRegistry`, nor the `connectIframe` method (use `connectHostIframe(integration, options)`), and `attachAssistantCommandHandler` is no longer exported. Use `updatePage`,
+  the new `setSelection(selection | null)`, `connectEmbeddedAssistant` and `AssistantHost`.
+  `targetRegistry`, `assistantCommands` and `assistantClient` stay.
 - **Breaking:** `AssistantHost` no longer takes `actionDeps`. The `actions` factory runs on every
   render and registered actions delegate to its latest definitions, so handlers and `available`
   always see current host state. Actions re-register only when their published shape changes

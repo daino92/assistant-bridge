@@ -26,7 +26,6 @@ export {
 export {
   createAssistantBridgeClient,
   createHostAssistantCommands,
-  attachAssistantCommandHandler,
   type AskOptions,
   type AssistantCommandHandler,
   type AssistantBridgeClient,

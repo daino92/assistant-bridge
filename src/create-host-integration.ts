@@ -16,7 +16,6 @@ import {
   type IntegrationTimelineEntry,
 } from '@/contracts';
 import { HostContextManager, type HostPageUpdateOptions } from '@/host-context';
-import { connectHostIframe, type HostIframeConnectionOptions } from '@/connections';
 
 export type UpdatePageOptions = HostPageUpdateOptions;
 
@@ -34,20 +33,49 @@ export interface CreateHostIntegrationOptions {
   actionTimeoutMs?: number;
 }
 
+/** What a host uses. The bridge, context store and action registry stay internal. */
 export interface HostIntegration {
+  /** Ends the integration: rejects pending requests and clears targets and actions. */
   dispose(): void;
   subscribeActionLifecycle(listener: (event: ActionLifecycleEvent) => void): () => void;
+  /** Publishes the current route, page, selection, entities, destinations and principal. */
   updatePage(options: UpdatePageOptions): void;
-  connectIframe(options: HostIframeConnectionOptions): () => void;
-  bridge: HostBridge;
-  contextManager: HostContextManager;
-  actionRegistry: HostActionRegistry;
+  /**
+   * Publishes the entity the user selected (also as a `host.entity.selected` event), or clears
+   * the selection with `null`. It does not submit a prompt.
+   */
+  setSelection(selection: NonNullable<HostContext['selection']> | null): void;
+  /** UI targets the assistant can highlight, scroll to and focus. */
   targetRegistry: UiTargetRegistry;
+  /** Commands to the assistant: open, close, focus, prefill, submitPrompt, askAbout. */
   assistantCommands: HostAssistantCommands;
+  /** The restricted client a same-window assistant receives. */
   assistantClient: AssistantBridgeClient;
 }
 
-export const createHostIntegration = (options: CreateHostIntegrationOptions): HostIntegration => {
+/** SDK-internal parts of an integration created by {@link createHostIntegration}. */
+export interface IntegrationInternals extends HostIntegration {
+  bridge: HostBridge;
+  contextManager: HostContextManager;
+  actionRegistry: HostActionRegistry;
+}
+
+/**
+ * Internal access for SDK modules (connections, React hooks). Only integrations created by
+ * `createHostIntegration` have these parts.
+ */
+export const internalsOf = (integration: HostIntegration): IntegrationInternals => {
+  const internals = integration as Partial<IntegrationInternals>;
+
+  if (!internals.bridge || !internals.contextManager || !internals.actionRegistry) {
+    throw new Error('Use an integration created by createHostIntegration');
+  }
+
+  return internals as IntegrationInternals;
+};
+
+/** {@link createHostIntegration} with its internal parts, for SDK modules and tests. */
+export const createIntegration = (options: CreateHostIntegrationOptions): IntegrationInternals => {
   const contextManager = new HostContextManager({
     route: options.initialRoute ?? '/',
     page: options.initialPage ?? { title: 'Dashboard', type: 'dashboard' },
@@ -90,7 +118,7 @@ export const createHostIntegration = (options: CreateHostIntegrationOptions): Ho
 
   let disposed = false;
 
-  const integration: HostIntegration = {
+  const integration: IntegrationInternals = {
     subscribeActionLifecycle: (listener) =>
       bridge.signal.aborted ? () => {} : bridge.bus.on('action.lifecycle', listener),
     dispose: () => {
@@ -121,7 +149,17 @@ export const createHostIntegration = (options: CreateHostIntegrationOptions): Ho
         targetRegistry.clearAllHighlights();
       }
     },
-    connectIframe: (connectionOptions) => connectHostIframe(integration, connectionOptions),
+    setSelection: (selection) => {
+      if (disposed || bridge.signal.aborted) {
+        throw createIntegrationError(ERROR_CODES.RECEIVER_UNAVAILABLE);
+      }
+
+      if (selection) {
+        bridge.publishEntitySelected(selection.type, selection.id);
+      } else {
+        contextManager.clearSelection();
+      }
+    },
     bridge,
     contextManager,
     actionRegistry,
@@ -132,3 +170,7 @@ export const createHostIntegration = (options: CreateHostIntegrationOptions): Ho
 
   return integration;
 };
+
+/** Creates the host side of the integration. Call `dispose()` when the host unmounts. */
+export const createHostIntegration = (options: CreateHostIntegrationOptions): HostIntegration =>
+  createIntegration(options);

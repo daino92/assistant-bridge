@@ -5,7 +5,7 @@ import {
   createActionConfirmationController,
   createAssistantActionExecutor,
 } from '@/assistant-client';
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 
 const REQUEST = { name: 'records.delete', description: 'Delete', args: { recordId: 'one' } };
 
@@ -94,7 +94,7 @@ it.each(['stop', 'dispose'])(
   async (operation) => {
     const dispatch = vi.fn();
 
-    const integration = createHostIntegration({
+    const integration = createIntegration({
       actions: [
         {
           name: REQUEST.name,

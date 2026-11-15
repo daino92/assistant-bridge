@@ -1,3 +1,4 @@
+import { internalsOf } from '@/create-host-integration';
 import { StrictMode, type ReactNode } from 'react';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -31,17 +32,17 @@ describe('useHostIntegration', () => {
     });
 
     const integration = result.current;
-    const destroy = vi.spyOn(integration.bridge, 'destroy');
+    const destroy = vi.spyOn(internalsOf(integration).bridge, 'destroy');
     const disposeIntegration = vi.spyOn(integration, 'dispose');
 
     expect(onTimeline).toHaveBeenCalledOnce();
-    expect(integration.bridge.bus.listenerCount('host.action.request')).toBe(1);
+    expect(internalsOf(integration).bridge.bus.listenerCount('host.action.request')).toBe(1);
     rerender({ ...options });
     expect(result.current).toBe(integration);
 
-    const detach = attachAssistantCommandHandler(integration.bridge, () => 'ack');
+    const detach = attachAssistantCommandHandler(internalsOf(integration).bridge, () => 'ack');
 
-    integration.bridge.notifyAssistantReady('test');
+    internalsOf(integration).bridge.notifyAssistantReady('test');
     await expect(integration.assistantCommands.open()).resolves.toBe('ack');
     expect(destroy).not.toHaveBeenCalled();
     expect(disposeIntegration).not.toHaveBeenCalled();
@@ -49,8 +50,8 @@ describe('useHostIntegration', () => {
     await Promise.resolve();
     expect(destroy).toHaveBeenCalledOnce();
     expect(disposeIntegration).toHaveBeenCalledOnce();
-    expect(integration.bridge.isAssistantAvailable()).toBe(false);
-    expect(integration.bridge.bus.listenerCount('host.action.request')).toBe(0);
+    expect(internalsOf(integration).bridge.isAssistantAvailable()).toBe(false);
+    expect(internalsOf(integration).bridge.bus.listenerCount('host.action.request')).toBe(0);
     detach();
   });
 
@@ -75,7 +76,7 @@ describe('useHostIntegration', () => {
       'first',
     );
 
-    const revision = integration.contextManager.getSnapshot().revision;
+    const revision = internalsOf(integration).contextManager.getSnapshot().revision;
     const nextHandler = vi.fn(() => 'next');
     const nextTimeline = vi.fn();
 
@@ -87,7 +88,7 @@ describe('useHostIntegration', () => {
 
     rerender(updated);
     expect(result.current).toBe(integration);
-    expect(integration.contextManager.getSnapshot().revision).toBe(revision);
+    expect(internalsOf(integration).contextManager.getSnapshot().revision).toBe(revision);
 
     const previousEvents = firstTimeline.mock.calls.length;
 
@@ -102,9 +103,11 @@ describe('useHostIntegration', () => {
       ...updated,
       actions: [{ name: 'other.action', description: 'Other', schema, handler: nextHandler }],
     });
-    expect(integration.contextManager.getSnapshot().capabilities.map((item) => item.name)).toEqual([
-      'other.action',
-    ]);
+    expect(
+      internalsOf(integration)
+        .contextManager.getSnapshot()
+        .capabilities.map((item) => item.name),
+    ).toEqual(['other.action']);
     await expect(
       integration.assistantClient.requestHostAction('test.action', {}),
     ).rejects.toMatchObject({ code: ERROR_CODES.UNKNOWN_ACTION });
@@ -163,9 +166,12 @@ describe('useHostIntegration', () => {
     integration.targetRegistry.highlight('target');
     clearHighlight.mockClear();
 
-    const detach = attachAssistantCommandHandler(integration.bridge, () => new Promise(() => {}));
+    const detach = attachAssistantCommandHandler(
+      internalsOf(integration).bridge,
+      () => new Promise(() => {}),
+    );
 
-    integration.bridge.notifyAssistantReady('test');
+    internalsOf(integration).bridge.notifyAssistantReady('test');
 
     const pending = integration.assistantCommands.open();
 
@@ -179,7 +185,7 @@ describe('useHostIntegration', () => {
     });
     await rejected;
     expect(clearHighlight).toHaveBeenCalledOnce();
-    expect(integration.bridge.bus.listenerCount('assistant.command.request')).toBe(0);
+    expect(internalsOf(integration).bridge.bus.listenerCount('assistant.command.request')).toBe(0);
     detach();
   });
 });

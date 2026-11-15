@@ -27,9 +27,11 @@ import {
 
 export interface UseAssistantIntegrationOptions extends Partial<EmbeddedAssistantOptions> {
   commands: AssistantCommandCallbacks;
+  /** Iframe chats only: the parent origin, or the parent origins the chat trusts. */
   iframe?: {
     enabled?: boolean;
     hostOrigin?: string;
+    allowedOrigins?: readonly string[];
   };
   actions?: AssistantActionExecutorOptions;
 }
@@ -93,6 +95,7 @@ export const useAssistantIntegration = ({
   useAssistantIframeConnection({
     enabled: !bridge && (iframe?.enabled ?? true),
     hostOrigin: iframe?.hostOrigin,
+    allowedOrigins: iframe?.allowedOrigins,
     onClient: setIframeClient,
     onCommand,
   });

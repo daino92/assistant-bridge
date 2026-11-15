@@ -230,6 +230,7 @@ describe('hooks outside AssistantHost', () => {
     );
 
     const names = () => context().capabilities.map((item) => item.name);
+
     const run = () => host!.integration.assistantClient.requestHostAction('customers.current', {});
 
     const { rerender } = render(view({ customer: 'Maria', open: true }));

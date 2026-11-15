@@ -117,7 +117,7 @@ Use these only when `AssistantHost` or `useAssistantIntegration` does not fit, f
 │  ├─ <a href="docs/core.md#update-the-page">updatePage, mapHostEntities</a>
 │  ├─ <a href="docs/core.md#use-the-client-inside-the-assistant">AssistantBridgeClient</a>
 │  ├─ <a href="docs/core.md#send-commands-from-the-host">assistantCommands</a>
-│  ├─ <a href="docs/core.md#connect-an-iframe">connectIframe, connectAssistantIframe</a>
+│  ├─ <a href="docs/core.md#connect-an-iframe">connectHostIframe, connectAssistantIframe</a>
 │  ├─ <a href="docs/core.md#connect-a-same-window-assistant">connectEmbeddedAssistant</a>
 │  ├─ <a href="docs/core.md#execute-actions-from-the-assistant">createAssistantActionExecutor</a>
 │  ├─ <a href="docs/core.md#action-confirmations">createActionConfirmationController</a>

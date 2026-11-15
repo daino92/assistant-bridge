@@ -5,11 +5,11 @@ import {
   createActionConfirmationController,
   createAssistantActionExecutor,
 } from '@/assistant-client';
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import type { ActionLifecycleEvent } from '@/contracts';
 
 const createHost = (requiresConfirmation = false, handler: () => unknown = () => ({ ok: true })) =>
-  createHostIntegration({
+  createIntegration({
     actions: [
       {
         name: 'test.action',
@@ -24,7 +24,7 @@ const createHost = (requiresConfirmation = false, handler: () => unknown = () =>
 it('shares one ID and ordered safe events between executor and host, including dispatch diagnostics', async () => {
   const timeline = vi.fn();
 
-  const host = createHostIntegration({
+  const host = createIntegration({
     onTimeline: timeline,
     actions: [
       {

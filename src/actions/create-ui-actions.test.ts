@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { UI_TARGET_ACTIONS, createUiActions } from '@/actions';
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import { ERROR_CODES, HOST_ACTION_NAMES } from '@/contracts';
 import { createIntegrationError } from '@/errors';
 
@@ -32,7 +32,7 @@ describe('createUiActions', () => {
   it('enables only selected target actions and preserves payload and target validation', async () => {
     const focus = vi.fn();
 
-    const integration = createHostIntegration({
+    const integration = createIntegration({
       actions: ({ targets }) =>
         createUiActions({ targets: { registry: targets, enable: ['focus', 'focus'] } }),
     });
@@ -73,7 +73,7 @@ describe('createUiActions', () => {
   it('keeps navigation policy in host callbacks without implicit registrations', async () => {
     const navigate = vi.fn();
 
-    const integration = createHostIntegration({
+    const integration = createIntegration({
       actions: createUiActions({
         navigation: { navigate, allowedRoutes: ['/catalog'], detailPattern: /^\/catalog\/[^/]+$/ },
       }),
@@ -101,7 +101,7 @@ describe('createUiActions', () => {
     const navigate = vi.fn();
     const beforeNavigate = vi.fn();
 
-    const integration = createHostIntegration({
+    const integration = createIntegration({
       actions: createUiActions({
         navigation: { navigate, allowedRoutes: ['/allowed'], beforeNavigate },
       }),
@@ -126,7 +126,7 @@ describe('createUiActions', () => {
     const navigate = vi.fn();
     const reason = { code: 'TEST_GUARD' as const, message: 'Guard message' };
 
-    const integration = createHostIntegration({
+    const integration = createIntegration({
       actions: createUiActions({
         navigation: {
           navigate,
@@ -160,7 +160,7 @@ describe('createUiActions', () => {
       });
     });
 
-    const integration = createHostIntegration({
+    const integration = createIntegration({
       actions: createUiActions({
         navigation: { navigate, allowedRoutes: ['/catalog', '/blocked'] },
       }),
