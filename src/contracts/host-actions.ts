@@ -76,28 +76,6 @@ export const uiClearHighlightPayloadSchema = z.object({
   targetId: z.string(),
 });
 
-export const uiOpenDetailsPayloadSchema = z.object({
-  entityType: z.enum(['catalog', 'record']),
-  id: z.string(),
-});
-
-export const catalogFilterPayloadSchema = z.object({
-  search: z.string().optional(),
-  category: z.string().optional(),
-  minPrice: z.number().optional(),
-  maxPrice: z.number().optional(),
-});
-
-export const recordsFilterPayloadSchema = z.object({
-  search: z.string().optional(),
-  status: z.enum(['active', 'pending', 'archived', 'all']).optional(),
-});
-
-export const recordsSortPayloadSchema = z.object({
-  field: z.enum(['name', 'status', 'updatedAt', 'owner']),
-  direction: z.enum(['asc', 'desc']),
-});
-
 export const HOST_ACTION_NAMES = {
   UI_NAVIGATE: 'ui.navigate',
   UI_HIGHLIGHT: 'ui.highlight',
@@ -109,8 +87,4 @@ export const HOST_ACTION_NAMES = {
   UI_SET_EXPANDED: 'ui.setExpanded',
   UI_SET_CHECKED: 'ui.setChecked',
   UI_SET_VALUE: 'ui.setValue',
-  UI_OPEN_DETAILS: 'ui.openDetails',
-  CATALOG_FILTER: 'catalog.filter',
-  RECORDS_FILTER: 'records.filter',
-  RECORDS_SORT: 'records.sort',
 } as const;

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import { attachHostPort, createPortAssistantClient } from '@/bridge';
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import { normalizeIntegrationError, createIntegrationError } from '@/errors';
 import { createAssistantActionExecutor } from '@/assistant-client';
 import type { ActionLifecycleEvent } from '@/contracts';
@@ -21,7 +21,7 @@ afterEach(() => {
 const connect = () => {
   const handler = vi.fn(({ path }: { path: string }) => ({ path }));
 
-  const integration = createHostIntegration({
+  const integration = createIntegration({
     actions: [
       {
         name: 'ui.navigate',

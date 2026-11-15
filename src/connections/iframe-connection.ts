@@ -1,7 +1,7 @@
 import { createPortAssistantClient, attachHostPort } from '@/bridge';
 import type { AssistantBridgeClient, AssistantCommandHandler } from '@/assistant-client';
 import { ASSISTANT_IFRAME_MESSAGES, hostContextSchema, type HostContext } from '@/contracts';
-import type { HostIntegration } from '@/create-host-integration';
+import { internalsOf, type HostIntegration } from '@/create-host-integration';
 import { createAssistantConnection, type AssistantConnectionOptions } from '@/connections';
 
 export interface HostIframeConnectionOptions extends AssistantConnectionOptions {
@@ -23,9 +23,10 @@ export const connectHostIframe = (
   options: HostIframeConnectionOptions,
 ): (() => void) => {
   const origin = new URL(options.url, window.location.origin).origin;
+  const { bridge, contextManager } = internalsOf(integration);
 
   const connection = createAssistantConnection(
-    integration.bridge,
+    bridge,
     {
       ...options,
       assistantId: options.assistantId ?? 'assistant-iframe',
@@ -76,7 +77,7 @@ export const connectHostIframe = (
 
     channel.port1.addEventListener('message', onConnected);
 
-    const detach = attachHostPort(channel.port1, integration.bridge);
+    const detach = attachHostPort(channel.port1, bridge);
 
     connection.attach(() => {
       channel.port1.removeEventListener('message', onConnected);
@@ -89,7 +90,7 @@ export const connectHostIframe = (
         {
           type: ASSISTANT_IFRAME_MESSAGES.CONNECT,
           sessionId,
-          context: integration.contextManager.getSnapshot(),
+          context: contextManager.getSnapshot(),
         },
         origin,
         [channel.port2],

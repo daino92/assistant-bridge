@@ -2,7 +2,7 @@ import { StrictMode, useRef, type ReactNode } from 'react';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import { IntegrationProvider, useUiTarget } from '@/react';
 
 interface WrapperProps {
@@ -37,7 +37,7 @@ afterEach(() => {
 
 describe('useUiTarget', () => {
   it('registers DOM behavior, clears highlights and removes obsolete targets on rerender/unmount', () => {
-    const integration = createHostIntegration({ actions: [] });
+    const integration = createIntegration({ actions: [] });
 
     disposers.push(() => integration.bridge.destroy());
 
@@ -84,7 +84,7 @@ describe('useUiTarget', () => {
 });
 
 it('advertises only mounted target interactions without inventing focus or select support', () => {
-  const integration = createHostIntegration({ actions: [] });
+  const integration = createIntegration({ actions: [] });
 
   disposers.push(() => integration.bridge.destroy());
 
@@ -112,7 +112,7 @@ it('advertises only mounted target interactions without inventing focus or selec
 });
 
 it('registers new callbacks, replaces stale callbacks and removes unsupported interactions', () => {
-  const integration = createHostIntegration({ actions: [] });
+  const integration = createIntegration({ actions: [] });
 
   disposers.push(() => integration.dispose());
 

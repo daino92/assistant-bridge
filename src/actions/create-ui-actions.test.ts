@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { UI_TARGET_ACTIONS, createUiActions } from '@/actions';
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import { ERROR_CODES, HOST_ACTION_NAMES } from '@/contracts';
 import { createIntegrationError } from '@/errors';
 
@@ -32,7 +32,7 @@ describe('createUiActions', () => {
   it('enables only selected target actions and preserves payload and target validation', async () => {
     const focus = vi.fn();
 
-    const integration = createHostIntegration({
+    const integration = createIntegration({
       actions: ({ targets }) =>
         createUiActions({ targets: { registry: targets, enable: ['focus', 'focus'] } }),
     });
@@ -70,20 +70,17 @@ describe('createUiActions', () => {
     ).toEqual([HOST_ACTION_NAMES.UI_FOCUS]);
   });
 
-  it('keeps navigation policy and detail routing in host callbacks without implicit registrations', async () => {
+  it('keeps navigation policy in host callbacks without implicit registrations', async () => {
     const navigate = vi.fn();
-    const openDetails = vi.fn();
 
-    const integration = createHostIntegration({
+    const integration = createIntegration({
       actions: createUiActions({
         navigation: { navigate, allowedRoutes: ['/catalog'], detailPattern: /^\/catalog\/[^/]+$/ },
-        details: { open: openDetails },
       }),
     });
 
     disposers.push(() => integration.bridge.destroy());
     expect(navigate).not.toHaveBeenCalled();
-    expect(openDetails).not.toHaveBeenCalled();
     await integration.assistantClient.requestHostAction(HOST_ACTION_NAMES.UI_NAVIGATE, {
       path: '/catalog/item',
     });
@@ -94,22 +91,17 @@ describe('createUiActions', () => {
       }),
     ).rejects.toMatchObject({ code: ERROR_CODES.ACTION_NOT_AVAILABLE });
     expect(navigate).toHaveBeenCalledOnce();
-    await integration.assistantClient.requestHostAction(HOST_ACTION_NAMES.UI_OPEN_DETAILS, {
-      entityType: 'catalog',
-      id: 'item',
-    });
-    expect(openDetails).toHaveBeenCalledWith('catalog', 'item');
     expect(createUiActions()).toEqual([]);
     expect(
       integration.contextManager.getSnapshot().capabilities.map((capability) => capability.name),
-    ).toEqual([HOST_ACTION_NAMES.UI_NAVIGATE, HOST_ACTION_NAMES.UI_OPEN_DETAILS]);
+    ).toEqual([HOST_ACTION_NAMES.UI_NAVIGATE]);
   });
 
   it('runs beforeNavigate after allowlist check and before navigate', async () => {
     const navigate = vi.fn();
     const beforeNavigate = vi.fn();
 
-    const integration = createHostIntegration({
+    const integration = createIntegration({
       actions: createUiActions({
         navigation: { navigate, allowedRoutes: ['/allowed'], beforeNavigate },
       }),
@@ -134,7 +126,7 @@ describe('createUiActions', () => {
     const navigate = vi.fn();
     const reason = { code: 'TEST_GUARD' as const, message: 'Guard message' };
 
-    const integration = createHostIntegration({
+    const integration = createIntegration({
       actions: createUiActions({
         navigation: {
           navigate,
@@ -168,7 +160,7 @@ describe('createUiActions', () => {
       });
     });
 
-    const integration = createHostIntegration({
+    const integration = createIntegration({
       actions: createUiActions({
         navigation: { navigate, allowedRoutes: ['/catalog', '/blocked'] },
       }),

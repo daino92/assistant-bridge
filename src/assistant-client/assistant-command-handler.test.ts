@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { attachAssistantCommandHandler } from '@/assistant-client';
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import { ERROR_CODES } from '@/contracts';
 
 const dispose: Array<() => void> = [];
@@ -15,7 +15,7 @@ afterEach(() => {
 
 describe('same-window assistant commands', () => {
   it('routes correlated commands to an async receiver without exposing host services', async () => {
-    const integration = createHostIntegration({ actions: [] });
+    const integration = createIntegration({ actions: [] });
 
     const handler = vi.fn(async (request) => ({
       accepted: request.command,
@@ -39,7 +39,7 @@ describe('same-window assistant commands', () => {
   });
 
   it('returns failures and rejects pending commands when the receiver unmounts', async () => {
-    const integration = createHostIntegration({ actions: [] });
+    const integration = createIntegration({ actions: [] });
 
     const detach = attachAssistantCommandHandler(integration.bridge, () => {
       throw new Error('Receiver failed');

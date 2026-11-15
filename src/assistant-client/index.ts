@@ -1,6 +1,7 @@
 export {
   createAssistantBridgeClient,
   createHostAssistantCommands,
+  type AskOptions,
   type AssistantBridgeClient,
   type EmbeddedAssistantOptions,
   type HostAssistantCommands,
@@ -31,12 +32,6 @@ export {
   type ActionConfirmationController,
   type PendingActionConfirmation,
 } from './action-confirmation-controller';
-
-export {
-  reduceActionProgress,
-  finalizeActionProgress,
-  type ActionProgressEntry,
-} from './action-progress';
 
 export {
   createAssistantCommandDispatcher,

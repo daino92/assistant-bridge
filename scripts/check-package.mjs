@@ -87,7 +87,7 @@ try {
   for (const entry of entries) {
     assert.match(
       entry,
-      /^package\/(?:dist\/|schemas\/|docs\/|package\.json$|README\.md$|CHANGELOG\.md$|LICENSE$)/,
+      /^package\/(?:dist\/|docs\/|package\.json$|README\.md$|CHANGELOG\.md$|LICENSE$)/,
     );
     assert.doesNotMatch(entry, /(?:^|\/)(?:node_modules|src|scripts|\.env)(?:\/|$)|\.test\./);
 
@@ -101,6 +101,22 @@ try {
       for (const target of Object.values(entry)) {
         assert.ok(entries.includes(`package/${target.replace(/^\.\//, '')}`), `Missing ${target}`);
       }
+    }
+  }
+
+  // `/contracts` is the dependency-free layer: Zod and its own files only.
+  for (const entry of entries.filter((item) => item.startsWith('package/dist/contracts/'))) {
+    if (!entry.endsWith('.js') && !entry.endsWith('.d.ts')) {
+      continue;
+    }
+
+    for (const [, specifier] of readEntry(entry).matchAll(
+      /(?:from\s*|import\s*\()\s*['"]([^'"]+)['"]/g,
+    )) {
+      assert.ok(
+        specifier === 'zod' || /^\.\/[\w.-]+$/.test(specifier),
+        `${entry} imports ${specifier}; /contracts may import only zod and its own files`,
+      );
     }
   }
 
@@ -121,6 +137,10 @@ try {
     assert.ok(integration.assistantClient);
     integration.dispose();
     console.log('Core works without optional peers');
+    const contracts = await import(${packageName} + '/contracts');
+    assert.equal(typeof contracts.PROTOCOL_VERSION, 'string');
+    assert.ok(contracts.hostContextSchema.safeParse({}).success === false);
+    console.log('contracts import OK');
   `,
   );
 
@@ -128,7 +148,7 @@ try {
     'adapters',
     Object.entries(MANIFEST.peerDependencies).map(([name, range]) => `${name}@${range}`),
     `
-    for (const entry of ['react', 'federation', 'react/federation', 'ag-ui']) {
+    for (const entry of ['react', 'federation', 'react/federation']) {
       await import(${packageName} + '/' + entry);
       console.log(entry + ' import OK');
     }

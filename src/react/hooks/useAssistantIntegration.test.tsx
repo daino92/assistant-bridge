@@ -4,7 +4,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import { connectAssistantIframe, connectEmbeddedAssistant } from '@/connections';
-import { createHostIntegration, type HostIntegration } from '@/create-host-integration';
+import { createIntegration, type HostIntegration } from '@/create-host-integration';
 import { PROTOCOL_VERSION, type AssistantCommandRequest } from '@/contracts';
 import { useAssistantIntegration, type UseAssistantIntegrationOptions } from '@/react/hooks';
 
@@ -18,7 +18,7 @@ const integrations: HostIntegration[] = [];
 const createHost = (requiresConfirmation = false) => {
   const handler = vi.fn(({ value }: { value: string }) => ({ value }));
 
-  const integration = createHostIntegration({
+  const integration = createIntegration({
     actions: [
       {
         name: 'test.action',
@@ -356,7 +356,7 @@ it('cancels an action waiting for the host on unmount without claiming to undo t
       }),
   );
 
-  const integration = createHostIntegration({
+  const integration = createIntegration({
     actions: [{ name: 'slow', description: 'Slow', schema: z.object({}), handler }],
   });
 

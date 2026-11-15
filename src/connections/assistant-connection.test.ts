@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { connectEmbeddedAssistant } from '@/connections';
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import { ASSISTANT_COMMAND_NAMES, ERROR_CODES, type AssistantCommandRequest } from '@/contracts';
 
 const cleanups: Array<() => void> = [];
@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 const connect = (timeoutMs = 1000) => {
-  const integration = createHostIntegration({ actions: [] });
+  const integration = createIntegration({ actions: [] });
   const onStatus = vi.fn();
   const connection = connectEmbeddedAssistant(integration, { onStatus, timeoutMs });
 
@@ -26,7 +26,7 @@ const connect = (timeoutMs = 1000) => {
 
 describe('assistant connection lifecycle', () => {
   it('connects without an onStatus callback', async () => {
-    const integration = createHostIntegration({ actions: [] });
+    const integration = createIntegration({ actions: [] });
     const connection = connectEmbeddedAssistant(integration, { timeoutMs: 1000 });
 
     cleanups.push(() => integration.bridge.destroy(), connection.dispose);
@@ -95,5 +95,35 @@ describe('assistant connection lifecycle', () => {
       ASSISTANT_COMMAND_NAMES.OPEN,
       ASSISTANT_COMMAND_NAMES.PREFILL,
     ]);
+  });
+
+  it('passes metadata with askAbout options, and keeps the host revision', async () => {
+    const { integration, connection } = connect();
+    const handler = vi.fn((_request: AssistantCommandRequest) => 'ok');
+
+    connection.onReady(handler);
+
+    const selection = { type: 'record', id: '123' };
+
+    await integration.assistantCommands.askAbout('Explain this', {
+      selection,
+      metadata: { questionContext: 'Section text', contextRevision: -1 },
+    });
+
+    expect(handler.mock.calls[1][0].payload).toEqual({
+      prompt: 'Explain this',
+      metadata: {
+        questionContext: 'Section text',
+        selection,
+        contextRevision: integration.contextManager.getSnapshot().revision,
+      },
+    });
+
+    await integration.assistantCommands.askAbout('Plain question', {});
+
+    expect(handler.mock.calls[3][0].payload).toEqual({
+      prompt: 'Plain question',
+      metadata: { contextRevision: integration.contextManager.getSnapshot().revision },
+    });
   });
 });

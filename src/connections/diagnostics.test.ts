@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import { createAssistantConnection } from '@/connections';
 import type { IntegrationTimelineEntry } from '@/contracts';
 
@@ -11,7 +11,7 @@ it('reports one structured timeout through the existing timeline and ignores lat
 
   const timeline: IntegrationTimelineEntry[] = [];
 
-  const integration = createHostIntegration({
+  const integration = createIntegration({
     actions: [],
     onTimeline: (entry) => timeline.push(entry),
   });
@@ -53,7 +53,7 @@ it('reports one structured timeout through the existing timeline and ignores lat
 it('correlates action failures and unavailable commands without including their payloads', async () => {
   const timeline: IntegrationTimelineEntry[] = [];
 
-  const integration = createHostIntegration({
+  const integration = createIntegration({
     actions: [],
     onTimeline: (entry) => timeline.push(entry),
   });
@@ -91,7 +91,7 @@ it('does not report an error for deliberate connection disposal', () => {
   vi.useFakeTimers();
 
   const onTimeline = vi.fn();
-  const integration = createHostIntegration({ actions: [], onTimeline });
+  const integration = createIntegration({ actions: [], onTimeline });
 
   try {
     const connection = createAssistantConnection(integration.bridge, {

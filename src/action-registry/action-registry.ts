@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { ERROR_CODES, type HostContext, type StructuredError } from '@/contracts';
-import { normalizeIntegrationError } from '@/errors';
+import { isIntegrationErrorCode, normalizeIntegrationError } from '@/errors';
 
 export interface ActionExecutionContext {
   getContext: () => HostContext;
@@ -15,12 +15,58 @@ export interface RegisteredAction<TPayload = unknown> {
   parametersSchema: z.ZodType<TPayload>;
   requiresConfirmation: boolean;
   isAvailable?: (ctx: HostContext) => boolean;
+  /** See `HostActionInput.exposeErrorMessages`. */
+  exposeErrorMessages?: boolean;
   handler: (payload: TPayload, ctx: ActionExecutionContext) => Promise<unknown> | unknown;
 }
 
 export interface ActionRegistryEntry {
   action: RegisteredAction;
 }
+
+/**
+ * For actions with `exposeErrorMessages`: an ordinary `Error` becomes `ACTION_NOT_AVAILABLE`
+ * with its message as the public reason, the same shape as `createIntegrationError` with a
+ * reason. `EXECUTION_FAILED` never carries a reason, so raw failures stay generic.
+ */
+const toStructuredError = (error: unknown, exposeMessage: boolean): StructuredError => {
+  const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
+
+  if (!exposeMessage || isIntegrationErrorCode(code) || !(error instanceof Error)) {
+    return normalizeIntegrationError(error);
+  }
+
+  const message = error.message.trim().slice(0, 300);
+
+  if (!message) {
+    return normalizeIntegrationError(error);
+  }
+
+  return normalizeIntegrationError({
+    code: ERROR_CODES.ACTION_NOT_AVAILABLE,
+    reason: { code: 'ACTION_FAILED', message },
+  });
+};
+
+const parameterSchemas = new WeakMap<z.ZodType, Record<string, unknown>>();
+
+/**
+ * JSON Schema published for an action's parameters, cached per Zod schema object, so
+ * republishing capabilities on every host render stays cheap.
+ */
+export const toParametersSchema = (schema: z.ZodType): Record<string, unknown> => {
+  let converted = parameterSchemas.get(schema);
+
+  if (!converted) {
+    converted = z.toJSONSchema(schema, { io: 'input', target: 'draft-7' }) as Record<
+      string,
+      unknown
+    >;
+    parameterSchemas.set(schema, converted);
+  }
+
+  return converted;
+};
 
 export class HostActionRegistry {
   private actions = new Map<string, RegisteredAction>();
@@ -52,7 +98,7 @@ export class HostActionRegistry {
       .map((a) => ({
         name: a.name,
         description: a.description,
-        parametersSchema: z.toJSONSchema(a.parametersSchema, { io: 'input', target: 'draft-7' }),
+        parametersSchema: toParametersSchema(a.parametersSchema),
         requiresConfirmation: a.requiresConfirmation,
       }));
   }
@@ -114,7 +160,7 @@ export class HostActionRegistry {
     } catch (err) {
       return {
         success: false,
-        error: normalizeIntegrationError(err),
+        error: toStructuredError(err, action.exposeErrorMessages ?? false),
       };
     }
   }

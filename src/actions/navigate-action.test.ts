@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import { navigateAction } from '@/actions';
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import { ERROR_CODES, HOST_ACTION_NAMES } from '@/contracts';
 
 const UUID = '7f1c2a9e-3b4d-4c5e-8f6a-1b2c3d4e5f60';
@@ -17,7 +17,7 @@ const setup = () => {
   const navigate = vi.fn();
   const beforeNavigate = vi.fn();
 
-  const integration = createHostIntegration({
+  const integration = createIntegration({
     actions: [
       navigateAction({
         navigate,
@@ -96,7 +96,7 @@ describe('navigateAction routes with parameters', () => {
   });
 
   it('keeps the original payload schema when no routes are configured', () => {
-    const integration = createHostIntegration({
+    const integration = createIntegration({
       actions: [navigateAction({ navigate: vi.fn(), allowedRoutes: ['/a'] })],
     });
 
@@ -114,7 +114,7 @@ describe('navigateAction routes with parameters', () => {
   it('navigates without parameters when an optional route schema yields none', async () => {
     const navigate = vi.fn();
 
-    const integration = createHostIntegration({
+    const integration = createIntegration({
       actions: [
         navigateAction({
           navigate,

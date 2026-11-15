@@ -2,11 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { ASSISTANT_COMMAND_NAMES } from '@/contracts';
 import type { AssistantConnectionStatus } from '@/connections';
+import { internalsOf } from '@/create-host-integration';
 import { useIntegration } from '@/react/context';
 
 /** Headless panel state. Rendering, availability controls and connection adapters stay host-owned. */
 export const useAssistantPanel = () => {
-  const { bridge } = useIntegration();
+  const { bridge } = internalsOf(useIntegration());
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<AssistantConnectionStatus>('loading');
   const [attempt, setAttempt] = useState(0);
