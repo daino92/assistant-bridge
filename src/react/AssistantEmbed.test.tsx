@@ -13,7 +13,8 @@ const adapters = vi.hoisted(() => ({
 }));
 
 vi.mock('@/react/context', () => ({
-  useIntegration: () => ({ bridge: adapters.bridge }),
+  // Shaped like an integration from createHostIntegration; only the bridge is used.
+  useIntegration: () => ({ bridge: adapters.bridge, contextManager: {}, actionRegistry: {} }),
 }));
 
 vi.mock('@/react/AssistantIframe', () => ({

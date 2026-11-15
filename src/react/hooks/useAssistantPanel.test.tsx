@@ -2,7 +2,7 @@ import { StrictMode, type ReactNode } from 'react';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import { attachAssistantCommandHandler } from '@/assistant-client';
 import { IntegrationProvider, useAssistantPanel } from '@/react';
 
@@ -21,7 +21,7 @@ afterEach(() => {
 });
 
 const setup = () => {
-  const integration = createHostIntegration({ actions: [] });
+  const integration = createIntegration({ actions: [] });
 
   disposers.push(() => integration.bridge.destroy());
 

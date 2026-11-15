@@ -2,10 +2,15 @@
   "name": "assistant-bridge",
   "version": "0.1.0-beta.5",
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./contracts": {
+      "types": "./dist/contracts/public.d.ts",
+      "default": "./dist/contracts/public.js"
     },
     "./react": {
       "types": "./dist/react/index.d.ts",
@@ -18,16 +23,10 @@
     "./react/federation": {
       "types": "./dist/react/federation/index.d.ts",
       "default": "./dist/react/federation/index.js"
-    },
-    "./ag-ui": {
-      "types": "./dist/ag-ui/index.d.ts",
-      "default": "./dist/ag-ui/index.js"
-    },
-    "./schemas/*": "./schemas/*"
+    }
   },
   "scripts": {
-    "build": "tsc6 -p tsconfig.build.json && node scripts/resolve-build-aliases.mjs && node scripts/generate-agent-schemas.mjs",
-    "schemas:check": "node scripts/generate-agent-schemas.mjs --check",
+    "build": "node -e \"for (const p of ['dist','node_modules/.tmp/tsconfig.tsbuildinfo']) require('node:fs').rmSync(p,{recursive:true,force:true})\" && tsc6 -p tsconfig.build.json && node scripts/resolve-build-aliases.mjs",
     "test": "vitest run",
     "typecheck": "tsc6 -p tsconfig.tests.json",
     "lint": "eslint .",
@@ -73,20 +72,15 @@
     }
   },
   "dependencies": {
-    "@ag-ui/client": "^1.0.4",
-    "@ag-ui/core": "^1.0.4",
-    "@stomp/stompjs": "7.5.0",
-    "rxjs": "7.8.1",
     "zod": "^4.6.6"
   },
-  "description": "Framework-agnostic host integration for AI assistants, with optional React, federation and AG-UI adapters.",
+  "description": "Typed contracts and runtime between a host application and an AI assistant, with optional React and Module Federation adapters.",
   "repository": {
     "type": "git",
     "url": "https://github.com/daino92/assistant-bridge.git"
   },
   "files": [
     "dist",
-    "schemas",
     "docs",
     "CHANGELOG.md"
   ],

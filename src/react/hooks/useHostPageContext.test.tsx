@@ -1,13 +1,13 @@
 import { cleanup, renderHook } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 
-import { createHostIntegration } from '@/create-host-integration';
+import { createIntegration } from '@/create-host-integration';
 import { useHostPageContext } from '@/react/hooks';
 
 afterEach(cleanup);
 
 it('syncs page and entities without clearing selection on data-only updates or equivalent renders', () => {
-  const integration = createHostIntegration({ actions: [] });
+  const integration = createIntegration({ actions: [] });
   const published = vi.fn();
 
   integration.assistantClient.subscribeContext(published);
@@ -55,7 +55,7 @@ it('syncs page and entities without clearing selection on data-only updates or e
 });
 
 it('publishes destinations that change while the integration stays mounted', () => {
-  const integration = createHostIntegration({
+  const integration = createIntegration({
     actions: [],
     destinations: [{ path: '/records', label: 'Records' }],
   });

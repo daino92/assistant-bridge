@@ -1,6 +1,10 @@
 import { useEffect, useEffectEvent, useRef, type ComponentPropsWithoutRef } from 'react';
 
-import { createAssistantIframeUrl, type AssistantConnectionOptions } from '@/connections';
+import {
+  connectHostIframe,
+  createAssistantIframeUrl,
+  type AssistantConnectionOptions,
+} from '@/connections';
 import type { AssistantConnectionStatus } from '@/connections';
 import { useIntegration } from '@/react/context';
 
@@ -31,7 +35,7 @@ const AssistantIframe = ({
       return;
     }
 
-    return integration.connectIframe({
+    return connectHostIframe(integration, {
       iframe: frameRef.current,
       url: src,
       onStatus: (status) => reportStatus(status),

@@ -1,5 +1,54 @@
 # Changelog
 
+## Unreleased
+
+- Add `assistant-bridge/contracts`: schemas, names, error codes and `PROTOCOL_VERSION`, with Zod
+  as the only dependency. It omits the deprecated demo schemas.
+- `AssistantHost` accepts `router={{ page, navigate }}` for hosts that switch pages by state;
+  `navigate` receives a catalog key.
+- `askAbout` and `useAssistantHost().ask` accept `{ selection, metadata }`. The host's
+  `contextRevision` and `selection` cannot be overridden. A selection alone still works.
+- `defineAction` accepts `exposeErrorMessages`: a handler's ordinary `Error` reaches the
+  assistant as `ACTION_NOT_AVAILABLE` with reason `ACTION_FAILED` and its message.
+- Failed requests, actions and commands reject with an `Error` carrying `code`, `message` and
+  `reason`, instead of a plain object. Code that checks `error instanceof Error` now sees the
+  safe message, including public reasons.
+- **Breaking (security):** iframe chats no longer trust the `hostOrigin` query parameter on
+  their own. Pass `allowedOrigins` to `useAssistantIframeConnection` or
+  `useAssistantIntegration({ iframe })`; the parameter is used only when listed. An explicit
+  `hostOrigin` works as before. Before, any page could frame the chat and act as its host.
+- The package declares `sideEffects: false`. A host that does not embed an iframe or a federation
+  remote no longer bundles that code.
+- **Breaking:** `HostIntegration` no longer exposes `bridge`, `contextManager` or
+  `actionRegistry`, nor the `connectIframe` method (use `connectHostIframe(integration, options)`), and `attachAssistantCommandHandler` is no longer exported. Use `updatePage`,
+  the new `setSelection(selection | null)`, `connectEmbeddedAssistant` and `AssistantHost`.
+  `targetRegistry`, `assistantCommands` and `assistantClient` stay.
+- **Breaking:** `AssistantHost` no longer takes `actionDeps`. The `actions` factory runs on every
+  render and registered actions delegate to its latest definitions, so handlers and `available`
+  always see current host state. Actions re-register only when their published shape changes
+  (names, descriptions, schemas, approval). Capability JSON Schemas are cached per Zod schema.
+  `useHostIntegration` keeps `actionDeps`.
+- **Breaking:** removed the `assistant-bridge/ag-ui` entry (WebSocket/STOMP agent client, run
+  controller, chat session, run errors, protocol schemas and the `schemas/` files) and the
+  `reduceActionProgress` / `finalizeActionProgress` helpers it used. Talking to a backend belongs to
+  the chat application; the SDK now covers only the host/assistant connection. The package no
+  longer depends on `@ag-ui/client`, `@ag-ui/core`, `@stomp/stompjs` or `rxjs`. Chats run host
+  tool calls with `createAssistantActionExecutor` or `useAssistantIntegration().executeHostAction`.
+- **Breaking:** removed APIs that only demos or internals used:
+  - Root exports of internal parts: `HostBridge`, `TypedEventBus`, `RequestResponseChannel`,
+    `HostActionRegistry`, `HostContextManager`, `attachHostPort`, `createPortAssistantClient`,
+    `createAssistantConnection`, `defaultActionReadiness`, `waitForHostContext`,
+    `reduceActionProgress` and `finalizeActionProgress`. Use `createHostIntegration`,
+    `AssistantHost`, `connectIframe` / `connectAssistantIframe` and `createChatSession`.
+  - Demo schemas and actions: `catalogFilterPayloadSchema`, `recordsFilterPayloadSchema`,
+    `recordsSortPayloadSchema`, `uiOpenDetailsPayloadSchema`, `openDetailsAction`, the `details`
+    option of `createUiActions`, the `ui.openDetails` readiness rule and the `UI_OPEN_DETAILS`,
+    `CATALOG_FILTER`, `RECORDS_FILTER` and `RECORDS_SORT` names. Define your own actions with
+    `defineAction`.
+  - `useHostPageContextFromCatalog` (use `AssistantHost`), `useAskAi` (use
+    `useAssistantHost().ask`) and `AssistantBridgeClient.getInitialContext` (use `getContext`).
+    Custom clients no longer implement `getInitialContext`.
+
 ## 0.1.0-beta.5
 
 - `definePageCatalog` entries accept `path`, `match: 'prefix'`, `needs` and `params`. New
