@@ -197,6 +197,10 @@ const AskButton = () => {
 
 `ask` opens the chat and submits the prompt. It rejects when no assistant is connected. Pass extra data as `host.ask(prompt, { metadata: { questionContext } })`.
 
+## 8. Test it
+
+`connectTestAssistant` from `assistant-bridge/testing` connects a test assistant that requests your actions through the same checks as a real one; see [testing a host](testing.md).
+
 ## Responsibilities
 
 | Host supplies                              | SDK handles                                             |

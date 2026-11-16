@@ -141,6 +141,14 @@ try {
     assert.equal(typeof contracts.PROTOCOL_VERSION, 'string');
     assert.ok(contracts.hostContextSchema.safeParse({}).success === false);
     console.log('contracts import OK');
+    const { connectTestAssistant } = await import(${packageName} + '/testing');
+    const tested = createHostIntegration({ actions: [] });
+    const assistant = connectTestAssistant(tested);
+    assert.deepEqual(await tested.assistantCommands.open(), { opened: true });
+    assert.equal(assistant.commands.length, 1);
+    assistant.dispose();
+    tested.dispose();
+    console.log('testing import OK');
   `,
   );
 

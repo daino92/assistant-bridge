@@ -12,6 +12,10 @@
       "types": "./dist/contracts/public.d.ts",
       "default": "./dist/contracts/public.js"
     },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
+    },
     "./react": {
       "types": "./dist/react/index.d.ts",
       "default": "./dist/react/index.js"

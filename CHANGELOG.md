@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add `assistant-bridge/testing` with `connectTestAssistant(integration, { approve })`: a test
+  assistant that runs host actions through the SDK executor and answers commands by contract.
+- Document what is public API and how versions change ([API stability](docs/stability.md)).
 - **Breaking (protocol):** `PROTOCOL_VERSION` is `2.0.0`, because command results changed.
   Peers with the same major are compatible (`isCompatibleProtocolVersion`); envelopes accept any
   compatible version instead of exactly one.

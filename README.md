@@ -4,7 +4,7 @@ A framework-agnostic integration layer between a host application and an AI assi
 
 The SDK supplies the contracts and execution boundary. The host owns its routes, state, UI and action handlers; the assistant owns conversations and rendering; the backend owns model calls. This package does not include an assistant UI or backend.
 
-> **Beta:** the public API may change before the first stable release.
+> **Beta:** the public API may change before the first stable release; see [API stability](docs/stability.md).
 
 For an existing chat app, see [the integration guide](docs/existing-chat.md) and `useAssistantIntegration` from `assistant-bridge/react`.
 
@@ -20,6 +20,7 @@ Zod is installed with the package. Add `zod` to your own dependencies only when 
 | ------------------- | ------------------------------------- |
 | Core                | None                                  |
 | `/contracts`        | None (Zod only; no runtime)           |
+| `/testing`          | None                                  |
 | `/react`            | `react@^19.3.0`                       |
 | `/federation`       | `@module-federation/runtime@2.9.2`    |
 | `/react/federation` | Both React and the federation runtime |
@@ -142,6 +143,8 @@ Use these only when `AssistantHost` or `useAssistantIntegration` does not fit, f
 - [Host quick start](docs/quick-start.md): a React host with `AssistantHost`
 - [Chat quick start](docs/chat-quick-start.md): the chat side of the connection
 - [Existing chat](docs/existing-chat.md): adapting a chat that has its own backend protocol
+- [Testing a host](docs/testing.md): `connectTestAssistant` for host tests
+- [API stability](docs/stability.md): what is public and what may change
 - [Core API](docs/core.md): actions, context, commands, connections and errors
 - [React](docs/react.md): provider, hooks and ready-made components
 - [Module Federation](docs/federation.md): framework-agnostic remote loading
