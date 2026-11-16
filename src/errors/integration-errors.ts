@@ -20,6 +20,8 @@ const ERROR_MESSAGES: Record<ErrorCode, string> = {
   EXECUTION_FAILED: 'The host action failed. Please try again.',
   RESOURCE_NOT_FOUND: 'This item no longer exists. Refresh the page before trying again.',
   SERVICE_UNAVAILABLE: 'Cannot reach the service. Check that the BFF is running and try again.',
+  PROTOCOL_MISMATCH:
+    'The assistant and this application use incompatible versions. Update one of them.',
 };
 
 export const isIntegrationErrorCode = (value: unknown): value is ErrorCode =>

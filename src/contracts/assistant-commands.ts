@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { PROTOCOL_VERSION, businessReasonSchema } from './protocol';
+import { businessReasonSchema, protocolVersionSchema } from './protocol';
 
 export const assistantCommandRequestSchema = z.object({
-  protocolVersion: z.literal(PROTOCOL_VERSION),
+  protocolVersion: protocolVersionSchema,
   requestId: z.string().uuid(),
   command: z.string(),
   payload: z.unknown(),
@@ -11,7 +11,7 @@ export const assistantCommandRequestSchema = z.object({
 export type AssistantCommandRequest = z.infer<typeof assistantCommandRequestSchema>;
 
 export const assistantCommandResultSchema = z.object({
-  protocolVersion: z.literal(PROTOCOL_VERSION),
+  protocolVersion: protocolVersionSchema,
   requestId: z.string().uuid(),
   success: z.boolean(),
   data: z.unknown().optional(),

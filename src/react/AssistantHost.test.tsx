@@ -13,7 +13,7 @@ import {
   useUiTarget,
   type AssistantHostValue,
 } from '@/react';
-import { answer } from '../../test/command-answers';
+import { answer, READY } from '../../test/command-answers';
 
 afterEach(cleanup);
 
@@ -151,7 +151,7 @@ describe('AssistantHost', () => {
     await waitFor(() => expect(host!.embedded).not.toBeNull());
 
     act(() => {
-      host!.embedded!.onReady(commands);
+      host!.embedded!.onReady(commands, READY);
     });
     await host!.ask('What can I do?');
     expect(commands).toHaveBeenCalledWith(

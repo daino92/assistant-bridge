@@ -1,6 +1,13 @@
 import { createPortAssistantClient, attachHostPort } from '@/bridge';
 import type { AssistantBridgeClient, AssistantCommandHandler } from '@/assistant-client';
-import { ASSISTANT_IFRAME_MESSAGES, hostContextSchema, type HostContext } from '@/contracts';
+import {
+  ASSISTANT_IFRAME_MESSAGES,
+  ERROR_CODES,
+  PROTOCOL_VERSION,
+  hostContextSchema,
+  isCompatibleProtocolVersion,
+  type HostContext,
+} from '@/contracts';
 import { internalsOf, type HostIntegration } from '@/create-host-integration';
 import { createAssistantConnection, type AssistantConnectionOptions } from '@/connections';
 
@@ -51,13 +58,30 @@ export const connectHostIframe = (
       return;
     }
 
-    const data = event.data as { type?: string; sessionId?: unknown } | null;
+    const data = event.data as {
+      type?: string;
+      sessionId?: unknown;
+      protocolVersion?: unknown;
+    } | null;
 
     if (
       data?.type !== ASSISTANT_IFRAME_MESSAGES.READY ||
       typeof data.sessionId !== 'string' ||
       sessionId === data.sessionId
     ) {
+      return;
+    }
+
+    // A chat without a version predates the check, so it is incompatible too.
+    if (!isCompatibleProtocolVersion(data.protocolVersion)) {
+      connection.fail({
+        code: 'PROTOCOL_MISMATCH',
+        phase: 'handshake',
+        mode: 'iframe',
+        message: 'The assistant iframe uses an incompatible protocol version.',
+        errorCode: ERROR_CODES.PROTOCOL_MISMATCH,
+      });
+
       return;
     }
 
@@ -90,6 +114,7 @@ export const connectHostIframe = (
         {
           type: ASSISTANT_IFRAME_MESSAGES.CONNECT,
           sessionId,
+          protocolVersion: PROTOCOL_VERSION,
           context: contextManager.getSnapshot(),
         },
         origin,
@@ -143,12 +168,19 @@ export const connectAssistantIframe = (options: AssistantIframeConnectionOptions
       return;
     }
 
-    const data = event.data as { type?: string; context?: unknown; sessionId?: unknown } | null;
+    const data = event.data as {
+      type?: string;
+      context?: unknown;
+      sessionId?: unknown;
+      protocolVersion?: unknown;
+    } | null;
 
     if (
       data?.type !== ASSISTANT_IFRAME_MESSAGES.CONNECT ||
       data.sessionId !== sessionId ||
-      !event.ports[0]
+      !event.ports[0] ||
+      // The host also checks; this keeps a newer chat from talking to an older host.
+      !isCompatibleProtocolVersion(data.protocolVersion)
     ) {
       return;
     }
@@ -177,7 +209,7 @@ export const connectAssistantIframe = (options: AssistantIframeConnectionOptions
 
   window.addEventListener('message', connect);
   window.parent.postMessage(
-    { type: ASSISTANT_IFRAME_MESSAGES.READY, sessionId },
+    { type: ASSISTANT_IFRAME_MESSAGES.READY, sessionId, protocolVersion: PROTOCOL_VERSION },
     options.hostOrigin,
   );
 

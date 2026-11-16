@@ -25,6 +25,7 @@ export {
 
 export {
   type AskOptions,
+  type AssistantReadyInfo,
   type AssistantCommandHandler,
   type AssistantBridgeClient,
   type EmbeddedAssistantOptions,
@@ -46,6 +47,7 @@ export {
   ERROR_CODES,
   HOST_ACTION_NAMES,
   PROTOCOL_VERSION,
+  isCompatibleProtocolVersion,
   assistantCommandRequestSchema,
   assistantCommandResultSchema,
   assistantPrefillPayloadSchema,

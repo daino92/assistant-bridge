@@ -2,7 +2,7 @@ import { createIntegrationError } from '@/errors';
 import { attachAssistantCommandHandler, type EmbeddedAssistantOptions } from '@/assistant-client';
 import type { HostBridge } from '@/bridge';
 import { internalsOf, type HostIntegration } from '@/create-host-integration';
-import { ERROR_CODES, type IntegrationDiagnostic } from '@/contracts';
+import { ERROR_CODES, isCompatibleProtocolVersion, type IntegrationDiagnostic } from '@/contracts';
 
 export type AssistantConnectionStatus = 'loading' | 'ready' | 'error';
 
@@ -134,8 +134,20 @@ export const connectEmbeddedAssistant = (
   const connection = createAssistantConnection(bridge, options, timeoutDiagnostic);
   let currentReceiver: symbol | undefined;
 
-  const onReady: EmbeddedAssistantOptions['onReady'] = (handler) => {
+  const onReady: EmbeddedAssistantOptions['onReady'] = (handler, info) => {
     if (!connection.isActive()) {
+      return () => {};
+    }
+
+    // An assistant without a version predates the check, so it is incompatible too.
+    if (!isCompatibleProtocolVersion(info?.protocolVersion)) {
+      connection.fail({
+        code: 'PROTOCOL_MISMATCH',
+        phase: 'receiver-ready',
+        message: 'The assistant uses an incompatible protocol version.',
+        errorCode: ERROR_CODES.PROTOCOL_MISMATCH,
+      });
+
       return () => {};
     }
 

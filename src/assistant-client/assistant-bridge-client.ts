@@ -148,7 +148,17 @@ export const createHostAssistantCommands = (bridge: HostBridge): HostAssistantCo
 };
 
 /** Framework-independent connection options for a same-window assistant. */
+/** What the assistant tells the host when it registers its command handler. */
+export interface AssistantReadyInfo {
+  /** The assistant's `PROTOCOL_VERSION`; the host refuses an incompatible one. */
+  protocolVersion: string;
+}
+
 export interface EmbeddedAssistantOptions {
   bridge: AssistantBridgeClient;
-  onReady: (handler: AssistantCommandHandler) => () => void;
+  /**
+   * Registers the assistant's command handler and marks it ready. Pass `{ protocolVersion }`;
+   * `useAssistantIntegration` and `useAssistantCommandHandler` do. Returns the cleanup.
+   */
+  onReady: (handler: AssistantCommandHandler, info?: AssistantReadyInfo) => () => void;
 }
