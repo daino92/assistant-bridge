@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-beta.7
 
 - Add `assistant-bridge/testing` with `connectTestAssistant(integration, { approve })`: a test
   assistant that runs host actions through the SDK executor and answers commands by contract.
