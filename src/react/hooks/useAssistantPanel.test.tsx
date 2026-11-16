@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { createIntegration } from '@/create-host-integration';
 import { attachAssistantCommandHandler } from '@/assistant-client';
 import { IntegrationProvider, useAssistantPanel } from '@/react';
+import { answer } from '../../../test/command-answers';
 
 interface WrapperProps {
   children: ReactNode;
@@ -39,7 +40,7 @@ const setup = () => {
 describe('useAssistantPanel', () => {
   it('handles correlated host commands and releases its subscription on unmount', async () => {
     const { integration, result, unmount } = setup();
-    const detach = attachAssistantCommandHandler(integration.bridge, () => 'ack');
+    const detach = attachAssistantCommandHandler(integration.bridge, answer);
 
     disposers.push(detach);
     integration.bridge.notifyAssistantReady('test');

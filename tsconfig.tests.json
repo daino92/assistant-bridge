@@ -3,8 +3,9 @@
   "compilerOptions": {
     "composite": false,
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node"],
+    "rootDir": "."
   },
-  "include": ["src"],
+  "include": ["src", "test"],
   "exclude": []
 }

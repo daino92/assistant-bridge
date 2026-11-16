@@ -1,6 +1,6 @@
 {
   "name": "assistant-bridge",
-  "version": "0.1.0-beta.6",
+  "version": "0.1.0-beta.7",
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -11,6 +11,10 @@
     "./contracts": {
       "types": "./dist/contracts/public.d.ts",
       "default": "./dist/contracts/public.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
     },
     "./react": {
       "types": "./dist/react/index.d.ts",

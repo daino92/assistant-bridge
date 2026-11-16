@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.1.0-beta.7
+
+- Add `assistant-bridge/testing` with `connectTestAssistant(integration, { approve })`: a test
+  assistant that runs host actions through the SDK executor and answers commands by contract.
+- Document what is public API and how versions change ([API stability](docs/stability.md)).
+- **Breaking (protocol):** `PROTOCOL_VERSION` is `2.0.0`, because command results changed.
+  Peers with the same major are compatible (`isCompatibleProtocolVersion`); envelopes accept any
+  compatible version instead of exactly one.
+- The handshakes check versions. The assistant sends its version (`READY` for iframes,
+  `onReady(handler, { protocolVersion })` otherwise; the React hooks do it), and the host refuses
+  an incompatible or missing one with status `error` and a `PROTOCOL_MISMATCH` diagnostic. New
+  error code `PROTOCOL_MISMATCH`.
+- **Breaking (protocol):** host commands have typed results, checked on the host:
+  `{ opened: true }`, `{ closed: true }`, `{ focused: true }`, `{ prefilled: true }` and
+  `{ accepted: true }` for `submitPrompt` (was `{ acknowledged: true }`). `assistantCommands`
+  and `ask` resolve with them; an answer in another shape rejects with `INVALID_PAYLOAD`. The
+  schemas are `assistantCommandResultDataSchemas` in `/contracts`.
+- **Breaking:** the command dispatcher (and `useAssistantIntegration`) ignores callback return
+  values and answers with the contract result. Chats refuse a command by throwing.
+- **Breaking:** `createHostAssistantCommands` and `createAssistantBridgeClient` are no longer
+  exported; they took the internal bridge. Use `integration.assistantCommands` and
+  `integration.assistantClient`.
+
 ## 0.1.0-beta.6
 
 - Add `assistant-bridge/contracts`: schemas, names, error codes and `PROTOCOL_VERSION`, with Zod
