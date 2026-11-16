@@ -4,6 +4,7 @@ import { createIntegration } from '@/create-host-integration';
 import type { IntegrationTimelineEntry } from '@/contracts';
 
 import { connectFederatedAssistant } from '@/federation';
+import { answer, READY } from '../../test/command-answers';
 
 const runtime = vi.hoisted(() => ({
   options: { name: 'test-runtime', remotes: [] as Array<{ name: string; entry: string }> },
@@ -108,9 +109,9 @@ describe('federation adapter', () => {
     );
     expect(runtime.loadRemote).toHaveBeenCalledWith('chat/Assistant');
     expect(onStatus).toHaveBeenLastCalledWith('loading');
-    connection.onReady(() => 'ok');
+    connection.onReady(answer, READY);
     expect(onStatus).toHaveBeenLastCalledWith('ready');
-    await expect(integration.assistantCommands.open()).resolves.toBe('ok');
+    await expect(integration.assistantCommands.open()).resolves.toEqual({ opened: true });
   });
 
   it('reports missing runtimes and remote errors without leaving an available receiver', async () => {

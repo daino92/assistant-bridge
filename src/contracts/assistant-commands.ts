@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { PROTOCOL_VERSION, businessReasonSchema } from './protocol';
+import { businessReasonSchema, protocolVersionSchema } from './protocol';
 
 export const assistantCommandRequestSchema = z.object({
-  protocolVersion: z.literal(PROTOCOL_VERSION),
+  protocolVersion: protocolVersionSchema,
   requestId: z.string().uuid(),
   command: z.string(),
   payload: z.unknown(),
@@ -11,7 +11,7 @@ export const assistantCommandRequestSchema = z.object({
 export type AssistantCommandRequest = z.infer<typeof assistantCommandRequestSchema>;
 
 export const assistantCommandResultSchema = z.object({
-  protocolVersion: z.literal(PROTOCOL_VERSION),
+  protocolVersion: protocolVersionSchema,
   requestId: z.string().uuid(),
   success: z.boolean(),
   data: z.unknown().optional(),
@@ -33,6 +33,26 @@ export const ASSISTANT_COMMAND_NAMES = {
   PREFILL: 'assistant.prefill',
   SUBMIT_PROMPT: 'assistant.submitPrompt',
 } as const;
+
+/**
+ * What the assistant answers to each command. A command it cannot carry out (for example a
+ * prompt while a reply is running) is an error result, not `false`.
+ */
+export const assistantCommandResultDataSchemas = {
+  [ASSISTANT_COMMAND_NAMES.OPEN]: z.object({ opened: z.literal(true) }),
+  [ASSISTANT_COMMAND_NAMES.CLOSE]: z.object({ closed: z.literal(true) }),
+  [ASSISTANT_COMMAND_NAMES.FOCUS]: z.object({ focused: z.literal(true) }),
+  [ASSISTANT_COMMAND_NAMES.PREFILL]: z.object({ prefilled: z.literal(true) }),
+  [ASSISTANT_COMMAND_NAMES.SUBMIT_PROMPT]: z.object({ accepted: z.literal(true) }),
+} as const;
+
+export type AssistantCommandName =
+  (typeof ASSISTANT_COMMAND_NAMES)[keyof typeof ASSISTANT_COMMAND_NAMES];
+
+/** Result data per command, for example `{ accepted: true }` for `assistant.submitPrompt`. */
+export type AssistantCommandResultData = {
+  [K in AssistantCommandName]: z.infer<(typeof assistantCommandResultDataSchemas)[K]>;
+};
 
 export const assistantPrefillPayloadSchema = z.object({
   text: z.string(),

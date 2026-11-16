@@ -1,6 +1,21 @@
 import { z } from 'zod';
 
-export const PROTOCOL_VERSION = '1.0.0';
+/**
+ * Version of the host/assistant wire protocol, `MAJOR.MINOR.PATCH`. Peers with the same MAJOR
+ * are compatible; a new MAJOR marks a breaking change to messages or results.
+ */
+export const PROTOCOL_VERSION = '2.0.0';
+
+const majorOf = (version: string): string | undefined => /^(\d+)\.\d+\.\d+$/.exec(version)?.[1];
+
+/** Whether a peer's protocol version can talk to this one (same MAJOR). */
+export const isCompatibleProtocolVersion = (version: unknown): boolean =>
+  typeof version === 'string' && majorOf(version) === majorOf(PROTOCOL_VERSION);
+
+/** Envelope field: any version compatible with {@link PROTOCOL_VERSION}. */
+export const protocolVersionSchema = z
+  .string()
+  .refine(isCompatibleProtocolVersion, { message: 'Incompatible protocol version' });
 
 /** Shared iframe handshake names, independent of a host application's branding. */
 export const ASSISTANT_IFRAME_MESSAGES = {
@@ -23,6 +38,7 @@ export const ERROR_CODES = {
   EXECUTION_FAILED: 'EXECUTION_FAILED',
   RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
+  PROTOCOL_MISMATCH: 'PROTOCOL_MISMATCH',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

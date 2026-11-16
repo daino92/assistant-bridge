@@ -414,7 +414,17 @@ await integration.assistantCommands.submitPrompt('Show active records', {
 await integration.assistantCommands.close();
 ```
 
-The receiver must implement these commands and return correlated results. The SDK does not create or open a panel itself. `submitPrompt()` completion means the receiver returned a command result; it does not inherently mean response streaming has finished.
+The receiver must implement these commands. Each one resolves with a typed result from the contract, which the host checks:
+
+| Command                  | Result                |
+| ------------------------ | --------------------- |
+| `assistant.open`         | `{ opened: true }`    |
+| `assistant.close`        | `{ closed: true }`    |
+| `assistant.focus`        | `{ focused: true }`   |
+| `assistant.prefill`      | `{ prefilled: true }` |
+| `assistant.submitPrompt` | `{ accepted: true }`  |
+
+An assistant that cannot carry out a command rejects it; there is no `false` result. An answer in another shape rejects on the host with `INVALID_PAYLOAD`. The schemas are `assistantCommandResultDataSchemas` in `assistant-bridge/contracts`, typed as `AssistantCommandResultData`. The SDK does not create or open a panel itself. `submitPrompt()` resolves when the assistant accepted the prompt, not when the answer is complete.
 
 For a same-window receiver, use `connectEmbeddedAssistant(integration)` and pass its `onReady` to the assistant, which registers its command handler there. The SDK validates command envelopes and emits correlated results from the handler's return value or rejection. The handler must validate command-specific payloads and reject unsupported commands.
 
@@ -457,7 +467,7 @@ const onCommand = createAssistantCommandDispatcher({
 });
 ```
 
-Callbacks may return synchronously or asynchronously. Explicit callback results are preserved; null/undefined results receive the normal opened/closed/focused/prefilled/acknowledged response. Unsupported commands or missing callbacks fail with `UNKNOWN_COMMAND`; malformed envelopes/payloads fail with `INVALID_PAYLOAD` before any callback runs. Callback failures propagate to the command error boundary for normalization. The helper does not own focus, visibility, input, history or run state; it does not automatically focus after prefill. Consumers choose those behaviors in callbacks. Submit metadata is forwarded separately and must not be treated as a retry message ID.
+Callbacks may be synchronous or asynchronous. Their return values are ignored: the dispatcher answers with the contract result (`{ opened: true }`, …, `{ accepted: true }`). To refuse a command, throw or reject. Unsupported commands or missing callbacks fail with `UNKNOWN_COMMAND`; malformed envelopes/payloads fail with `INVALID_PAYLOAD` before any callback runs. Callback failures propagate to the command error boundary for normalization. The helper does not own focus, visibility, input, history or run state; it does not automatically focus after prefill. Consumers choose those behaviors in callbacks. Submit metadata is forwarded separately and must not be treated as a retry message ID.
 
 ## Choose a connection
 
@@ -499,10 +509,10 @@ For the iframe integration:
 
 Both applications import `ASSISTANT_IFRAME_MESSAGES` from the SDK for the brand-neutral readiness, connection, and acknowledgement handshake names. Assistant instance IDs describe the adapter (`assistant-iframe` or `assistant-federation`).
 
-1. The chat announces readiness to its configured host origin.
-2. The host checks the message's exact `origin` and `source` against the intended iframe.
+1. The chat announces readiness, with its protocol version, to its configured host origin.
+2. The host checks the message's exact `origin` and `source` against the intended iframe, and the protocol version. An incompatible or missing version fails the connection with `PROTOCOL_MISMATCH`.
 3. The host creates a private `MessageChannel`, attaches one port to its integration and transfers the other with a context snapshot to the verified iframe origin.
-4. The chat verifies the parent origin/source, validates the context and wraps its port in an `AssistantBridgeClient`.
+4. The chat verifies the parent origin/source and the host's protocol version, validates the context and wraps its port in an `AssistantBridgeClient`.
 5. After the chat acknowledges the connection, the host marks the assistant ready. Application logic uses the returned `client` as `AssistantBridgeClient`.
 
 The port adapters validate envelopes, correlate requests, forward context and commands, enforce a fixed 10-second port request timeout, and reject pending requests when disposed. The port layer currently converts remote failures into `Error` messages; structured error codes are not preserved end-to-end through that adapter.
@@ -513,7 +523,7 @@ The high-level iframe connection APIs own the window handshake and exact origin/
 
 For a directly supplied component or mount API, `connectEmbeddedAssistant(integration, { onStatus })` returns `bridge` and `onReady` properties, plus `dispose()` and `fail()`. `onStatus` is optional; omit it when the host does not show connection state. Its default 10-second timeout covers both loading and receiver registration. Call `onReady(handler)` only once the command receiver is usable, and run the returned cleanup on unmount. Failed or disposed connections cannot become ready later. Reconnection creates a new connection.
 
-A Module Federation remote must expose a component that accepts EmbeddedAssistantOptions: a bridge client and an onReady(handler) callback that returns cleanup. The SDK connection adapter registers the command handler and marks the assistant ready; the assistant invokes cleanup on unmount. No MessagePort is used in this mode.
+A Module Federation remote must expose a component that accepts EmbeddedAssistantOptions: a bridge client and an `onReady(handler, { protocolVersion })` callback that returns cleanup. `useAssistantIntegration` and `useAssistantCommandHandler` pass the version; a custom receiver passes `{ protocolVersion: PROTOCOL_VERSION }`. The host refuses an incompatible or missing version with `PROTOCOL_MISMATCH`. The SDK connection adapter registers the command handler and marks the assistant ready; the assistant invokes cleanup on unmount. No MessagePort is used in this mode.
 
 ## Execute actions from the assistant
 
@@ -641,6 +651,16 @@ This lifecycle belongs to the host/chat bridge, not to the chat's backend protoc
 Actions keep their Zod `parametersSchema` for TypeScript inference and host-side `safeParse` validation. Advertised capabilities use Zod 4 `z.toJSONSchema(schema, { io: 'input', target: 'draft-7' })`, preserving enum values, required/optional fields, nested objects/arrays, descriptions and representable constraints for the model. The input representation describes what callers send; Zod still applies defaults and transforms when executing the action. Unknown fields follow the input schema's policy (ordinary Zod objects accept and strip them).
 
 No separate hand-maintained JSON Schema is required. Custom types that Zod cannot express as JSON Schema cause capability generation to throw instead of silently advertising a misleading generic schema. Custom refinements and other runtime-only checks are not guaranteed to appear in JSON Schema; the host's Zod validation remains authoritative. This does not change action availability, confirmation requirements or execution permissions.
+
+## Protocol versions
+
+`PROTOCOL_VERSION` (`MAJOR.MINOR.PATCH`) is the version of the host/assistant messages and results. Peers with the same MAJOR are compatible; `isCompatibleProtocolVersion(version)` checks it.
+
+- Every request and result envelope carries `protocolVersion`, and the schemas accept any compatible version.
+- When they connect, the assistant sends its version (`READY` for iframes, `onReady(handler, { protocolVersion })` otherwise) and the host refuses an incompatible or missing one. The connection then fails with status `error` and an `IntegrationDiagnostic` with code `PROTOCOL_MISMATCH`, instead of timing out or rejecting later with `INVALID_PAYLOAD`. In an iframe, the chat also checks the host's version.
+- A new MAJOR is required when a message, payload or result changes in a way an existing peer would reject or misread: a renamed or removed field, a new required field, a changed result. Adding an optional field or a new command or action is a MINOR change. Both sides must then be updated together.
+
+`2.0.0` introduced the typed command results. An assistant or host built with an earlier SDK is incompatible.
 
 ## Integration errors
 

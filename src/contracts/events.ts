@@ -43,7 +43,8 @@ export interface IntegrationDiagnostic {
     | 'FEDERATION_ADAPTER_LOAD_FAILED'
     | 'FEDERATION_ADAPTER_TIMEOUT'
     | 'ACTION_FAILED'
-    | 'COMMAND_FAILED';
+    | 'COMMAND_FAILED'
+    | 'PROTOCOL_MISMATCH';
   phase:
     | 'adapter-load'
     | 'remote-load'

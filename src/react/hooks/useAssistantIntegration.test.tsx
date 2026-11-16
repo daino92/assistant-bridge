@@ -71,7 +71,7 @@ it('registers commands in Strict Mode and uses fresh callbacks without reconnect
 
   expect(result.current.isConnected).toBe(true);
   await expect(integration.assistantCommands.submitPrompt('first')).resolves.toEqual({
-    acknowledged: true,
+    accepted: true,
   });
   expect(firstSubmit).toHaveBeenCalledWith('first', undefined);
 

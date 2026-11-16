@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { PROTOCOL_VERSION, businessReasonSchema } from './protocol';
+import { businessReasonSchema, protocolVersionSchema } from './protocol';
 
 export const hostActionRequestSchema = z.object({
-  protocolVersion: z.literal(PROTOCOL_VERSION),
+  protocolVersion: protocolVersionSchema,
   requestId: z.string().uuid(),
   action: z.string(),
   actionExecutionId: z.string().uuid().optional(),
@@ -14,7 +14,7 @@ export const hostActionRequestSchema = z.object({
 export type HostActionRequest = z.infer<typeof hostActionRequestSchema>;
 
 export const hostActionResultSchema = z.object({
-  protocolVersion: z.literal(PROTOCOL_VERSION),
+  protocolVersion: protocolVersionSchema,
   requestId: z.string().uuid(),
   success: z.boolean(),
   data: z.unknown().optional(),

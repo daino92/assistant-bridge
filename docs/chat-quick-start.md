@@ -63,7 +63,7 @@ const Chat = ({ bridge, onReady }: Partial<EmbeddedAssistantOptions>) => {
 
 - The hook announces the chat to the host only after the command handler is registered.
 - Omit a callback the chat does not support; the host then gets `UNKNOWN_COMMAND` instead of a false success.
-- `onSubmit` should reject when the chat cannot accept a prompt (for example while answering). It resolves when the prompt is accepted, not when the answer is complete.
+- `onSubmit` should reject when the chat cannot accept a prompt (for example while answering), and return once the prompt is accepted, not when the answer is complete. Callbacks return nothing; the hook answers the host with the contract result (`{ accepted: true }` for a prompt).
 - On unmount or disconnect the hook detaches commands and cancels pending actions and approvals.
 
 ## 4. Send the host context to your backend

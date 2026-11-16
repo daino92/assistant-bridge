@@ -2,7 +2,7 @@ import { MessageChannel } from 'node:worker_threads';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createIntegration } from '@/create-host-integration';
-import { ASSISTANT_IFRAME_MESSAGES } from '@/contracts';
+import { ASSISTANT_IFRAME_MESSAGES, PROTOCOL_VERSION } from '@/contracts';
 import { connectAssistantIframe, connectHostIframe, createAssistantIframeUrl } from '@/connections';
 
 const cleanups: Array<() => void> = [];
@@ -54,12 +54,18 @@ describe('host iframe handshake', () => {
       context: unknown,
       origin = 'https://host.example',
       source: MessageEventSource = parent,
+      protocolVersion: unknown = PROTOCOL_VERSION,
     ) => {
       window.dispatchEvent(
         new MessageEvent('message', {
           origin,
           source,
-          data: { type: ASSISTANT_IFRAME_MESSAGES.CONNECT, sessionId: session, context },
+          data: {
+            type: ASSISTANT_IFRAME_MESSAGES.CONNECT,
+            sessionId: session,
+            protocolVersion,
+            context,
+          },
           ports: [channel.port1 as unknown as MessagePort],
         }),
       );
@@ -71,6 +77,10 @@ describe('host iframe handshake', () => {
     send(sessionId, { invalid: true });
     send(sessionId, context, 'https://wrong.example');
     send(sessionId, context, 'https://host.example', window);
+    // A host on another protocol major, or one from before the version check.
+    send(sessionId, context, 'https://host.example', parent, '1.0.0');
+    // `null`, not `undefined`: an undefined argument would take the default (valid) version.
+    send(sessionId, context, 'https://host.example', parent, null);
     expect(onClient).not.toHaveBeenCalled();
     send(sessionId, context);
     expect(onClient).toHaveBeenCalledOnce();
@@ -114,7 +124,11 @@ describe('host iframe handshake', () => {
         new MessageEvent('message', {
           origin,
           source,
-          data: { type: ASSISTANT_IFRAME_MESSAGES.READY, sessionId },
+          data: {
+            type: ASSISTANT_IFRAME_MESSAGES.READY,
+            sessionId,
+            protocolVersion: PROTOCOL_VERSION,
+          },
         }),
       );
     };
@@ -138,6 +152,45 @@ describe('host iframe handshake', () => {
     dispose();
     ready('https://chat.example', iframe.contentWindow, 'three');
     expect(postMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('fails the connection when the chat uses an incompatible protocol version', () => {
+    const timeline = vi.fn();
+    const integration = createIntegration({ actions: [], onTimeline: timeline });
+    const iframe = document.createElement('iframe');
+
+    document.body.append(iframe);
+
+    const postMessage = vi.spyOn(iframe.contentWindow!, 'postMessage').mockImplementation(() => {});
+    const onStatus = vi.fn();
+
+    const dispose = connectHostIframe(integration, {
+      iframe,
+      url: 'https://chat.example/',
+      onStatus,
+    });
+
+    cleanups.push(
+      () => iframe.remove(),
+      () => integration.bridge.destroy(),
+      dispose,
+    );
+    // A chat from before the version check sends no protocolVersion.
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: 'https://chat.example',
+        source: iframe.contentWindow,
+        data: { type: ASSISTANT_IFRAME_MESSAGES.READY, sessionId: 'old' },
+      }),
+    );
+
+    expect(postMessage).not.toHaveBeenCalled();
+    expect(onStatus).toHaveBeenLastCalledWith('error');
+    expect(timeline).toHaveBeenCalledWith(
+      expect.objectContaining({
+        diagnostic: expect.objectContaining({ code: 'PROTOCOL_MISMATCH', phase: 'handshake' }),
+      }),
+    );
   });
 
   it('preserves assistant URL options while adding host connection parameters', () => {

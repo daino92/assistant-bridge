@@ -10,7 +10,7 @@ const request = (command: string, payload: unknown = {}): AssistantCommandReques
   payload,
 });
 
-it('dispatches supported commands and preserves default acknowledgements', async () => {
+it('dispatches supported commands and answers with the contract results', async () => {
   const open = vi.fn();
   const close = vi.fn();
   const focus = vi.fn();
@@ -33,7 +33,7 @@ it('dispatches supported commands and preserves default acknowledgements', async
   });
   await expect(
     dispatch(request('assistant.submitPrompt', { prompt: 'Ask', metadata: { source: 'host' } })),
-  ).resolves.toEqual({ acknowledged: true });
+  ).resolves.toEqual({ accepted: true });
   expect(open).toHaveBeenCalledOnce();
   expect(close).toHaveBeenCalledOnce();
   expect(focus).toHaveBeenCalledOnce();
@@ -68,7 +68,7 @@ it('validates envelopes and payloads before callbacks, with typed errors for uns
   expect(submit).not.toHaveBeenCalled();
 });
 
-it('awaits asynchronous callbacks, preserves custom results and propagates failures', async () => {
+it('awaits asynchronous callbacks, ignores their return values and propagates failures', async () => {
   let complete!: (value: unknown) => void;
 
   const dispatch = createAssistantCommandDispatcher({
@@ -80,8 +80,9 @@ it('awaits asynchronous callbacks, preserves custom results and propagates failu
 
   const pending = dispatch(request('assistant.submitPrompt', { prompt: 'Hello' }));
 
+  // The answer follows the contract, whatever the callback resolves with.
   complete({ acknowledged: true, messageId: 'one' });
-  await expect(pending).resolves.toEqual({ acknowledged: true, messageId: 'one' });
+  await expect(pending).resolves.toEqual({ accepted: true });
 
   const failure = Object.assign(new Error('Handler failed'), { code: 'SERVICE_UNAVAILABLE' });
 

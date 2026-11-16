@@ -8,8 +8,11 @@ export {
   assistantCommandResultSchema,
   assistantPrefillPayloadSchema,
   assistantSubmitPromptPayloadSchema,
+  assistantCommandResultDataSchemas,
+  type AssistantCommandName,
   type AssistantCommandRequest,
   type AssistantCommandResult,
+  type AssistantCommandResultData,
 } from './assistant-commands';
 
 export type {
@@ -50,6 +53,8 @@ export {
   ASSISTANT_IFRAME_MESSAGES,
   ERROR_CODES,
   PROTOCOL_VERSION,
+  isCompatibleProtocolVersion,
+  protocolVersionSchema,
   businessReasonSchema,
   type BusinessReason,
   type ErrorCode,
