@@ -34,6 +34,26 @@ export const ASSISTANT_COMMAND_NAMES = {
   SUBMIT_PROMPT: 'assistant.submitPrompt',
 } as const;
 
+/**
+ * What the assistant answers to each command. A command it cannot carry out (for example a
+ * prompt while a reply is running) is an error result, not `false`.
+ */
+export const assistantCommandResultDataSchemas = {
+  [ASSISTANT_COMMAND_NAMES.OPEN]: z.object({ opened: z.literal(true) }),
+  [ASSISTANT_COMMAND_NAMES.CLOSE]: z.object({ closed: z.literal(true) }),
+  [ASSISTANT_COMMAND_NAMES.FOCUS]: z.object({ focused: z.literal(true) }),
+  [ASSISTANT_COMMAND_NAMES.PREFILL]: z.object({ prefilled: z.literal(true) }),
+  [ASSISTANT_COMMAND_NAMES.SUBMIT_PROMPT]: z.object({ accepted: z.literal(true) }),
+} as const;
+
+export type AssistantCommandName =
+  (typeof ASSISTANT_COMMAND_NAMES)[keyof typeof ASSISTANT_COMMAND_NAMES];
+
+/** Result data per command, for example `{ accepted: true }` for `assistant.submitPrompt`. */
+export type AssistantCommandResultData = {
+  [K in AssistantCommandName]: z.infer<(typeof assistantCommandResultDataSchemas)[K]>;
+};
+
 export const assistantPrefillPayloadSchema = z.object({
   text: z.string(),
 });

@@ -8,6 +8,7 @@ import { createIntegration } from '@/create-host-integration';
 import { normalizeIntegrationError, createIntegrationError } from '@/errors';
 import { createAssistantActionExecutor } from '@/assistant-client';
 import type { ActionLifecycleEvent } from '@/contracts';
+import { answer } from '../../test/command-answers';
 
 const cleanups: Array<() => void> = [];
 
@@ -34,7 +35,7 @@ const connect = () => {
 
   const ports = new MessageChannel();
   const detach = attachHostPort(ports.port1 as unknown as MessagePort, integration.bridge);
-  const onCommand = vi.fn((request) => ({ command: request.command }));
+  const onCommand = vi.fn((request) => answer(request));
 
   const remote = createPortAssistantClient(
     ports.port2 as unknown as MessagePort,
@@ -74,7 +75,7 @@ describe('iframe port transport', () => {
     await vi.waitFor(() => expect(context).toHaveBeenCalled());
     expect(remote.client.getContext().route).toBe('/records');
     await expect(assistantCommands.prefill('Review records')).resolves.toEqual({
-      command: 'assistant.prefill',
+      prefilled: true,
     });
     expect(onCommand.mock.calls[0][0].payload).toEqual({ text: 'Review records' });
   });

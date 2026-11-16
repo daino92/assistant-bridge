@@ -13,6 +13,7 @@ import {
   useUiTarget,
   type AssistantHostValue,
 } from '@/react';
+import { answer } from '../../test/command-answers';
 
 afterEach(cleanup);
 
@@ -135,7 +136,7 @@ describe('AssistantHost', () => {
   });
 
   it('connects an embedded assistant and asks through it', async () => {
-    const commands = vi.fn(() => 'ok');
+    const commands = vi.fn(answer);
 
     render(
       <AssistantHost

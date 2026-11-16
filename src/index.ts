@@ -24,8 +24,6 @@ export {
 } from './actions';
 
 export {
-  createAssistantBridgeClient,
-  createHostAssistantCommands,
   type AskOptions,
   type AssistantCommandHandler,
   type AssistantBridgeClient,

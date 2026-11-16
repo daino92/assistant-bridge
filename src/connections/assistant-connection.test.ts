@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { connectEmbeddedAssistant } from '@/connections';
 import { createIntegration } from '@/create-host-integration';
 import { ASSISTANT_COMMAND_NAMES, ERROR_CODES, type AssistantCommandRequest } from '@/contracts';
+import { answer } from '../../test/command-answers';
 
 const cleanups: Array<() => void> = [];
 
@@ -30,8 +31,8 @@ describe('assistant connection lifecycle', () => {
     const connection = connectEmbeddedAssistant(integration, { timeoutMs: 1000 });
 
     cleanups.push(() => integration.bridge.destroy(), connection.dispose);
-    connection.onReady(() => 'ready');
-    await expect(integration.assistantCommands.open()).resolves.toBe('ready');
+    connection.onReady(answer);
+    await expect(integration.assistantCommands.open()).resolves.toEqual({ opened: true });
   });
 
   it('times out and ignores receivers that arrive after failure', () => {
@@ -48,15 +49,23 @@ describe('assistant connection lifecycle', () => {
 
   it('allows effect cleanup and remount without an old cleanup removing the new receiver', async () => {
     const { integration, connection, onStatus } = connect();
-    const firstCleanup = connection.onReady(() => 'first');
-    const secondCleanup = connection.onReady(() => 'second');
+    const first = vi.fn(answer);
+    const second = vi.fn(answer);
+    const firstCleanup = connection.onReady(first);
+    const secondCleanup = connection.onReady(second);
 
     firstCleanup();
-    await expect(integration.assistantCommands.open()).resolves.toBe('second');
+    await expect(integration.assistantCommands.open()).resolves.toEqual({ opened: true });
+    expect(second).toHaveBeenCalledOnce();
+    expect(first).not.toHaveBeenCalled();
     secondCleanup();
     expect(integration.bridge.isAssistantAvailable()).toBe(false);
-    connection.onReady(() => 'remounted');
-    await expect(integration.assistantCommands.open()).resolves.toBe('remounted');
+
+    const remounted = vi.fn(answer);
+
+    connection.onReady(remounted);
+    await expect(integration.assistantCommands.open()).resolves.toEqual({ opened: true });
+    expect(remounted).toHaveBeenCalledOnce();
     expect(onStatus).toHaveBeenLastCalledWith('ready');
   });
 
@@ -75,7 +84,7 @@ describe('assistant connection lifecycle', () => {
 
   it('opens before submitting prompts and includes the current selection and revision', async () => {
     const { integration, connection } = connect();
-    const handler = vi.fn((_request: AssistantCommandRequest) => 'ok');
+    const handler = vi.fn((request: AssistantCommandRequest) => answer(request));
 
     connection.onReady(handler);
 
@@ -97,9 +106,26 @@ describe('assistant connection lifecycle', () => {
     ]);
   });
 
+  it('checks each answer against the command contract', async () => {
+    const { integration, connection } = connect();
+
+    // An assistant from before typed results answers submitPrompt with `acknowledged`.
+    connection.onReady((request) =>
+      request.command === ASSISTANT_COMMAND_NAMES.SUBMIT_PROMPT
+        ? { acknowledged: true }
+        : { ...answer(request), extra: 'ignored' },
+    );
+
+    await expect(integration.assistantCommands.open()).resolves.toEqual({ opened: true });
+    await expect(integration.assistantCommands.submitPrompt('Hi')).rejects.toMatchObject({
+      code: ERROR_CODES.INVALID_PAYLOAD,
+    });
+    await expect(integration.assistantCommands.askAbout('Hi')).rejects.toBeInstanceOf(Error);
+  });
+
   it('passes metadata with askAbout options, and keeps the host revision', async () => {
     const { integration, connection } = connect();
-    const handler = vi.fn((_request: AssistantCommandRequest) => 'ok');
+    const handler = vi.fn((request: AssistantCommandRequest) => answer(request));
 
     connection.onReady(handler);
 

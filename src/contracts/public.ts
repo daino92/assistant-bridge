@@ -8,8 +8,11 @@ export {
   assistantCommandResultSchema,
   assistantPrefillPayloadSchema,
   assistantSubmitPromptPayloadSchema,
+  assistantCommandResultDataSchemas,
+  type AssistantCommandName,
   type AssistantCommandRequest,
   type AssistantCommandResult,
+  type AssistantCommandResultData,
 } from './assistant-commands';
 
 export type {

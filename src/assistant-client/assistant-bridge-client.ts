@@ -2,11 +2,16 @@ import type { HostBridge } from '@/bridge';
 import type { AssistantCommandHandler } from '@/assistant-client';
 import {
   ASSISTANT_COMMAND_NAMES,
+  ERROR_CODES,
+  assistantCommandResultDataSchemas,
   assistantPrefillPayloadSchema,
   assistantSubmitPromptPayloadSchema,
+  type AssistantCommandName,
+  type AssistantCommandResultData,
   type HostContext,
   type ActionLifecycleEvent,
 } from '@/contracts';
+import { toIntegrationError } from '@/errors';
 
 /**
  * Scoped API shared by direct, federated, and cross-window integrations.
@@ -41,13 +46,20 @@ export interface HostAssistantCommands {
    * Opens the assistant and submits the prompt. The second argument is either the selection
    * (the original signature) or {@link AskOptions}.
    */
-  askAbout(prompt: string, options?: AskOptions | HostContext['selection']): Promise<unknown>;
-  prefillAndOpen(text: string): Promise<unknown>;
-  open(): Promise<unknown>;
-  close(): Promise<unknown>;
-  focus(): Promise<unknown>;
-  prefill(text: string): Promise<unknown>;
-  submitPrompt(prompt: string, metadata?: Record<string, unknown>): Promise<unknown>;
+  askAbout(
+    prompt: string,
+    options?: AskOptions | HostContext['selection'],
+  ): Promise<AssistantCommandResultData['assistant.submitPrompt']>;
+  prefillAndOpen(text: string): Promise<AssistantCommandResultData['assistant.prefill']>;
+  open(): Promise<AssistantCommandResultData['assistant.open']>;
+  close(): Promise<AssistantCommandResultData['assistant.close']>;
+  focus(): Promise<AssistantCommandResultData['assistant.focus']>;
+  prefill(text: string): Promise<AssistantCommandResultData['assistant.prefill']>;
+  /** Resolves with `{ accepted: true }` once the assistant took the prompt, not when it answered. */
+  submitPrompt(
+    prompt: string,
+    metadata?: Record<string, unknown>,
+  ): Promise<AssistantCommandResultData['assistant.submitPrompt']>;
 }
 
 export const createAssistantBridgeClient = (bridge: HostBridge): AssistantBridgeClient => {
@@ -79,6 +91,23 @@ const toAskOptions = (options?: AskOptions | HostContext['selection']): AskOptio
   return 'type' in options && 'id' in options ? { selection: options } : options;
 };
 
+/** Sends a command and checks the assistant's answer against the command's result schema. */
+const send = async <K extends AssistantCommandName>(
+  bridge: HostBridge,
+  command: K,
+  payload: unknown,
+): Promise<AssistantCommandResultData[K]> => {
+  const data = await bridge.sendAssistantCommand(command, payload);
+  const parsed = assistantCommandResultDataSchemas[command].safeParse(data);
+
+  if (!parsed.success) {
+    // An assistant that answers in another shape does not implement this protocol version.
+    throw toIntegrationError({ code: ERROR_CODES.INVALID_PAYLOAD });
+  }
+
+  return parsed.data as AssistantCommandResultData[K];
+};
+
 export const createHostAssistantCommands = (bridge: HostBridge): HostAssistantCommands => {
   const commands: HostAssistantCommands = {
     askAbout: async (prompt, options) => {
@@ -102,19 +131,17 @@ export const createHostAssistantCommands = (bridge: HostBridge): HostAssistantCo
 
       return commands.prefill(text);
     },
-    open: () => bridge.sendAssistantCommand(ASSISTANT_COMMAND_NAMES.OPEN, {}),
-    close: () => bridge.sendAssistantCommand(ASSISTANT_COMMAND_NAMES.CLOSE, {}),
-    focus: () => bridge.sendAssistantCommand(ASSISTANT_COMMAND_NAMES.FOCUS, {}),
-    prefill: (text) => {
-      const payload = assistantPrefillPayloadSchema.parse({ text });
-
-      return bridge.sendAssistantCommand(ASSISTANT_COMMAND_NAMES.PREFILL, payload);
-    },
-    submitPrompt: (prompt, metadata) => {
-      const payload = assistantSubmitPromptPayloadSchema.parse({ prompt, metadata });
-
-      return bridge.sendAssistantCommand(ASSISTANT_COMMAND_NAMES.SUBMIT_PROMPT, payload);
-    },
+    open: () => send(bridge, ASSISTANT_COMMAND_NAMES.OPEN, {}),
+    close: () => send(bridge, ASSISTANT_COMMAND_NAMES.CLOSE, {}),
+    focus: () => send(bridge, ASSISTANT_COMMAND_NAMES.FOCUS, {}),
+    prefill: (text) =>
+      send(bridge, ASSISTANT_COMMAND_NAMES.PREFILL, assistantPrefillPayloadSchema.parse({ text })),
+    submitPrompt: (prompt, metadata) =>
+      send(
+        bridge,
+        ASSISTANT_COMMAND_NAMES.SUBMIT_PROMPT,
+        assistantSubmitPromptPayloadSchema.parse({ prompt, metadata }),
+      ),
   };
 
   return commands;

@@ -414,7 +414,17 @@ await integration.assistantCommands.submitPrompt('Show active records', {
 await integration.assistantCommands.close();
 ```
 
-The receiver must implement these commands and return correlated results. The SDK does not create or open a panel itself. `submitPrompt()` completion means the receiver returned a command result; it does not inherently mean response streaming has finished.
+The receiver must implement these commands. Each one resolves with a typed result from the contract, which the host checks:
+
+| Command                  | Result                |
+| ------------------------ | --------------------- |
+| `assistant.open`         | `{ opened: true }`    |
+| `assistant.close`        | `{ closed: true }`    |
+| `assistant.focus`        | `{ focused: true }`   |
+| `assistant.prefill`      | `{ prefilled: true }` |
+| `assistant.submitPrompt` | `{ accepted: true }`  |
+
+An assistant that cannot carry out a command rejects it; there is no `false` result. An answer in another shape rejects on the host with `INVALID_PAYLOAD`. The schemas are `assistantCommandResultDataSchemas` in `assistant-bridge/contracts`, typed as `AssistantCommandResultData`. The SDK does not create or open a panel itself. `submitPrompt()` resolves when the assistant accepted the prompt, not when the answer is complete.
 
 For a same-window receiver, use `connectEmbeddedAssistant(integration)` and pass its `onReady` to the assistant, which registers its command handler there. The SDK validates command envelopes and emits correlated results from the handler's return value or rejection. The handler must validate command-specific payloads and reject unsupported commands.
 
@@ -457,7 +467,7 @@ const onCommand = createAssistantCommandDispatcher({
 });
 ```
 
-Callbacks may return synchronously or asynchronously. Explicit callback results are preserved; null/undefined results receive the normal opened/closed/focused/prefilled/acknowledged response. Unsupported commands or missing callbacks fail with `UNKNOWN_COMMAND`; malformed envelopes/payloads fail with `INVALID_PAYLOAD` before any callback runs. Callback failures propagate to the command error boundary for normalization. The helper does not own focus, visibility, input, history or run state; it does not automatically focus after prefill. Consumers choose those behaviors in callbacks. Submit metadata is forwarded separately and must not be treated as a retry message ID.
+Callbacks may be synchronous or asynchronous. Their return values are ignored: the dispatcher answers with the contract result (`{ opened: true }`, …, `{ accepted: true }`). To refuse a command, throw or reject. Unsupported commands or missing callbacks fail with `UNKNOWN_COMMAND`; malformed envelopes/payloads fail with `INVALID_PAYLOAD` before any callback runs. Callback failures propagate to the command error boundary for normalization. The helper does not own focus, visibility, input, history or run state; it does not automatically focus after prefill. Consumers choose those behaviors in callbacks. Submit metadata is forwarded separately and must not be treated as a retry message ID.
 
 ## Choose a connection
 

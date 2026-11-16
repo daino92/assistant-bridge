@@ -8,6 +8,11 @@ import {
 } from '@/contracts';
 import { createIntegrationError } from '@/errors';
 
+/**
+ * Chat callbacks for host commands. Each one does the work and returns nothing; throw (or reject)
+ * to refuse, for example when a prompt arrives while a reply is running. The dispatcher answers
+ * the host with the contract's result (`{ opened: true }`, `{ accepted: true }`, …).
+ */
 export interface AssistantCommandCallbacks {
   onOpen?: () => unknown | Promise<unknown>;
   onClose?: () => unknown | Promise<unknown>;
@@ -16,12 +21,16 @@ export interface AssistantCommandCallbacks {
   onSubmit?: (prompt: string, metadata?: Record<string, unknown>) => unknown | Promise<unknown>;
 }
 
-const invoke = (callback: (() => unknown) | undefined, acknowledgement: unknown) => {
+/**
+ * Runs the callback and answers with the contract's result for the command. The callback's
+ * own return value is ignored; it refuses by throwing.
+ */
+const invoke = <T>(callback: (() => unknown) | undefined, result: T): Promise<T> => {
   if (!callback) {
     throw createIntegrationError(ERROR_CODES.UNKNOWN_COMMAND);
   }
 
-  return Promise.resolve(callback()).then((result) => result ?? acknowledgement);
+  return Promise.resolve(callback()).then(() => result);
 };
 
 /** Validates and routes commands without owning input, focus, storage or run state. */
@@ -68,7 +77,7 @@ export const createAssistantCommandDispatcher = (
           handlers.onSubmit
             ? () => handlers.onSubmit!(payload.data.prompt, payload.data.metadata)
             : undefined,
-          { acknowledged: true },
+          { accepted: true },
         );
       }
 

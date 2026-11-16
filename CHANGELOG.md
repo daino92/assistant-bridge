@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- **Breaking (protocol):** host commands have typed results, checked on the host:
+  `{ opened: true }`, `{ closed: true }`, `{ focused: true }`, `{ prefilled: true }` and
+  `{ accepted: true }` for `submitPrompt` (was `{ acknowledged: true }`). `assistantCommands`
+  and `ask` resolve with them; an answer in another shape rejects with `INVALID_PAYLOAD`. The
+  schemas are `assistantCommandResultDataSchemas` in `/contracts`.
+- **Breaking:** the command dispatcher (and `useAssistantIntegration`) ignores callback return
+  values and answers with the contract result. Chats refuse a command by throwing.
+- **Breaking:** `createHostAssistantCommands` and `createAssistantBridgeClient` are no longer
+  exported; they took the internal bridge. Use `integration.assistantCommands` and
+  `integration.assistantClient`.
+
 ## 0.1.0-beta.6
 
 - Add `assistant-bridge/contracts`: schemas, names, error codes and `PROTOCOL_VERSION`, with Zod

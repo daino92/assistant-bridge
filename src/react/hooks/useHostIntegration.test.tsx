@@ -8,6 +8,7 @@ import { attachAssistantCommandHandler } from '@/assistant-client';
 import { ERROR_CODES } from '@/contracts';
 import type { CreateHostIntegrationOptions } from '@/create-host-integration';
 import { useHostIntegration } from '@/react/hooks';
+import { answer } from '../../../test/command-answers';
 
 interface WrapperProps {
   children: ReactNode;
@@ -40,10 +41,10 @@ describe('useHostIntegration', () => {
     rerender({ ...options });
     expect(result.current).toBe(integration);
 
-    const detach = attachAssistantCommandHandler(internalsOf(integration).bridge, () => 'ack');
+    const detach = attachAssistantCommandHandler(internalsOf(integration).bridge, answer);
 
     internalsOf(integration).bridge.notifyAssistantReady('test');
-    await expect(integration.assistantCommands.open()).resolves.toBe('ack');
+    await expect(integration.assistantCommands.open()).resolves.toEqual({ opened: true });
     expect(destroy).not.toHaveBeenCalled();
     expect(disposeIntegration).not.toHaveBeenCalled();
     unmount();

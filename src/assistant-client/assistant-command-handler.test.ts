@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { attachAssistantCommandHandler } from '@/assistant-client';
 import { createIntegration } from '@/create-host-integration';
 import { ERROR_CODES } from '@/contracts';
+import { answer } from '../../test/command-answers';
 
 const dispose: Array<() => void> = [];
 
@@ -17,10 +18,7 @@ describe('same-window assistant commands', () => {
   it('routes correlated commands to an async receiver without exposing host services', async () => {
     const integration = createIntegration({ actions: [] });
 
-    const handler = vi.fn(async (request) => ({
-      accepted: request.command,
-      payload: request.payload,
-    }));
+    const handler = vi.fn(async (request) => answer(request));
 
     const detach = attachAssistantCommandHandler(integration.bridge, handler);
 
@@ -31,10 +29,8 @@ describe('same-window assistant commands', () => {
         integration.assistantCommands.prefill('Hello'),
         integration.assistantCommands.open(),
       ]),
-    ).resolves.toEqual([
-      { accepted: 'assistant.prefill', payload: { text: 'Hello' } },
-      { accepted: 'assistant.open', payload: {} },
-    ]);
+    ).resolves.toEqual([{ prefilled: true }, { opened: true }]);
+    expect(handler.mock.calls.map(([request]) => request.payload)).toEqual([{ text: 'Hello' }, {}]);
     expect(handler).toHaveBeenCalledTimes(2);
   });
 
