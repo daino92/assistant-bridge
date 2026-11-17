@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- `ui.navigate` treats `params: null`, and `params: {}` on routes without parameters, as
+  no parameters. Models often send these, and they used to fail with `INVALID_PAYLOAD`.
+  Parameters with any content are still rejected.
+
 ## 0.1.0-beta.8
 
 - Add `preview(args, context)` to action definitions. The host validates arguments

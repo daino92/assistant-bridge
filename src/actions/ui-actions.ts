@@ -52,7 +52,11 @@ export interface NavigateActionOptions {
   beforeNavigate?: (path: string, params?: NavigateParams) => void | Promise<void>;
 }
 
-export type NavigatePayload = { path: string; params?: NavigateParams };
+/** `null` and, on plain routes, `{}` mean "no parameters": models often send them. */
+export type NavigatePayload = { path: string; params?: NavigateParams | null };
+
+// A plain route accepts only an empty parameter object; anything in it fails validation.
+const noParams = z.object({}).strict().nullable().optional();
 
 const navigateSchema = (
   routes: Readonly<Record<string, NavigateRoute>>,
@@ -65,14 +69,17 @@ const navigateSchema = (
 
   // Route branches come first; the plain branch is strict so stray parameters fail validation.
   const branches = entries.map(([path, route]) => {
-    const branch = z.object({ path: z.literal(path), params: route.params });
+    const branch = z.object({
+      path: z.literal(path),
+      params: z.union([z.null(), route.params]),
+    });
 
     return route.description ? branch.describe(route.description) : branch;
   });
 
   const [first, ...rest]: z.ZodType<NavigatePayload>[] = [
     ...branches,
-    uiNavigatePayloadSchema.strict(),
+    uiNavigatePayloadSchema.extend({ params: noParams }).strict(),
   ];
 
   return z.union([first, ...rest]);
@@ -88,7 +95,8 @@ export const navigateAction = (deps: NavigateActionOptions): HostActionInput<Nav
       ? 'Navigate to an allowed application route. Routes with parameters require `params`.'
       : 'Navigate to an allowed application route',
     schema: navigateSchema(routes),
-    async handler({ path, params }) {
+    async handler({ path, params: sent }) {
+      const params = sent ?? undefined;
       const route = Object.hasOwn(routes, path) ? routes[path] : undefined;
 
       if (route) {
@@ -114,7 +122,7 @@ export const navigateAction = (deps: NavigateActionOptions): HostActionInput<Nav
 
       const allowed = allowedRoutes.includes(path) || (deps.detailPattern?.test(path) ?? false);
 
-      if (!allowed || params !== undefined) {
+      if (!allowed || (params !== undefined && Object.keys(params).length > 0)) {
         throw createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE);
       }
 
