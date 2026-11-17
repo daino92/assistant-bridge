@@ -377,3 +377,19 @@ it('cancels an action waiting for the host on unmount without claiming to undo t
   await cancelled;
   finish({ done: true });
 });
+
+it('returns normalized results through the React hook without changing its throwing API', async () => {
+  const { integration, handler } = createHost();
+
+  const { result } = renderHook(() =>
+    useAssistantIntegration({ bridge: integration.assistantClient, commands: {} }),
+  );
+
+  await expect(
+    result.current.executeHostActionResult('test.action', { value: 'ok' }),
+  ).resolves.toEqual({ status: 'succeeded', data: { value: 'ok' } });
+  await expect(
+    result.current.executeHostActionResult('test.action', { value: 42 }),
+  ).resolves.toMatchObject({ status: 'failed', error: { code: 'INVALID_PAYLOAD' } });
+  expect(handler).toHaveBeenCalledOnce();
+});

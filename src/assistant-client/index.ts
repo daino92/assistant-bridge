@@ -38,3 +38,5 @@ export {
   createAssistantCommandDispatcher,
   type AssistantCommandCallbacks,
 } from './assistant-command-dispatcher';
+
+export { type ActionExecutionResult } from './action-result';

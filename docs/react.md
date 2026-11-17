@@ -212,7 +212,7 @@ const integration = useAssistantIntegration({
 });
 ```
 
-Use `integration.context` and `integration.isConnected` for host state. Await `integration.executeHostAction(name, payload)` for backend-originated host requests. Render `integration.confirmation` with `approve`/`reject`, or supply `actions.requestConfirmation` for an existing approval UI. Backend adapters (AG-UI or other) can pass `integration.bridge` and `integration.requestConfirmation` to `createAssistantActionExecutor`. See the [existing chat integration guide](existing-chat.md) for lifecycle, backend protocol boundaries, and Commercebot/Tell-a-story adapter mappings.
+Use `integration.context` and `integration.isConnected` for host state. Use `integration.executeHostActionResult(name, payload)` for normalized outcomes, or await `integration.executeHostAction(name, payload)` when your adapter uses exceptions. Both handle backend-originated host requests. Render `integration.confirmation` (including its optional host-owned `preview`) with `approve`/`reject`, or supply `actions.requestConfirmation` for an existing approval UI. Backend adapters (AG-UI or other) can pass `integration.bridge` and `integration.requestConfirmation` to `createAssistantActionExecutor`. See the [existing chat integration guide](existing-chat.md) for lifecycle, backend protocol boundaries, and Commercebot/Tell-a-story adapter mappings.
 
 ## Assistant-side hooks
 

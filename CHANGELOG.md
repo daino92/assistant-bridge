@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-beta.8
+
+- Add `preview(args, context)` to action definitions. The host validates arguments
+  and returns a bounded, plain-text `{ title, details }` preview before approval.
+- Add `executeActionResult` and React `executeHostActionResult` with normalized
+  `succeeded`, `rejected`, `cancelled` and `failed` outcomes. Existing throwing APIs remain.
+- Protocol `2.1.0` adds optional `hasPreview` capabilities and separate read-only
+  preview requests/results over MessagePort. Peers without previews retain generic
+  approval descriptions; a preview request is never an action execution request.
+
 ## 0.1.0-beta.7
 
 - Add `assistant-bridge/testing` with `connectTestAssistant(integration, { approve })`: a test

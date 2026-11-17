@@ -88,24 +88,27 @@ Send only what your backend needs. `capabilities` lists the actions the host all
 When your backend asks for a host action:
 
 ```ts
-import { ERROR_CODES } from 'assistant-bridge';
+const outcome = await integration.executeHostActionResult(name, args, { toolCallId });
 
-try {
-  const data = await integration.executeHostAction(name, args, { toolCallId });
-
-  await backend.sendToolResult(toolCallId, { ok: true, data });
-} catch (error) {
-  const code = (error as { code?: string }).code;
-
+if (outcome.status === 'succeeded') {
+  await backend.sendToolResult(toolCallId, { ok: true, data: outcome.data });
+} else {
   await backend.sendToolResult(toolCallId, {
     ok: false,
-    rejected: code === ERROR_CODES.ACTION_REJECTED,
-    message: error instanceof Error ? error.message : 'The action failed',
+    rejected: outcome.status === 'rejected',
+    cancelled: outcome.status === 'cancelled',
+    message: outcome.error.reason?.message ?? outcome.error.message,
   });
 }
 ```
 
-`executeHostAction` checks that the action is currently allowed, waits for a stable host context and, when the action requires it, asks the user. The host validates the payload again and runs its handler. Error messages are safe to show: the SDK never forwards raw handler errors.
+`executeHostActionResult` checks that the action is currently allowed, waits for a stable host context and, when the action requires it, asks the user. The host validates the payload again and runs its handler. Error messages are safe to show: the SDK never forwards raw handler errors.
+
+The existing `executeHostAction` method still resolves with data or throws an
+error. Core users can call `createAssistantActionExecutor(...).executeActionResult`
+for the same normalized outcome. SDK outcomes describe execution, not an LLM's
+claims about what happened. Keep backend protocol mapping and run cancellation
+in the chat adapter.
 
 Render the approval request when one is pending:
 
@@ -113,7 +116,10 @@ Render the approval request when one is pending:
 {
   integration.confirmation && (
     <section role="dialog" aria-label="Approve action">
-      <p>{integration.confirmation.description}</p>
+      <p>{integration.confirmation.preview?.title ?? integration.confirmation.description}</p>
+      {integration.confirmation.preview?.details.map((line, index) => (
+        <p key={index}>{line}</p>
+      ))}
       <button onClick={integration.approve}>Approve</button>
       <button onClick={integration.reject}>Reject</button>
     </section>
@@ -138,7 +144,7 @@ The chat connects only when the `hostOrigin` in its URL is in that list, and the
 
 ## Backend protocols
 
-The SDK does not talk to your backend. Whatever the protocol (AG-UI, SSE, WebSocket), the chat sends the host context and capabilities in its own format (step 4) and runs each requested host action with `executeHostAction` (step 5).
+The SDK does not talk to your backend. Whatever the protocol (AG-UI, SSE, WebSocket), the chat sends the host context and capabilities in its own format (step 4) and runs each requested host action with `executeHostActionResult` (step 5).
 
 ## Responsibilities
 

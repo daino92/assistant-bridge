@@ -23,6 +23,8 @@ const messageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('action.lifecycle'), value: actionLifecycleEventSchema }),
   z.object({ type: z.literal('action.request'), value: hostActionRequestSchema }),
   z.object({ type: z.literal('action.result'), value: hostActionResultSchema }),
+  z.object({ type: z.literal('action.preview.request'), value: hostActionRequestSchema }),
+  z.object({ type: z.literal('action.preview.result'), value: hostActionResultSchema }),
   z.object({ type: z.literal('command.request'), value: assistantCommandRequestSchema }),
   z.object({ type: z.literal('command.result'), value: assistantCommandResultSchema }),
 ]);
@@ -65,7 +67,11 @@ const createPortChannel = (port: MessagePort, onMessage: (message: PortMessage) 
       return;
     }
 
-    if (message.type === 'action.result' || message.type === 'command.result') {
+    if (
+      message.type === 'action.result' ||
+      message.type === 'action.preview.result' ||
+      message.type === 'command.result'
+    ) {
       const waiter = pending.get(message.value.requestId);
 
       if (!waiter) {
@@ -156,6 +162,22 @@ export const attachHostPort = (port: MessagePort, bridge: HostBridge) => {
   const channel = createPortChannel(port, (message) => {
     if (message.type === 'action.lifecycle') {
       bridge.publishActionLifecycle(message.value);
+
+      return;
+    }
+
+    if (message.type === 'action.preview.request') {
+      const { requestId, action, payload, contextRevision } = message.value;
+
+      void bridge.previewHostAction(action, payload, contextRevision).then(
+        (data) =>
+          channel.send({
+            type: 'action.preview.result',
+            value: { protocolVersion: PROTOCOL_VERSION, requestId, success: true, data },
+          }),
+        (error: unknown) =>
+          channel.send({ type: 'action.preview.result', value: failure(requestId, error) }),
+      );
 
       return;
     }
@@ -302,6 +324,23 @@ export const createPortAssistantClient = (
         return () => {
           subscribers.delete(callback);
         };
+      },
+      previewHostAction: (action, payload, contextRevision) => {
+        const requestId = crypto.randomUUID();
+
+        return channel.request(
+          {
+            type: 'action.preview.request',
+            value: {
+              protocolVersion: PROTOCOL_VERSION,
+              requestId,
+              action,
+              payload,
+              contextRevision,
+            },
+          },
+          requestId,
+        );
       },
       requestHostAction: (action, payload, contextRevision, confirmed, actionExecutionId) => {
         const requestId = crypto.randomUUID();
