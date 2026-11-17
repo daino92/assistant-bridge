@@ -4,7 +4,7 @@ import { z } from 'zod';
  * Version of the host/assistant wire protocol, `MAJOR.MINOR.PATCH`. Peers with the same MAJOR
  * are compatible; a new MAJOR marks a breaking change to messages or results.
  */
-export const PROTOCOL_VERSION = '2.0.0';
+export const PROTOCOL_VERSION = '2.1.0';
 
 const majorOf = (version: string): string | undefined => /^(\d+)\.\d+\.\d+$/.exec(version)?.[1];
 

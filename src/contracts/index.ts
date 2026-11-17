@@ -22,6 +22,8 @@ export {
   HOST_ACTION_NAMES,
   hostActionRequestSchema,
   hostActionResultSchema,
+  actionPreviewSchema,
+  type ActionPreview,
   uiFocusPayloadSchema,
   uiHighlightPayloadSchema,
   uiNavigatePayloadSchema,

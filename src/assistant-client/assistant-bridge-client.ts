@@ -19,6 +19,12 @@ import { toIntegrationError } from '@/errors';
  */
 export interface AssistantBridgeClient {
   readonly signal?: AbortSignal;
+  /** Separate read-only request; optional for older clients. */
+  previewHostAction?: (
+    action: string,
+    payload: unknown,
+    contextRevision?: number,
+  ) => Promise<unknown>;
   publishActionLifecycle?: (event: ActionLifecycleEvent) => void;
   subscribeActionLifecycle?: (callback: (event: ActionLifecycleEvent) => void) => () => void;
   /** Returns the latest published host context. */
@@ -67,6 +73,8 @@ export const createAssistantBridgeClient = (bridge: HostBridge): AssistantBridge
 
   return {
     signal: bridge.signal,
+    previewHostAction: (action, payload, revision) =>
+      bridge.previewHostAction(action, payload, revision),
     publishActionLifecycle: (event) => bridge.publishActionLifecycle(event),
     subscribeActionLifecycle: (callback) =>
       bridge.signal.aborted ? () => {} : bridge.bus.on('action.lifecycle', callback),

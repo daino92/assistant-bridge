@@ -445,6 +445,49 @@ export class HostBridge {
     }
   }
 
+  /** Read-only preview path. It never calls an action handler or grants confirmation. */
+  async previewHostAction(
+    action: string,
+    payload: unknown,
+    contextRevision?: number,
+  ): Promise<unknown> {
+    if (this.signal.aborted) {
+      throw createIntegrationError(ERROR_CODES.RECEIVER_UNAVAILABLE);
+    }
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    let abort = () => {};
+
+    try {
+      return await Promise.race([
+        this.actionRegistry
+          .preview(action, payload, {
+            getContext: () => this.contextManager.getSnapshot(),
+            minContextRevision: contextRevision,
+          })
+          .then((result) => {
+            if (!result.success) {
+              throw toIntegrationError(result.error);
+            }
+
+            return result.data;
+          }),
+        new Promise<never>((_resolve, reject) => {
+          timer = setTimeout(
+            () => reject(createIntegrationError(ERROR_CODES.TIMEOUT)),
+            this.actionTimeoutMs,
+          );
+          abort = () => reject(createIntegrationError(ERROR_CODES.RECEIVER_UNAVAILABLE));
+          this.signal.addEventListener('abort', abort, { once: true });
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+      this.signal.removeEventListener('abort', abort);
+    }
+  }
+
   /** Assistant → Host: request an action through the bridge. */
   async requestHostAction(
     action: string,

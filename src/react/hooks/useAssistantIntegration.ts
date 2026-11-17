@@ -25,6 +25,8 @@ import {
   useAssistantIframeConnection,
 } from '@/react/hooks';
 
+import { captureActionResult } from '@/assistant-client/action-result';
+
 export interface UseAssistantIntegrationOptions extends Partial<EmbeddedAssistantOptions> {
   commands: AssistantCommandCallbacks;
   /** Iframe chats only: the parent origin, or the parent origins the chat trusts. */
@@ -154,11 +156,28 @@ export const useAssistantIntegration = ({
     [client, requestConfirmation],
   );
 
+  const executeHostActionResult = useCallback(
+    (name: string, payload: unknown, execution?: ActionExecutionOptions) => {
+      const signals = [
+        client?.signal,
+        actionOptions.current?.signal,
+        actionConnection.current?.controller.signal,
+      ].filter((value): value is AbortSignal => Boolean(value));
+
+      return captureActionResult(
+        () => executeHostAction(name, payload, execution),
+        AbortSignal.any(signals),
+      );
+    },
+    [client, executeHostAction],
+  );
+
   return {
     bridge: isConnected ? client : undefined,
     context: isConnected ? context : undefined,
     isConnected,
     executeHostAction,
+    executeHostActionResult,
     requestConfirmation,
     confirmation: approval.confirmation,
     approve: approval.approve,

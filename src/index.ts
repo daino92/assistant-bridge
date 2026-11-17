@@ -54,6 +54,8 @@ export {
   assistantSubmitPromptPayloadSchema,
   hostActionRequestSchema,
   hostActionResultSchema,
+  actionPreviewSchema,
+  type ActionPreview,
   hostCapabilitySchema,
   hostContextSchema,
   hostPrincipalSchema,
@@ -121,6 +123,7 @@ export {
   type ActionConfirmation,
   type AssistantActionExecutorOptions,
   type ActionExecutionOptions,
+  type ActionExecutionResult,
 } from './assistant-client';
 
 export { type ActionReadiness, type ActionReadinessContext } from './assistant-client';

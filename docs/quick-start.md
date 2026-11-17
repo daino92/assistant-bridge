@@ -104,6 +104,32 @@ The assistant can request only the actions you return. The SDK validates every p
 
 To refuse with a reason the user may see, throw `createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE, { code: 'OFFER_REQUIRED', message: 'Choose an offer first.' })`. Other handler errors reach the assistant as a generic `EXECUTION_FAILED`, unless the action sets `exposeErrorMessages: true` because its error messages are safe for the user.
 
+### Describe a protected action before approval
+
+Keep its preview beside its schema and handler:
+
+```ts
+const save = defineAction({
+  name: 'record.save',
+  description: 'Save a record draft.',
+  schema: z.object({ id: z.string(), title: z.string() }).strict(),
+  requiresConfirmation: true,
+  preview: ({ title }) => ({
+    title: `Save "${title}"?`,
+    details: ['This saves a draft; it does not publish.'],
+  }),
+  handler: (args) => api.saveDraft(args),
+});
+```
+
+`preview` may read host data asynchronously, but must not mutate it. The SDK
+validates arguments and current action availability before calling it. It never
+calls the write handler to obtain a preview. A preview failure prevents approval
+and execution; `exposeErrorMessages` controls public errors for both callbacks.
+The host validates and authorizes again when the approved action executes.
+
+Actions without `preview` continue to use their generic description.
+
 ## 5. Mark targets and publish page data
 
 `CatalogPage.tsx`:
