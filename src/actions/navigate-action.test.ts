@@ -80,6 +80,27 @@ describe('navigateAction routes with parameters', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
+  it('treats null or empty parameters on a plain route as no parameters', async () => {
+    const { navigate, go } = setup();
+
+    await expect(go({ path: '/settings', params: {} })).resolves.toEqual({ path: '/settings' });
+    await expect(go({ path: '/settings', params: null })).resolves.toEqual({ path: '/settings' });
+    expect(navigate).toHaveBeenCalledTimes(2);
+    expect(navigate.mock.calls.every((call) => call.length === 1)).toBe(true);
+  });
+
+  it('still requires parameters on a route whose schema needs them when null is sent', async () => {
+    const { navigate, go } = setup();
+
+    await expect(go({ path: '/content', params: null })).rejects.toMatchObject({
+      code: ERROR_CODES.INVALID_PAYLOAD,
+    });
+    await expect(go({ path: '/admin', params: {} })).rejects.toMatchObject({
+      code: ERROR_CODES.ACTION_NOT_AVAILABLE,
+    });
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
   it('publishes each route and its parameter schema to the assistant', () => {
     const { integration } = setup();
 
