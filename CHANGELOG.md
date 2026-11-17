@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-beta.9
 
 - `ui.navigate` with `routes` now publishes one flat object schema: `path` lists the
   allowed paths as an enum and `params` says which paths take parameters. The former
