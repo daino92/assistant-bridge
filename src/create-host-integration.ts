@@ -110,6 +110,7 @@ export const createIntegration = (options: CreateHostIntegrationOptions): Integr
       requiresConfirmation: action.requiresConfirmation ?? false,
       isAvailable: action.available,
       exposeErrorMessages: action.exposeErrorMessages,
+      preview: action.preview,
       handler: action.handler,
     });
   }

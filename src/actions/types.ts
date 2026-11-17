@@ -1,7 +1,7 @@
 import type { z } from 'zod';
 
 import type { ActionExecutionContext } from '@/action-registry';
-import type { HostContext } from '@/contracts';
+import type { ActionPreview, HostContext } from '@/contracts';
 
 export interface HostActionInput<TPayload = unknown> {
   name: string;
@@ -17,6 +17,8 @@ export interface HostActionInput<TPayload = unknown> {
    * `createIntegrationError` keep their own code.
    */
   exposeErrorMessages?: boolean;
+  /** Read-only; called with validated arguments before approval. Never perform writes here. */
+  preview?(payload: TPayload, ctx: ActionExecutionContext): ActionPreview | Promise<ActionPreview>;
   handler(payload: TPayload, ctx: ActionExecutionContext): Promise<unknown> | unknown;
 }
 

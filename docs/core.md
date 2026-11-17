@@ -760,3 +760,35 @@ integration.dispose();
 `AssistantBridgeClient.signal` (optional on custom clients) indicates that the integration ended. Built-in clients provide the signal; custom clients can omit it for compatibility. Readiness waits listen to both caller cancellation and client lifetime. The iframe port sends an internal `disconnect` notification so the chat-side client can reject pending requests and abort its lifetime signal. This is part of the host/chat bridge, not the chat's backend protocol.
 
 Disposal does not remove host DOM, unload federation runtime caches, cancel arbitrary already-running handler promises, roll back completed mutations or stop independently owned BFF/model runs. Confirmation UI and per-run cancellation remain owned by the chat application. The SDK prevents later dispatch after an awaited confirmation if its client lifetime ended.
+
+## Host-owned approval previews and normalized outcomes
+
+Action definitions can supply `preview(payload, context)` alongside the handler.
+Its result is plain text: `{ title: string, details: string[] }`. Titles are bounded
+to 200 characters, details to 200 lines of at most 2000 characters each. Previews
+must be read-only. The registry validates the payload, action availability and
+minimum context revision before invoking the callback. It applies the same public
+error policy as execution. An invalid preview fails before approval.
+
+Built-in clients expose `previewHostAction(name, args, contextRevision?)`.
+The executor requests it only for a capability with `hasPreview: true`, then
+passes it as `ActionConfirmation.preview` to custom or built-in approval UI.
+Context changes during preview/approval still prevent stale dispatch. The normal
+handler and backend checks remain the write boundary. Cancellation prevents later
+approval/dispatch; it does not roll back or cancel arbitrary host callback work.
+
+Protocol `2.1.0` adds `action.preview.request` and `action.preview.result` messages
+on MessagePort. They use the action request/result envelopes on a separate,
+read-only path. A preview is never encoded as an execution flag that an older peer
+could ignore. The optional `hasPreview` capability enables feature detection.
+Old hosts without it keep generic approval; old assistants can still execute the
+unchanged action protocol with generic approval. Custom clients used with new
+preview capabilities must implement `previewHostAction` or the executor fails
+closed. Protocol MAJOR compatibility remains unchanged.
+
+`createAssistantActionExecutor(client, options).executeActionResult(name, args,
+execution?)` returns `{ status: 'succeeded', data }` or
+`{ status: 'rejected' | 'cancelled' | 'failed', error: StructuredError }`.
+React exposes the same behavior through `executeHostActionResult`. Public
+business reasons are preserved; arbitrary exception messages stay private.
+The existing throwing execution methods remain available.

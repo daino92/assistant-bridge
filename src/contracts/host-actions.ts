@@ -29,6 +29,16 @@ export const hostActionResultSchema = z.object({
 
 export type HostActionResult = z.infer<typeof hostActionResultSchema>;
 
+/** Plain-text, host-owned information shown before approval. */
+export const actionPreviewSchema = z
+  .object({
+    title: z.string().min(1).max(200),
+    details: z.array(z.string().max(2000)).max(200),
+  })
+  .strict();
+
+export type ActionPreview = z.infer<typeof actionPreviewSchema>;
+
 /** Generic UI action payloads */
 export const uiNavigatePayloadSchema = z.object({
   path: z.string(),

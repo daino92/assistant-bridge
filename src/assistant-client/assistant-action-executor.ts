@@ -11,8 +11,12 @@ import {
   type ActionLifecycleListener,
   type ActionLifecycleStatus,
   type HostContext,
+  type ActionPreview,
+  actionPreviewSchema,
 } from '@/contracts';
 import { createIntegrationError, normalizeIntegrationError } from '@/errors';
+
+import { captureActionResult } from './action-result';
 
 export interface ActionConfirmation {
   entities?: HostContext['entities'];
@@ -20,6 +24,7 @@ export interface ActionConfirmation {
   name: string;
   description: string;
   args: unknown;
+  preview?: ActionPreview;
 }
 
 export interface ActionExecutionOptions {
@@ -64,7 +69,7 @@ export const createAssistantActionExecutor = (
 
   const signal = signals.length ? AbortSignal.any(signals) : undefined;
 
-  return {
+  const executor = {
     executeAction: async (name: string, args: unknown, execution: ActionExecutionOptions = {}) => {
       const actionExecutionId = execution.actionExecutionId ?? crypto.randomUUID();
       let sequence = 0;
@@ -123,6 +128,37 @@ export const createAssistantActionExecutor = (
             throw createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE);
           }
 
+          let preview: ActionPreview | undefined;
+
+          if (capability.hasPreview) {
+            if (!bridge.previewHostAction) {
+              throw createIntegrationError(ERROR_CODES.RECEIVER_UNAVAILABLE);
+            }
+
+            const data = await awaitWithSignal(
+              bridge.previewHostAction(name, structuredClone(payloadSnapshot), latest.revision),
+              signal,
+            );
+
+            const parsed = actionPreviewSchema.safeParse(data);
+
+            if (!parsed.success) {
+              throw createIntegrationError(ERROR_CODES.INVALID_PAYLOAD);
+            }
+
+            preview = parsed.data;
+
+            const fresh = bridge.getContext();
+
+            if (
+              fresh.route !== latest.route ||
+              JSON.stringify(fresh.entities) !== JSON.stringify(latest.entities) ||
+              !fresh.capabilities.some((item) => item.name === name && item.hasPreview)
+            ) {
+              throw createIntegrationError(ERROR_CODES.STALE_CONTEXT);
+            }
+          }
+
           emit('awaiting-approval');
           signal?.throwIfAborted();
 
@@ -131,6 +167,7 @@ export const createAssistantActionExecutor = (
               {
                 actionExecutionId,
                 name,
+                ...(preview ? { preview } : {}),
                 description: capability.description,
                 args: structuredClone(payloadSnapshot),
                 ...(latest.entities ? { entities: structuredClone(latest.entities) } : {}),
@@ -209,5 +246,11 @@ export const createAssistantActionExecutor = (
         throw error;
       }
     },
+  };
+
+  return {
+    ...executor,
+    executeActionResult: (name: string, args: unknown, execution?: ActionExecutionOptions) =>
+      captureActionResult(() => executor.executeAction(name, args, execution), signal),
   };
 };

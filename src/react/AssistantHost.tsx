@@ -109,6 +109,7 @@ const shapeOf = (actions: HostActionInput[]): string =>
       action.description,
       action.requiresConfirmation ?? false,
       action.exposeErrorMessages ?? false,
+      Boolean(action.preview),
       toParametersSchema(action.schema),
     ]),
   );
@@ -216,6 +217,17 @@ const AssistantHost = <TKey extends string>({
     schema: action.schema,
     requiresConfirmation: action.requiresConfirmation,
     exposeErrorMessages: action.exposeErrorMessages,
+    preview: action.preview
+      ? (payload, context) => {
+          const definition = current.current.get(action.name);
+
+          if (!definition?.preview) {
+            throw createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE);
+          }
+
+          return definition.preview(payload, context);
+        }
+      : undefined,
     available: (context) => {
       const definition = current.current.get(action.name);
 

@@ -5,6 +5,8 @@ export const hostCapabilitySchema = z.object({
   description: z.string(),
   parametersSchema: z.record(z.string(), z.unknown()),
   requiresConfirmation: z.boolean(),
+  /** Fetch a host-owned preview through the separate read-only preview request. */
+  hasPreview: z.boolean().optional(),
 });
 
 export type HostCapability = z.infer<typeof hostCapabilitySchema>;

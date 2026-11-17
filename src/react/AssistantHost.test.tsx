@@ -340,3 +340,39 @@ describe('hooks outside AssistantHost', () => {
     ).rejects.toMatchObject({ code: 'RECEIVER_UNAVAILABLE' });
   });
 });
+
+it('delegates preview reads to current host state after rerender', async () => {
+  const view = (label: string) => (
+    <AssistantHost
+      pages={PAGES}
+      router={{ pathname: '/dashboard', navigate: () => {} }}
+      actions={() => [
+        defineAction({
+          name: 'preview.current',
+          description: 'Current',
+          schema: z.object({}),
+          requiresConfirmation: true,
+          preview: () => ({ title: label, details: [] }),
+          handler: () => 'saved',
+        }),
+      ]}
+    >
+      <Capture />
+    </AssistantHost>
+  );
+
+  const { rerender } = render(view('First'));
+
+  await waitFor(() =>
+    expect(context().capabilities.find((item) => item.name === 'preview.current')?.hasPreview).toBe(
+      true,
+    ),
+  );
+  await expect(
+    host!.integration.assistantClient.previewHostAction!('preview.current', {}),
+  ).resolves.toEqual({ title: 'First', details: [] });
+  rerender(view('Second'));
+  await expect(
+    host!.integration.assistantClient.previewHostAction!('preview.current', {}),
+  ).resolves.toEqual({ title: 'Second', details: [] });
+});

@@ -87,7 +87,7 @@ flowchart LR
     Commands --> Assistant
 ```
 
-Assistant-to-host actions and host-to-assistant commands carry the protocol version (`PROTOCOL_VERSION`, currently `2.0.0`) and UUID `requestId` values to correlate results. Host and assistant check each other's version when they connect; see [protocol versions](docs/core.md#protocol-versions). Context notifications do not automatically submit a prompt.
+Assistant-to-host actions and host-to-assistant commands carry the protocol version (`PROTOCOL_VERSION`, currently `2.1.0`) and UUID `requestId` values to correlate results. Host and assistant check each other's version when they connect; see [protocol versions](docs/core.md#protocol-versions). Context notifications do not automatically submit a prompt.
 
 ## API overview
 

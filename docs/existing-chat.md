@@ -100,3 +100,17 @@ These are integration points identified in the frontend repositories, not comple
 When SDK mode is enabled, route a given host operation through the SDK once. Do not also emit the legacy CustomEvent or `postMessage` for that operation. Unknown legacy actions must fail explicitly rather than dispatch arbitrary payloads. The embedding host defines allowed actions and business rules; the chat does not grant itself capabilities.
 
 Both candidates require the supported React version for `/react`. Backend changes and host configuration are separate from installing the frontend SDK. No backend credentials belong in browser options.
+
+### Optional simplifications
+
+Use `integration.executeHostActionResult(name, payload, { toolCallId })` to avoid
+repeating exception-to-result mapping. It returns `succeeded` with `data`, or
+`rejected`, `cancelled` or `failed` with a normalized `error`. Your adapter still
+owns backend tool-result IDs, its wire format and when to stop a cancelled run.
+The throwing `executeHostAction` API remains supported.
+
+If the host defines `preview` on an action, render
+`integration.confirmation.preview.title` and `.details` in your existing approval
+UI. With no preview, use `.description`. This removes an action-name-to-preview
+mapping from the chat. The preview is validated host data, not model-generated
+instructions or permission to execute a write.
