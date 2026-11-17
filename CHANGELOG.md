@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-beta.9
 
 - `ui.navigate` treats `params: null`, and `params: {}` on routes without parameters, as
   no parameters. Models often send these, and they used to fail with `INVALID_PAYLOAD`.
