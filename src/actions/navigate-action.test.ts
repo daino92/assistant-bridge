@@ -110,9 +110,14 @@ describe('navigateAction routes with parameters', () => {
 
     const schema = JSON.stringify(capability.parametersSchema);
 
-    expect(schema).toContain('"const":"/content"');
-    expect(schema).toContain('Entries of one model');
-    expect(schema).toContain('"model"');
+    // Model tool APIs need an object at the root; a root anyOf made models send `{}`.
+    expect(capability.parametersSchema).toMatchObject({
+      type: 'object',
+      properties: { path: { type: 'string', enum: ['/settings', '/content'] } },
+      required: ['path'],
+    });
+    expect(capability.parametersSchema).not.toHaveProperty('anyOf');
+    expect(schema).toContain('/content: Entries of one model');
     expect(capability.description).toContain('params');
   });
 

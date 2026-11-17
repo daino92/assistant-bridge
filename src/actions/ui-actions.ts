@@ -55,11 +55,15 @@ export interface NavigateActionOptions {
 /** `null` and, on plain routes, `{}` mean "no parameters": models often send them. */
 export type NavigatePayload = { path: string; params?: NavigateParams | null };
 
-// A plain route accepts only an empty parameter object; anything in it fails validation.
-const noParams = z.object({}).strict().nullable().optional();
-
+/**
+ * One flat object schema: model tool APIs (OpenAI-compatible gateways, for example) need an
+ * object at the root, and a root `anyOf` made models send `{}`. Paths are listed as an enum
+ * hint; the handler checks the allowlist and each route's own parameter schema.
+ */
 const navigateSchema = (
   routes: Readonly<Record<string, NavigateRoute>>,
+  allowedRoutes: readonly string[],
+  detailPattern: RegExp | undefined,
 ): z.ZodType<NavigatePayload> => {
   const entries = Object.entries(routes);
 
@@ -67,22 +71,28 @@ const navigateSchema = (
     return uiNavigatePayloadSchema;
   }
 
-  // Route branches come first; the plain branch is strict so stray parameters fail validation.
-  const branches = entries.map(([path, route]) => {
-    const branch = z.object({
-      path: z.literal(path),
-      params: z.union([z.null(), route.params]),
-    });
+  const paths = [...new Set([...allowedRoutes, ...entries.map(([path]) => path)])];
 
-    return route.description ? branch.describe(route.description) : branch;
-  });
+  const pathHint = detailPattern
+    ? { description: `One of: ${paths.join(', ')}, or a detail page path.` }
+    : { enum: paths };
 
-  const [first, ...rest]: z.ZodType<NavigatePayload>[] = [
-    ...branches,
-    uiNavigatePayloadSchema.extend({ params: noParams }).strict(),
-  ];
+  const paramsHint = entries
+    .map(([path, route]) =>
+      route.description ? `${path}: ${route.description.replace(/\.$/, '')}` : path,
+    )
+    .join('; ');
 
-  return z.union([first, ...rest]);
+  return z
+    .object({
+      path: z.string().meta(pathHint),
+      params: z
+        .record(z.string(), z.unknown())
+        .nullable()
+        .optional()
+        .describe(`Only for these paths: ${paramsHint}. Omit it for every other path.`),
+    })
+    .strict();
 };
 
 export const navigateAction = (deps: NavigateActionOptions): HostActionInput<NavigatePayload> => {
@@ -94,7 +104,7 @@ export const navigateAction = (deps: NavigateActionOptions): HostActionInput<Nav
     description: Object.keys(routes).length
       ? 'Navigate to an allowed application route. Routes with parameters require `params`.'
       : 'Navigate to an allowed application route',
-    schema: navigateSchema(routes),
+    schema: navigateSchema(routes, allowedRoutes, deps.detailPattern),
     async handler({ path, params: sent }) {
       const params = sent ?? undefined;
       const route = Object.hasOwn(routes, path) ? routes[path] : undefined;
@@ -120,9 +130,14 @@ export const navigateAction = (deps: NavigateActionOptions): HostActionInput<Nav
         return { path, params: parsed.data };
       }
 
+      // `null` and `{}` mean no parameters; a plain route rejects any actual parameter.
+      if (params !== undefined && Object.keys(params).length > 0) {
+        throw createIntegrationError(ERROR_CODES.INVALID_PAYLOAD);
+      }
+
       const allowed = allowedRoutes.includes(path) || (deps.detailPattern?.test(path) ?? false);
 
-      if (!allowed || (params !== undefined && Object.keys(params).length > 0)) {
+      if (!allowed) {
         throw createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE);
       }
 
