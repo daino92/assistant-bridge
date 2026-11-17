@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- `ui.navigate` with `routes` now publishes one flat object schema: `path` lists the
+  allowed paths as an enum and `params` says which paths take parameters. The former
+  root `anyOf` made models behind OpenAI-compatible gateways call it with `{}`. Each
+  route's parameter schema is now checked in the handler; rejections are unchanged.
+
 - `ui.navigate` treats `params: null`, and `params: {}` on routes without parameters, as
   no parameters. Models often send these, and they used to fail with `INVALID_PAYLOAD`.
   Parameters with any content are still rejected.
