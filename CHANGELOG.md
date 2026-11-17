@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-beta.8
 
 - Add `preview(args, context)` to action definitions. The host validates arguments
   and returns a bounded, plain-text `{ title, details }` preview before approval.
