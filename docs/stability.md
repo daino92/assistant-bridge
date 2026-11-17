@@ -34,6 +34,7 @@ They change independently. A package release can keep the protocol, and a host a
 
 - Any beta release may change the public API. Breaking changes are marked **Breaking** in the [CHANGELOG](../CHANGELOG.md), with what to use instead.
 - Pin an exact version (`assistant-bridge@0.1.0-beta.6`, not `^`), and read the CHANGELOG before upgrading.
+- npm `latest` points at the newest beta until 1.0, so `npm install assistant-bridge` gets it. From 1.0, `latest` is the newest stable release and prereleases go to `beta`.
 - A protocol change that is breaking raises the protocol MAJOR in the same release, so mixed deployments fail at the handshake instead of misbehaving.
 
 ## From 1.0

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Release workflow: until a stable version exists, prereleases publish to npm `latest`
+  (trusted publishing cannot move a second tag). From 1.0, prereleases publish to `beta`.
+
 ## 0.1.0-beta.10
 
 - `ui.navigate` with `routes` now publishes one flat object schema: `path` lists the
