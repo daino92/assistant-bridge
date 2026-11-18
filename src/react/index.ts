@@ -22,7 +22,6 @@ export {
   useUiTarget,
   usePageEntities,
   useAssistantPanel,
-  useAssistantIframeConnection,
   useAssistantContext,
   useAssistantIntegration,
   type UseAssistantIntegrationOptions,
@@ -33,14 +32,4 @@ export {
   useActionConfirmation,
   type HostPageContextOptions,
   type UiTargetOptions,
-  type UseAssistantIframeConnectionOptions,
 } from './hooks';
-
-export { default as AssistantIframe, type AssistantIframeProps } from './AssistantIframe';
-
-export {
-  default as AssistantEmbed,
-  type AssistantEmbedConfig,
-  type AssistantEmbedProps,
-  type FederationAdapterModule,
-} from './AssistantEmbed';

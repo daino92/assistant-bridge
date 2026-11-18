@@ -175,3 +175,18 @@ describe('assistant connection lifecycle', () => {
     });
   });
 });
+
+it('refuses action dispatch through a disposed connection while preserving the host client', async () => {
+  const integration = createIntegration({ actions: [] });
+  const connection = connectEmbeddedAssistant(integration, {});
+
+  cleanups.push(integration.dispose);
+  connection.dispose();
+  expect(connection.bridge.signal?.aborted).toBe(true);
+  await expect(connection.bridge.requestHostAction('unknown', {})).rejects.toMatchObject({
+    code: 'RECEIVER_UNAVAILABLE',
+  });
+  await expect(integration.assistantClient.requestHostAction('unknown', {})).rejects.toMatchObject({
+    code: 'UNKNOWN_ACTION',
+  });
+});

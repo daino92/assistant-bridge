@@ -172,38 +172,9 @@ const ChatSlot = () => {
 };
 ```
 
-**Separate application, Module Federation:**
+**Separately built chat:** load the remote in the host application, then pass it the same `bridge` and `onReady` props. `assistant-bridge` does not configure Module Federation or load the remote. Keep remote loading errors/retry in the host and create the connection after loading succeeds.
 
-```tsx
-import { AssistantEmbed } from 'assistant-bridge/react';
-
-<AssistantEmbed
-  config={{
-    mode: 'federation',
-    federation: {
-      runtimeName: 'host_app',
-      remoteName: 'assistant_chat',
-      exposedModule: 'EmbeddedAssistant',
-      entry: 'https://chat.example.com/remoteEntry.js',
-    },
-    loadAdapter: () => import('assistant-bridge/react/federation'),
-  }}
-  onStatus={setStatus}
-/>;
-```
-
-The host also installs `@module-federation/runtime@2.9.2` and configures its build plugin; `runtimeName` must match it. See [federation](federation.md).
-
-**Separate application, other origin (iframe):**
-
-```tsx
-<AssistantEmbed
-  config={{ mode: 'iframe', iframe: { url: 'https://chat.example.com/', title: 'Assistant' } }}
-  onStatus={setStatus}
-/>
-```
-
-The SDK performs the origin-checked handshake. `onStatus` receives `loading`, `ready` or `error`, so the host can show its own loading and error UI. For an open/close panel with a retry button, see `useAssistantPanel` and [unified embedding](react.md#unified-assistant-embedding).
+**Separate window:** create/mount the iframe in the host, authenticate the peer and transfer a private port. Use the optional [MessagePort adapter](connections.md#messageport-connections) for protocol communication. There is no implicit iframe initialization.
 
 ## 7. Ask the assistant from the host
 

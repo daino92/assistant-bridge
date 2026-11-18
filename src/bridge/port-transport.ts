@@ -150,7 +150,7 @@ const failure = (requestId: string, error: unknown): Result => {
   };
 };
 
-/** Attach only after checking the iframe's exact source and origin. */
+/** Attach only after the application has authenticated the channel peer. */
 export const attachHostPort = (port: MessagePort, bridge: HostBridge) => {
   if (bridge.signal.aborted) {
     port.postMessage({ type: 'disconnect' });

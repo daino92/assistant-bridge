@@ -52,7 +52,6 @@ export {
 } from './host-context';
 
 export {
-  ASSISTANT_IFRAME_MESSAGES,
   ERROR_CODES,
   PROTOCOL_VERSION,
   isCompatibleProtocolVersion,

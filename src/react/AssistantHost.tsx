@@ -86,7 +86,7 @@ export interface AssistantHostProps<TKey extends string> {
   fallbackPage?: HostContext['page'];
   /**
    * `embedded` connects a same-window assistant and exposes it as `useAssistantHost().embedded`.
-   * `external` (default) leaves the connection to `AssistantEmbed` / `AssistantIframe`.
+   * `external` (default) leaves connection setup to the host application.
    */
   connection?: 'embedded' | 'external';
   /** Timeout for the embedded assistant to register its command handler. */

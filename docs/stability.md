@@ -6,14 +6,13 @@
 
 Only what the package entry points export is public:
 
-| Entry                               | For                                                   |
-| ----------------------------------- | ----------------------------------------------------- |
-| `assistant-bridge`                  | Hosts and chats without a framework                   |
-| `assistant-bridge/react`            | React hosts (`AssistantHost`) and chats (hooks)       |
-| `assistant-bridge/contracts`        | The wire contract: schemas, names, error codes        |
-| `assistant-bridge/testing`          | Host tests (`connectTestAssistant`)                   |
-| `assistant-bridge/federation`       | Loading a Module Federation remote without React      |
-| `assistant-bridge/react/federation` | `FederatedAssistant`, loaded through `AssistantEmbed` |
+| Entry                                      | For                                                     |
+| ------------------------------------------ | ------------------------------------------------------- |
+| `assistant-bridge`                         | Hosts and chats without a framework                     |
+| `assistant-bridge/react`                   | React hosts (`AssistantHost`) and chats (hooks)         |
+| `assistant-bridge/contracts`               | The wire contract: schemas, names, error codes          |
+| `assistant-bridge/testing`                 | Host tests (`connectTestAssistant`)                     |
+| `assistant-bridge/transports/message-port` | Communication over an application-supplied private port |
 
 Also public: the documented fields and methods of the returned objects (`HostIntegration`, `AssistantBridgeClient`, `useAssistantHost()`), the error codes and their meaning, and the wire protocol described by `PROTOCOL_VERSION`.
 

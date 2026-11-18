@@ -92,6 +92,7 @@ try {
     assert.doesNotMatch(entry, /(?:^|\/)(?:node_modules|src|scripts|\.env)(?:\/|$)|\.test\./);
 
     if (entry.endsWith('.js') || entry.endsWith('.d.ts')) {
+      assert.doesNotMatch(readEntry(entry), /@module-federation|HTMLIFrameElement|window\.parent/);
       assert.doesNotMatch(readEntry(entry), /(?:from\s*|import\s*\()\s*['"]@\//);
     }
   }
@@ -156,7 +157,7 @@ try {
     'adapters',
     Object.entries(MANIFEST.peerDependencies).map(([name, range]) => `${name}@${range}`),
     `
-    for (const entry of ['react', 'federation', 'react/federation']) {
+    for (const entry of ['react', 'transports/message-port']) {
       await import(${packageName} + '/' + entry);
       console.log(entry + ' import OK');
     }
@@ -168,8 +169,8 @@ try {
     'react-without-federation',
     [`react@${MANIFEST.peerDependencies.react}`],
     `
-    import { AssistantEmbed, IntegrationProvider, useIntegration } from ${JSON.stringify(`${MANIFEST.name}/react`)};
-    console.log(AssistantEmbed, IntegrationProvider, useIntegration);
+    import { useAssistantIntegration, IntegrationProvider, useIntegration } from ${JSON.stringify(`${MANIFEST.name}/react`)};
+    console.log(useAssistantIntegration, IntegrationProvider, useIntegration);
   `,
   );
 

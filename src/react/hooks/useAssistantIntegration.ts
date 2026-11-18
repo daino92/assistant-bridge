@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 
 import {
   createAssistantActionExecutor,
@@ -22,19 +15,12 @@ import {
   useActionConfirmation,
   useAssistantCommandHandler,
   useAssistantContext,
-  useAssistantIframeConnection,
 } from '@/react/hooks';
 
 import { captureActionResult } from '@/assistant-client/action-result';
 
 export interface UseAssistantIntegrationOptions extends Partial<EmbeddedAssistantOptions> {
   commands: AssistantCommandCallbacks;
-  /** Iframe chats only: the parent origin, or the parent origins the chat trusts. */
-  iframe?: {
-    enabled?: boolean;
-    hostOrigin?: string;
-    allowedOrigins?: readonly string[];
-  };
   actions?: AssistantActionExecutorOptions;
 }
 
@@ -50,13 +36,10 @@ export const useAssistantIntegration = ({
   bridge,
   onReady,
   commands,
-  iframe,
   actions,
 }: UseAssistantIntegrationOptions) => {
-  const [iframeClient, setIframeClient] = useState<AssistantBridgeClient>();
-  const client = bridge ?? iframeClient;
+  const client = bridge;
   const approval = useActionConfirmation();
-  const context = useAssistantContext(client);
   const actionConnection = useRef<ActionConnection | null>(null);
   const actionOptions = useRef(actions);
 
@@ -74,6 +57,7 @@ export const useAssistantIntegration = ({
   const getSnapshot = useCallback(() => Boolean(client && !client.signal?.aborted), [client]);
 
   const isConnected = useSyncExternalStore(subscribeConnection, getSnapshot, getServerSnapshot);
+  const context = useAssistantContext(isConnected ? client : undefined);
 
   useLayoutEffect(() => {
     actionOptions.current = actions;
@@ -93,14 +77,6 @@ export const useAssistantIntegration = ({
       actionConnection.current = null;
     };
   }, [client]);
-
-  useAssistantIframeConnection({
-    enabled: !bridge && (iframe?.enabled ?? true),
-    hostOrigin: iframe?.hostOrigin,
-    allowedOrigins: iframe?.allowedOrigins,
-    onClient: setIframeClient,
-    onCommand,
-  });
 
   useAssistantCommandHandler(onCommand, isConnected ? onReady : undefined);
 
