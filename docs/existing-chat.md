@@ -1,8 +1,8 @@
 # Integrate an existing chat app
 
-Use `useAssistantIntegration` from `assistant-bridge/react` to connect an existing React 19.3+ chat to a host. Keep the chat's UI, history, authentication, backend connection and message format. In this workspace the package is named `@assistant/host-sdk`; the standalone distribution is `assistant-bridge`.
+Use `useAssistantIntegration` from `assistant-bridge/react` to connect an existing React 19.3+ chat to a host. Keep the chat's UI, history, authentication, backend connection and message format.
 
-The hook accepts the same `bridge` and `onReady` embedding props as the demo chat. Without a supplied bridge it can establish the SDK iframe connection. It requires no host `IntegrationProvider` inside the chat.
+The hook accepts the same `bridge` and `onReady` embedding props as the demo chat. Without a supplied bridge it stays disconnected. It requires no host `IntegrationProvider` inside the chat.
 
 ## Connect the chat's existing functions
 
@@ -61,13 +61,11 @@ The host owns the surrounding embedding panel. `onOpen` may also select the chat
 
 ## Connection modes and lifecycle
 
-- **Direct/widget/federation:** pass `bridge` and `onReady` from `connectEmbeddedAssistant` or the federation adapter. Extend an existing widget's mount options to carry these two properties.
-- **Iframe:** omit those properties. The hook uses `iframe.hostOrigin`, or the SDK `hostOrigin` query parameter when it is listed in `iframe.allowedOrigins`. The parent must use the SDK host iframe connection. Existing `READY` messages alone do not implement this handshake.
-- **Standalone:** without embedding props or an iframe parent/origin, `isConnected` is false. Set `iframe: { enabled: false }` to explicitly disable iframe initialization. The chat can continue using its own backend.
+- **Local component/widget/remote:** the host loads and mounts the chat, passing `bridge` and `onReady` from `connectEmbeddedAssistant`. Loading strategy is an application concern.
+- **Separate window:** application bootstrap authenticates the peer, transfers a private MessagePort and explicitly supplies the client from `connectAssistantPort`.
+- **Standalone:** omit the connection. No window listeners, URL interpretation or iframe initialization occur.
 
-A supplied bridge takes precedence over iframe initialization. `isConnected` describes the host bridge, not the backend socket or model provider. Context is available as `integration.context`; use `integration.bridge?.getContext()` when taking a fresh snapshot for an outbound backend request. Host disconnect clears the exposed bridge/context and cancels approvals. Callback changes do not reconnect the host. Bridge replacement or unmount cancels pending hook-owned action execution and detaches commands; the hook never disposes a host-owned integration instance.
-
-The iframe connection retains exact parent origin/source checks and a private MessagePort. No application-specific window events or wildcard `postMessage` are needed for SDK actions.
+`isConnected` describes the bridge, not backend availability. Use `integration.bridge?.getContext()` for a fresh outbound snapshot. Callback changes do not reconnect. Bridge replacement, connection disposal or unmount cancels pending hook-owned actions/approvals and detaches commands. The hook never disposes the host integration. See [connections and migration](connections.md).
 
 ## Adapt the existing backend protocol
 
@@ -91,7 +89,7 @@ These are integration points identified in the frontend repositories, not comple
 
 | Concern         | Commercebot                                                                                      | Tell-a-story                                                                                                             |
 | --------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| Host connection | Extend `WisemanChatWidget.render` options with `bridge`/`onReady`; preserve Shadow DOM mounting. | Add SDK assistant iframe initialization; parent uses SDK iframe embedding.                                               |
+| Host connection | Extend `WisemanChatWidget.render` options with `bridge`/`onReady`; preserve Shadow DOM mounting. | Use explicit application bootstrap and the optional SDK MessagePort adapter.                                             |
 | Commands        | Wire panel state, draft, focus and the existing send flow.                                       | Select the chat tab, update draft/focus and call the existing `handleSend` flow.                                         |
 | Backend         | Keep `useWebSocket`, streaming, auth and deterministic cards. Add agreed context/action frames.  | Keep `useStomp`, session topics, tokens, widgets and flow progress. Extend the agreed message metadata/result contract.  |
 | Host actions    | Introduce typed action requests through `executeHostAction`.                                     | Translate allowlisted `nextAction` values and applicable quick-action `post_message` entries into SDK actions.           |

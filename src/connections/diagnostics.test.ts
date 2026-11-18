@@ -23,10 +23,10 @@ it('reports one structured timeout through the existing timeline and ignores lat
       integration.bridge,
       { onStatus, timeoutMs: 20 },
       {
-        code: 'IFRAME_HANDSHAKE_TIMEOUT',
+        code: 'CONNECTION_TIMEOUT',
         phase: 'handshake',
-        mode: 'iframe',
-        message: 'Assistant iframe handshake timed out.',
+        mode: 'message-port',
+        message: 'Assistant transport handshake timed out.',
       },
     );
 
@@ -39,8 +39,8 @@ it('reports one structured timeout through the existing timeline and ignores lat
 
     expect(diagnostics).toHaveLength(1);
     expect(diagnostics[0].diagnostic).toMatchObject({
-      code: 'IFRAME_HANDSHAKE_TIMEOUT',
-      mode: 'iframe',
+      code: 'CONNECTION_TIMEOUT',
+      mode: 'message-port',
       phase: 'handshake',
     });
     expect(onStatus.mock.calls).toEqual([['loading'], ['error']]);

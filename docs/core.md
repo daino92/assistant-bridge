@@ -26,7 +26,7 @@ The framework-independent API of `assistant-bridge`. It has no React or federati
 │  ├─ <a href="#send-commands-from-the-host">askAbout, prefillAndOpen</a>
 │  └─ <a href="#dispatch-assistant-commands">createAssistantCommandDispatcher</a>
 ├─ Connections
-│  ├─ <a href="#connect-an-iframe">connectHostIframe, connectAssistantIframe, createAssistantIframeUrl</a>
+│  ├─ <a href="connections.md#messageport-connections">connectHostPort, connectAssistantPort</a> (/transports/message-port)
 │  └─ <a href="#connect-a-same-window-assistant">connectEmbeddedAssistant</a>
 ├─ Action execution
 │  ├─ <a href="#execute-actions-from-the-assistant">createAssistantActionExecutor</a>
@@ -428,7 +428,7 @@ An assistant that cannot carry out a command rejects it; there is no `false` res
 
 For a same-window receiver, use `connectEmbeddedAssistant(integration)` and pass its `onReady` to the assistant, which registers its command handler there. The SDK validates command envelopes and emits correlated results from the handler's return value or rejection. The handler must validate command-specific payloads and reject unsupported commands.
 
-For an iframe receiver, `connectAssistantIframe` (or `useAssistantIntegration`) forwards command requests to its `onCommand` callback and creates the result envelope from its return value or rejection.
+For a MessagePort receiver, `connectAssistantPort` forwards requests to its supplied `onCommand` callback and creates result envelopes from its return value or rejection.
 
 Host command helpers combine these commands:
 
@@ -478,52 +478,15 @@ Callbacks may be synchronous or asynchronous. Their return values are ignored: t
 
 A separately built assistant does not require an iframe. The iframe adds runtime and styling isolation; the client interface stays the same in either approach.
 
-## Connect an iframe
+## Connect a supplied MessagePort
 
-For iframe embedding, create the URL with `createAssistantIframeUrl(url, window.location.origin)`, render it in the host's iframe and connect:
-
-```ts
-const disconnect = connectHostIframe(integration, {
-  iframe,
-  url: assistantUrl,
-  onStatus: (status) => console.log(status),
-});
-```
-
-The SDK verifies the exact iframe origin and source, creates/transfers the private port, waits for acknowledgement, handles frame reload sessions and reports `loading`, `ready` or `error`. The default handshake timeout is 8 seconds; override it with `timeoutMs`. Call `disconnect()` when removing the frame or replacing the connection.
-
-Inside the chat:
-
-```ts
-const disconnect = connectAssistantIframe({
-  hostOrigin,
-  onCommand,
-  onClient,
-  onContext,
-});
-```
-
-`hostOrigin` must be the intended parent origin. The SDK checks parent source/origin and validates the initial context before exposing the client. The chat remains responsible for executing its commands and rendering context. Standalone windows do not connect.
-
-For the iframe integration:
-
-Both applications import `ASSISTANT_IFRAME_MESSAGES` from the SDK for the brand-neutral readiness, connection, and acknowledgement handshake names. Assistant instance IDs describe the adapter (`assistant-iframe` or `assistant-federation`).
-
-1. The chat announces readiness, with its protocol version, to its configured host origin.
-2. The host checks the message's exact `origin` and `source` against the intended iframe, and the protocol version. An incompatible or missing version fails the connection with `PROTOCOL_MISMATCH`.
-3. The host creates a private `MessageChannel`, attaches one port to its integration and transfers the other with a context snapshot to the verified iframe origin.
-4. The chat verifies the parent origin/source and the host's protocol version, validates the context and wraps its port in an `AssistantBridgeClient`.
-5. After the chat acknowledges the connection, the host marks the assistant ready. Application logic uses the returned `client` as `AssistantBridgeClient`.
-
-The port adapters validate envelopes, correlate requests, forward context and commands, enforce a fixed 10-second port request timeout, and reject pending requests when disposed. The port layer currently converts remote failures into `Error` messages; structured error codes are not preserved end-to-end through that adapter.
-
-The high-level iframe connection APIs own the window handshake and exact origin/source checks. The host owns iframe rendering, visibility and the reconnect button. The port adapters are internal; use `connectHostIframe` / `connectAssistantIframe` (or `AssistantEmbed` and `useAssistantIntegration` in React). See [assistant-side React hooks](react.md#assistant-side-hooks) for the assistant connection.
+The optional `assistant-bridge/transports/message-port` entry point supplies `connectHostPort` and `connectAssistantPort`. Application code owns iframe creation, peer authentication and port transfer. The SDK owns protocol validation, context initialization, command readiness and channel cleanup. See [connections](connections.md#messageport-connections).
 
 ## Connect a same-window assistant
 
 For a directly supplied component or mount API, `connectEmbeddedAssistant(integration, { onStatus })` returns `bridge` and `onReady` properties, plus `dispose()` and `fail()`. `onStatus` is optional; omit it when the host does not show connection state. Its default 10-second timeout covers both loading and receiver registration. Call `onReady(handler)` only once the command receiver is usable, and run the returned cleanup on unmount. Failed or disposed connections cannot become ready later. Reconnection creates a new connection.
 
-A Module Federation remote must expose a component that accepts EmbeddedAssistantOptions: a bridge client and an `onReady(handler, { protocolVersion })` callback that returns cleanup. `useAssistantIntegration` and `useAssistantCommandHandler` pass the version; a custom receiver passes `{ protocolVersion: PROTOCOL_VERSION }`. The host refuses an incompatible or missing version with `PROTOCOL_MISMATCH`. The SDK connection adapter registers the command handler and marks the assistant ready; the assistant invokes cleanup on unmount. No MessagePort is used in this mode.
+A Module Federation remote must expose a component that accepts EmbeddedAssistantOptions: a bridge client and an `onReady(handler, { protocolVersion })` callback that returns cleanup. `useAssistantIntegration` and `useAssistantCommandHandler` pass the version; a custom receiver passes `{ protocolVersion: PROTOCOL_VERSION }`. The host refuses an incompatible or missing version with `PROTOCOL_MISMATCH`. The host loads the remote itself. The SDK connection registers the command handler and marks the assistant ready; the assistant invokes cleanup on unmount. No MessagePort is used in this mode.
 
 ## Execute actions from the assistant
 
@@ -634,7 +597,7 @@ const executor = createAssistantActionExecutor(bridge, {
 });
 ```
 
-Events are generated once by the executor and forwarded through the direct/iframe bridge to the host. `AssistantBridgeClient.publishActionLifecycle` and `subscribeActionLifecycle` are optional for custom clients; built-in clients implement both. Custom clients without them still get executor-local callbacks but cannot forward them without implementing these methods. Unsubscribe when your observer ends; `integration.dispose()` clears host observers.
+Events are generated once by the executor and forwarded through the direct/MessagePort bridge to the host. `AssistantBridgeClient.publishActionLifecycle` and `subscribeActionLifecycle` are optional for custom clients; built-in clients implement both. Custom clients without them still get executor-local callbacks but cannot forward them without implementing these methods. Unsubscribe when your observer ends; `integration.dispose()` clears host observers.
 
 `executeAction(name, args, execution)` accepts optional execution metadata: an execution ID, the backend's `toolCallId` and a lifecycle listener. Backend adapters pass the tool call ID so lifecycle events, approvals and diagnostics correlate with the backend's tool call.
 
@@ -657,7 +620,7 @@ No separate hand-maintained JSON Schema is required. Custom types that Zod canno
 `PROTOCOL_VERSION` (`MAJOR.MINOR.PATCH`) is the version of the host/assistant messages and results. Peers with the same MAJOR are compatible; `isCompatibleProtocolVersion(version)` checks it.
 
 - Every request and result envelope carries `protocolVersion`, and the schemas accept any compatible version.
-- When they connect, the assistant sends its version (`READY` for iframes, `onReady(handler, { protocolVersion })` otherwise) and the host refuses an incompatible or missing one. The connection then fails with status `error` and an `IntegrationDiagnostic` with code `PROTOCOL_MISMATCH`, instead of timing out or rejecting later with `INVALID_PAYLOAD`. In an iframe, the chat also checks the host's version.
+- When they connect, the assistant sends its version (over a supplied port, or `onReady(handler, { protocolVersion })` for same-window connections) and the host refuses an incompatible or missing one. The connection then fails with status `error` and an `IntegrationDiagnostic` with code `PROTOCOL_MISMATCH`, instead of timing out or rejecting later with `INVALID_PAYLOAD`. Over a MessagePort, the chat also checks the host's version.
 - A new MAJOR is required when a message, payload or result changes in a way an existing peer would reject or misread: a renamed or removed field, a new required field, a changed result. Adding an optional field or a new command or action is a MINOR change. Both sides must then be updated together.
 
 `2.0.0` introduced the typed command results. An assistant or host built with an earlier SDK is incompatible.
@@ -668,7 +631,7 @@ No separate hand-maintained JSON Schema is required. Custom types that Zod canno
 
 Requests that fail (`requestHostAction`, `executeAction`, host commands) reject with an `Error` that also carries `code`, `message` and, where allowed, `reason`. Both `error instanceof Error` and `error.code` work; the message is the safe one described here.
 
-Registry execution, same-window command handlers, request/result channels and the iframe transport use this policy. SDK readiness waits emit `TIMEOUT`; unavailable actions and missing UI targets have explicit codes. `ACTION_REJECTED` is the SDK error code for user rejection. Backend adapters should check codes instead of guessing categories from message text. Provider/run errors remain a separate backend concern; this API normalizes integration failures, not arbitrary provider-specific codes.
+Registry execution, same-window command handlers, request/result channels and the MessagePort transport use this policy. SDK readiness waits emit `TIMEOUT`; unavailable actions and missing UI targets have explicit codes. `ACTION_REJECTED` is the SDK error code for user rejection. Backend adapters should check codes instead of guessing categories from message text. Provider/run errors remain a separate backend concern; this API normalizes integration failures, not arbitrary provider-specific codes.
 
 Host handlers should throw an error/object with a supported `code`. Handler messages are not part of the public error contract. Inspect `code` for branching and translate it in application UI if needed. Unknown custom codes are intentionally not transported unchanged.
 
@@ -685,7 +648,7 @@ throw createIntegrationError(ERROR_CODES.ACTION_NOT_AVAILABLE, {
 
 The reason code is host-owned (uppercase letters, digits and underscores, up to 64 characters).
 Its message is explicitly public text, limited to 300 characters: never include secrets, raw API
-responses or exception details. Valid reasons survive direct/iframe errors, so a chat can pass them to the model as
+responses or exception details. Valid reasons survive direct/MessagePort errors, so a chat can pass them to the model as
 the tool result. Other errors and invalid reasons retain safe catalog messages.
 The SDK does not interpret business codes or navigate automatically. No reason is required.
 
@@ -728,13 +691,13 @@ onTimeline: (entry) => {
 | `CONNECTION_TIMEOUT`                                                                    | `remote-load` or `receiver-ready` |
 | `ACTION_FAILED`, `COMMAND_FAILED`                                                       | `action` or `command`             |
 
-Connection diagnostics include `mode` (`iframe`, `federation` or `embedded`). Action/command diagnostics include the correlated timeline `requestId` and protocol `errorCode` when available. They omit mode because the core request can originate outside an embedding adapter. Failed remote loading is reported generically when the runtime cannot distinguish a network failure from an exposure-resolution failure; raw exception text is not copied into diagnostics.
+Connection diagnostics include `mode` (`message-port` or `embedded`). Action/command diagnostics include the correlated timeline `requestId` and protocol `errorCode` when available. They omit mode because the core request can originate outside an embedding adapter. Remote loading and render failures are host-owned and do not appear as SDK connection diagnostics.
 
 Request payload summaries read `Payload omitted`. Failure summaries use generic messages, and diagnostics omit raw prompts, payloads, remote URLs and exception text. Context/selection timeline entries still contain host-provided routes and entity identifiers; the timeline is not a universal data redactor. The host owns log retention, filtering and destinations.
 
 Consumers can forward structured diagnostics from `onTimeline` to their own UI or logging service. The SDK does not persist a timeline.
 
-- The connection APIs (`connectEmbeddedAssistant`, `connectHostIframe`, `connectAssistantIframe`, `AssistantEmbed`) manage readiness, availability, receiver cleanup and connection timeouts. Dispose them when removing the assistant; pending host commands are then rejected.
+- The connection APIs (`connectEmbeddedAssistant`, `connectHostPort`, `connectAssistantPort`) manage readiness, availability, receiver cleanup and connection timeouts. Dispose them when removing the assistant; pending host commands are then rejected.
 - Unsubscribe context and lifecycle listeners when disconnecting.
 - Call `integration.dispose()` when the host integration is permanently disposed. It owns SDK cleanup; host components still own their DOM and rendering lifecycle.
 
@@ -753,11 +716,11 @@ const integration = createHostIntegration({ actions });
 integration.dispose();
 ```
 
-`dispose()` is synchronous and idempotent. It closes SDK-managed iframe/embedded/federation connections, cancels their loading timers, rejects pending action/command requests with `RECEIVER_UNAVAILABLE`, clears active highlights and timers, and releases target/context subscriptions and registered action handlers. The instance is terminal: do not reuse it; create a new integration to reconnect. Calls to `updatePage` or new connection setup after disposal fail; later action/command requests reject immediately without new timers.
+`dispose()` is synchronous and idempotent. It closes SDK-managed same-window/MessagePort connections, cancels their loading timers, rejects pending action/command requests with `RECEIVER_UNAVAILABLE`, clears active highlights and timers, and releases target/context subscriptions and registered action handlers. The instance is terminal: do not reuse it; create a new integration to reconnect. Calls to `updatePage` or new connection setup after disposal fail; later action/command requests reject immediately without new timers.
 
 `useHostIntegration` calls `dispose()` automatically on final unmount while preserving Strict Mode replay behavior. `IntegrationProvider` only shares the instance and does not dispose an externally supplied integration. Component-level connection cleanup remains safe to call before or after the integration is disposed.
 
-`AssistantBridgeClient.signal` (optional on custom clients) indicates that the integration ended. Built-in clients provide the signal; custom clients can omit it for compatibility. Readiness waits listen to both caller cancellation and client lifetime. The iframe port sends an internal `disconnect` notification so the chat-side client can reject pending requests and abort its lifetime signal. This is part of the host/chat bridge, not the chat's backend protocol.
+`AssistantBridgeClient.signal` (optional on custom clients) indicates that the client connection or integration ended. Built-in clients provide the signal; custom clients can omit it for compatibility. Readiness waits listen to both caller cancellation and client lifetime. The MessagePort transport sends an internal `disconnect` notification so the chat-side client can reject pending requests and abort its lifetime signal. This is part of the host/chat bridge, not the chat's backend protocol.
 
 Disposal does not remove host DOM, unload federation runtime caches, cancel arbitrary already-running handler promises, roll back completed mutations or stop independently owned BFF/model runs. Confirmation UI and per-run cancellation remain owned by the chat application. The SDK prevents later dispatch after an awaited confirmation if its client lifetime ended.
 

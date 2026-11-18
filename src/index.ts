@@ -43,7 +43,6 @@ export { queryNavigate } from './connections';
 
 export {
   ASSISTANT_COMMAND_NAMES,
-  ASSISTANT_IFRAME_MESSAGES,
   ERROR_CODES,
   HOST_ACTION_NAMES,
   PROTOCOL_VERSION,
@@ -109,13 +108,8 @@ export {
 
 export {
   connectEmbeddedAssistant,
-  connectHostIframe,
-  connectAssistantIframe,
-  createAssistantIframeUrl,
   type AssistantConnectionOptions,
   type AssistantConnectionStatus,
-  type HostIframeConnectionOptions,
-  type AssistantIframeConnectionOptions,
 } from './connections';
 
 export {

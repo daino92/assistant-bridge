@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Breaking
+
+- Remove `/federation`, `/react/federation`, `AssistantEmbed`, `AssistantIframe`, iframe connection helpers and iframe handshake constants. The host owns remote loading, mounting, URLs and retry. See [migration](docs/connections.md).
+- Remove `iframe` options and implicit initialization from `useAssistantIntegration`. Supply `bridge`/`onReady` explicitly; without a bridge the chat stays standalone.
+- Replace embedding-specific diagnostics with communication diagnostics (`embedded` / `message-port`). Loading/render failures belong to the application.
+
+### Added
+
+- Optional `/transports/message-port` connects a caller-authenticated private channel without inspecting windows or URLs. It validates versions/context and owns readiness and cleanup.
+- Same-window clients expose a connection-scoped cancellation signal, so ending a connection cancels pending actions and approvals without destroying the host integration.
+
 ## 0.1.0-beta.10
 
 - `ui.navigate` with `routes` now publishes one flat object schema: `path` lists the

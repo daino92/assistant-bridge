@@ -34,26 +34,11 @@ export interface IntegrationDiagnostic {
   code:
     | 'CONNECTION_TIMEOUT'
     | 'CONNECTION_FAILED'
-    | 'IFRAME_HANDSHAKE_TIMEOUT'
-    | 'IFRAME_HANDSHAKE_FAILED'
-    | 'FEDERATION_RUNTIME_UNAVAILABLE'
-    | 'FEDERATION_LOAD_FAILED'
-    | 'FEDERATION_EXPORT_MISSING'
-    | 'FEDERATION_RENDER_FAILED'
-    | 'FEDERATION_ADAPTER_LOAD_FAILED'
-    | 'FEDERATION_ADAPTER_TIMEOUT'
     | 'ACTION_FAILED'
     | 'COMMAND_FAILED'
     | 'PROTOCOL_MISMATCH';
-  phase:
-    | 'adapter-load'
-    | 'remote-load'
-    | 'handshake'
-    | 'receiver-ready'
-    | 'render'
-    | 'action'
-    | 'command';
-  mode?: 'iframe' | 'federation' | 'embedded';
+  phase: 'handshake' | 'receiver-ready' | 'action' | 'command';
+  mode?: 'message-port' | 'embedded';
   message: string;
   errorCode?: string;
 }

@@ -30,6 +30,7 @@ export const createAssistantConnection = (
     message: 'Assistant receiver did not become ready in time.',
   };
 
+  const lifetime = new AbortController();
   let active = true;
   let detach: (() => void) | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -63,6 +64,7 @@ export const createAssistantConnection = (
     }
 
     active = false;
+    lifetime.abort(createIntegrationError(ERROR_CODES.RECEIVER_UNAVAILABLE));
     bridge.signal.removeEventListener('abort', dispose);
     bridge.reportDiagnostic(diagnostic);
     disconnect();
@@ -86,6 +88,7 @@ export const createAssistantConnection = (
     }
 
     active = false;
+    lifetime.abort(createIntegrationError(ERROR_CODES.RECEIVER_UNAVAILABLE));
     bridge.signal.removeEventListener('abort', dispose);
     disconnect();
     close();
@@ -96,6 +99,7 @@ export const createAssistantConnection = (
 
   return {
     closed,
+    signal: lifetime.signal,
     isActive: () => active,
     loading,
     fail,
@@ -168,5 +172,26 @@ export const connectEmbeddedAssistant = (
     };
   };
 
-  return { ...connection, bridge: integration.assistantClient, onReady };
+  return {
+    ...connection,
+    bridge: {
+      ...integration.assistantClient,
+      signal: connection.signal,
+      requestHostAction: async (
+        ...args: Parameters<typeof integration.assistantClient.requestHostAction>
+      ) => {
+        connection.signal.throwIfAborted();
+
+        return integration.assistantClient.requestHostAction(...args);
+      },
+      previewHostAction: async (
+        ...args: Parameters<NonNullable<typeof integration.assistantClient.previewHostAction>>
+      ) => {
+        connection.signal.throwIfAborted();
+
+        return integration.assistantClient.previewHostAction!(...args);
+      },
+    },
+    onReady,
+  };
 };
