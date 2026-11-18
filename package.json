@@ -1,6 +1,6 @@
 {
   "name": "assistant-bridge",
-  "version": "0.1.0-beta.10",
+  "version": "0.1.0-beta.11",
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -20,13 +20,9 @@
       "types": "./dist/react/index.d.ts",
       "default": "./dist/react/index.js"
     },
-    "./federation": {
-      "types": "./dist/federation/index.d.ts",
-      "default": "./dist/federation/index.js"
-    },
-    "./react/federation": {
-      "types": "./dist/react/federation/index.d.ts",
-      "default": "./dist/react/federation/index.js"
+    "./transports/message-port": {
+      "types": "./dist/transports/message-port.d.ts",
+      "default": "./dist/transports/message-port.js"
     }
   },
   "scripts": {
@@ -40,12 +36,10 @@
     "package:check": "node scripts/check-package.mjs"
   },
   "peerDependencies": {
-    "@module-federation/runtime": "2.9.2",
     "react": "^19.3.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@module-federation/runtime": "2.9.2",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
@@ -70,15 +64,12 @@
   "peerDependenciesMeta": {
     "react": {
       "optional": true
-    },
-    "@module-federation/runtime": {
-      "optional": true
     }
   },
   "dependencies": {
     "zod": "^4.6.6"
   },
-  "description": "Typed contracts and runtime between a host application and an AI assistant, with optional React and Module Federation adapters.",
+  "description": "Typed communication contracts and runtime between a host application and an AI assistant, with optional React and MessagePort adapters.",
   "repository": {
     "type": "git",
     "url": "https://github.com/daino92/assistant-bridge.git"

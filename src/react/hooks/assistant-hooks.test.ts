@@ -2,20 +2,8 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { AssistantBridgeClient, AssistantCommandHandler } from '@/assistant-client';
-import type { AssistantIframeConnectionOptions } from '@/connections';
 import { PROTOCOL_VERSION, type AssistantCommandRequest, type HostContext } from '@/contracts';
-import {
-  useAssistantIframeConnection,
-  useAssistantCommandHandler,
-  useAssistantContext,
-  type UseAssistantIframeConnectionOptions,
-} from '@/react/hooks';
-
-const connect = vi.hoisted(() => vi.fn());
-
-vi.mock('@/connections', () => ({ connectAssistantIframe: connect }));
-
-const INITIAL_URL = window.location.href;
+import { useAssistantCommandHandler, useAssistantContext } from '@/react/hooks';
 
 const CONTEXT: HostContext = {
   route: '/',
@@ -33,7 +21,6 @@ const REQUEST: AssistantCommandRequest = {
 
 afterEach(() => {
   cleanup();
-  window.history.replaceState(null, '', INITIAL_URL);
   vi.resetAllMocks();
 });
 
@@ -68,86 +55,6 @@ const createClient = (initial: HostContext = CONTEXT) => {
 };
 
 describe('assistant-side React hooks', () => {
-  it('keeps iframe callbacks current without reconnecting and disconnects when disabled', () => {
-    const disconnect = vi.fn();
-
-    connect.mockImplementation((options: AssistantIframeConnectionOptions) => () => {
-      disconnect();
-      options.onClient(undefined);
-    });
-
-    const firstCommand = vi.fn(() => 'first');
-    const firstClient = vi.fn();
-
-    const options: UseAssistantIframeConnectionOptions = {
-      hostOrigin: 'https://host.example',
-      onCommand: firstCommand,
-      onClient: firstClient,
-    };
-
-    const { rerender, unmount } = renderHook(
-      (props: UseAssistantIframeConnectionOptions) => useAssistantIframeConnection(props),
-      { initialProps: options },
-    );
-
-    const nextCommand = vi.fn(() => 'next');
-    const nextClient = vi.fn();
-
-    rerender({ ...options, onCommand: nextCommand, onClient: nextClient });
-    expect(connect).toHaveBeenCalledOnce();
-
-    const connectionOptions = connect.mock.calls[0][0] as AssistantIframeConnectionOptions;
-
-    expect(connectionOptions.onCommand(REQUEST)).toBe('next');
-
-    const { client } = createClient();
-
-    act(() => connectionOptions.onClient(client));
-    expect(nextClient).toHaveBeenCalledWith(client);
-    expect(firstClient).not.toHaveBeenCalled();
-    expect(firstCommand).not.toHaveBeenCalled();
-    rerender({ ...options, onCommand: nextCommand, onClient: nextClient, enabled: false });
-    expect(disconnect).toHaveBeenCalledOnce();
-    expect(nextClient).toHaveBeenLastCalledWith(undefined);
-    unmount();
-    expect(disconnect).toHaveBeenCalledOnce();
-  });
-
-  it('skips standalone initialization and trusts the embedding query only from allowed origins', () => {
-    const options = { onCommand: vi.fn(), onClient: vi.fn() };
-    const standalone = renderHook(() => useAssistantIframeConnection(options));
-
-    expect(connect).not.toHaveBeenCalled();
-    standalone.unmount();
-
-    const url = new URL(window.location.href);
-
-    url.searchParams.set('hostOrigin', 'https://host.example');
-    window.history.replaceState(null, '', url);
-
-    // Any page can frame the chat and name itself in the query: ignored without a list.
-    renderHook(() => useAssistantIframeConnection(options)).unmount();
-    renderHook(() =>
-      useAssistantIframeConnection({ ...options, allowedOrigins: ['https://other.example'] }),
-    ).unmount();
-    expect(connect).not.toHaveBeenCalled();
-
-    const disconnect = vi.fn();
-
-    connect.mockReturnValue(disconnect);
-
-    const embedded = renderHook(() =>
-      useAssistantIframeConnection({
-        ...options,
-        allowedOrigins: ['https://other.example', 'https://host.example'],
-      }),
-    );
-
-    expect(connect.mock.calls[0][0].hostOrigin).toBe('https://host.example');
-    embedded.unmount();
-    expect(disconnect).toHaveBeenCalledOnce();
-  });
-
   it('uses the latest command implementation and cleans up replaced readiness registrations', () => {
     const firstCleanup = vi.fn();
     const onReady = vi.fn((_handler: AssistantCommandHandler) => firstCleanup);

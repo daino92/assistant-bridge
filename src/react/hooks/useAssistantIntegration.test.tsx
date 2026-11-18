@@ -3,15 +3,9 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import { connectAssistantIframe, connectEmbeddedAssistant } from '@/connections';
+import { connectEmbeddedAssistant } from '@/connections';
 import { createIntegration, type HostIntegration } from '@/create-host-integration';
-import { PROTOCOL_VERSION, type AssistantCommandRequest } from '@/contracts';
 import { useAssistantIntegration, type UseAssistantIntegrationOptions } from '@/react/hooks';
-
-vi.mock('@/connections', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/connections')>()),
-  connectAssistantIframe: vi.fn(),
-}));
 
 const integrations: HostIntegration[] = [];
 
@@ -36,13 +30,6 @@ const createHost = (requiresConfirmation = false) => {
 };
 
 const Wrapper = ({ children }: { children: ReactNode }) => <StrictMode>{children}</StrictMode>;
-
-const request = (command: string, payload: unknown = {}): AssistantCommandRequest => ({
-  protocolVersion: PROTOCOL_VERSION,
-  requestId: crypto.randomUUID(),
-  command,
-  payload,
-});
 
 afterEach(async () => {
   cleanup();
@@ -265,60 +252,24 @@ it('uses the latest custom approval callback without opening its built-in card',
   expect(result.current.confirmation).toBeUndefined();
 });
 
-it('connects an iframe with the same API and fresh command callbacks', async () => {
-  const { integration } = createHost();
-  const disconnect = vi.fn();
+it('stays disconnected without an explicitly supplied bridge, even with host-origin URL parameters', async () => {
+  window.history.replaceState(null, '', '/?embedded=1&hostOrigin=https://host.example');
 
-  vi.mocked(connectAssistantIframe).mockImplementation((options) => {
-    options.onClient(integration.assistantClient);
+  const postMessage = vi.spyOn(window.parent, 'postMessage');
 
-    return disconnect;
-  });
+  try {
+    const { result } = renderHook(() => useAssistantIntegration({ commands: {} }));
 
-  const onSubmit = vi.fn();
-
-  const options: UseAssistantIntegrationOptions = {
-    iframe: { hostOrigin: 'https://host.example' },
-    commands: { onSubmit },
-  };
-
-  const { result, rerender, unmount } = renderHook((props) => useAssistantIntegration(props), {
-    initialProps: options,
-  });
-
-  await waitFor(() => expect(result.current.isConnected).toBe(true));
-
-  const connection = vi.mocked(connectAssistantIframe).mock.calls[0]![0];
-  const nextSubmit = vi.fn();
-
-  rerender({ ...options, commands: { onSubmit: nextSubmit } });
-  await connection.onCommand(request('assistant.submitPrompt', { prompt: 'from host' }));
-  expect(nextSubmit).toHaveBeenCalledWith('from host', undefined);
-  expect(onSubmit).not.toHaveBeenCalled();
-  expect(connectAssistantIframe).toHaveBeenCalledOnce();
-  unmount();
-  expect(disconnect).toHaveBeenCalledOnce();
-});
-
-it('prefers a supplied bridge and supports disconnected standalone operation', async () => {
-  const { integration } = createHost();
-
-  const options: UseAssistantIntegrationOptions = {
-    bridge: integration.assistantClient,
-    iframe: { hostOrigin: 'https://host.example' },
-    commands: {},
-  };
-
-  const { result, rerender } = renderHook((props) => useAssistantIntegration(props), {
-    initialProps: options,
-  });
-
-  expect(connectAssistantIframe).not.toHaveBeenCalled();
-  rerender({ commands: {}, iframe: { enabled: false } });
-  expect(result.current.isConnected).toBe(false);
-  await expect(result.current.executeHostAction('test.action', {})).rejects.toMatchObject({
-    code: 'RECEIVER_UNAVAILABLE',
-  });
+    expect(result.current.isConnected).toBe(false);
+    expect(result.current.context).toBeUndefined();
+    expect(postMessage).not.toHaveBeenCalled();
+    await expect(result.current.executeHostAction('test.action', {})).rejects.toMatchObject({
+      code: 'RECEIVER_UNAVAILABLE',
+    });
+  } finally {
+    postMessage.mockRestore();
+    window.history.replaceState(null, '', '/');
+  }
 });
 
 it('routes open, close, focus and prefill through the existing chat functions', async () => {
@@ -392,4 +343,39 @@ it('returns normalized results through the React hook without changing its throw
     result.current.executeHostActionResult('test.action', { value: 42 }),
   ).resolves.toMatchObject({ status: 'failed', error: { code: 'INVALID_PAYLOAD' } });
   expect(handler).toHaveBeenCalledOnce();
+});
+
+it('cancels pending approval when only the connection ends and permits a fresh connection', async () => {
+  const { integration, handler } = createHost(true);
+  const connection = connectEmbeddedAssistant(integration, {});
+
+  const { result, rerender } = renderHook(
+    (props: UseAssistantIntegrationOptions) => useAssistantIntegration(props),
+    { initialProps: { ...connection, commands: {} } },
+  );
+
+  let pending: Promise<unknown>;
+
+  act(() => {
+    pending = result.current.executeHostAction('test.action', { value: 'old' });
+  });
+
+  const cancelled = expect(pending!).rejects.toMatchObject({ code: 'RECEIVER_UNAVAILABLE' });
+
+  await act(async () => {
+    connection.dispose();
+    await cancelled;
+  });
+  expect(result.current.isConnected).toBe(false);
+  expect(result.current.confirmation).toBeUndefined();
+  expect(handler).not.toHaveBeenCalled();
+
+  const replacement = connectEmbeddedAssistant(integration, {});
+
+  rerender({ ...replacement, commands: {} });
+  expect(result.current.isConnected).toBe(true);
+  await expect(integration.assistantCommands.open()).rejects.toMatchObject({
+    code: 'UNKNOWN_COMMAND',
+  });
+  replacement.dispose();
 });

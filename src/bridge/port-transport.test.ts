@@ -49,7 +49,7 @@ const connect = () => {
   return { ...integration, remote, handler, onCommand, ports };
 };
 
-describe('iframe port transport', () => {
+describe('MessagePort port transport', () => {
   it('correlates concurrent actions and enforces host action schemas and allowlist', async () => {
     const { remote, handler } = connect();
 
@@ -97,7 +97,7 @@ describe('iframe port transport', () => {
 });
 
 it.each(['STALE_CONTEXT', 'RESOURCE_NOT_FOUND', 'ACTION_REJECTED', 'PRIVATE_CODE'])(
-  'returns the same safe action failure over direct and iframe clients: %s',
+  'returns the same safe action failure over direct and MessagePort clients: %s',
   async (code) => {
     const { actionRegistry, assistantClient, remote } = connect();
 
@@ -122,7 +122,7 @@ it.each(['STALE_CONTEXT', 'RESOURCE_NOT_FOUND', 'ACTION_REJECTED', 'PRIVATE_CODE
   },
 );
 
-it('normalizes iframe command errors without exposing receiver details', async () => {
+it('normalizes MessagePort command errors without exposing receiver details', async () => {
   const { onCommand, assistantCommands } = connect();
 
   onCommand.mockImplementation(() => {
@@ -133,7 +133,7 @@ it('normalizes iframe command errors without exposing receiver details', async (
   );
 });
 
-it('disconnects the iframe client and its pending requests when the integration is disposed', async () => {
+it('disconnects the MessagePort client and its pending requests when the integration is disposed', async () => {
   const { actionRegistry, dispose, remote } = connect();
 
   actionRegistry.register({
@@ -157,7 +157,7 @@ it('disconnects the iframe client and its pending requests when the integration 
   remote.dispose();
 });
 
-it('forwards one correlated lifecycle between executor, host and iframe subscribers', async () => {
+it('forwards one correlated lifecycle between executor, host and MessagePort subscribers', async () => {
   const { remote, subscribeActionLifecycle, bridge } = connect();
   const hostEvents: ActionLifecycleEvent[] = [];
   const localEvents: ActionLifecycleEvent[] = [];
@@ -182,7 +182,7 @@ it('forwards one correlated lifecycle between executor, host and iframe subscrib
   expect(requests.mock.calls[0][0].actionExecutionId).toBe(hostEvents[0].actionExecutionId);
 });
 
-it('isolates iframe context snapshots and each subscriber notification', async () => {
+it('isolates MessagePort context snapshots and each subscriber notification', async () => {
   const { remote, contextManager } = connect();
   const snapshot = remote.client.getContext();
 
@@ -201,7 +201,7 @@ it('isolates iframe context snapshots and each subscriber notification', async (
   expect(remote.client.getContext().page.title).toBe('Records');
 });
 
-it('preserves public business guidance through direct and iframe action results', async () => {
+it('preserves public business guidance through direct and MessagePort action results', async () => {
   const { actionRegistry, assistantClient, remote } = connect();
   const reason = { code: 'OFFER_REQUIRED', message: 'Select an offer before checkout.' };
 

@@ -2,11 +2,6 @@ export { HIGHLIGHT_ATTRIBUTE, useUiTarget, type UiTargetOptions } from './useUiT
 export { usePageEntities } from './usePageEntities';
 export { useAssistantPanel } from './useAssistantPanel';
 
-export {
-  useAssistantIframeConnection,
-  type UseAssistantIframeConnectionOptions,
-} from './useAssistantIframeConnection';
-
 export { useAssistantContext } from './useAssistantContext';
 export { useAssistantCommandHandler } from './useAssistantCommandHandler';
 export { useHostIntegration, type UseHostIntegrationOptions } from './useHostIntegration';

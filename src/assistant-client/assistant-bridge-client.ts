@@ -14,7 +14,7 @@ import {
 import { toIntegrationError } from '@/errors';
 
 /**
- * Scoped API shared by direct, federated, and cross-window integrations.
+ * Scoped API shared by same-window and cross-window integrations.
  * The Host passes this interface — not internal services.
  */
 export interface AssistantBridgeClient {

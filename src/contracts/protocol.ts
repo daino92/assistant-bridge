@@ -17,13 +17,6 @@ export const protocolVersionSchema = z
   .string()
   .refine(isCompatibleProtocolVersion, { message: 'Incompatible protocol version' });
 
-/** Shared iframe handshake names, independent of a host application's branding. */
-export const ASSISTANT_IFRAME_MESSAGES = {
-  READY: 'assistant.iframe.ready',
-  CONNECT: 'assistant.iframe.connect',
-  CONNECTED: 'assistant.iframe.connected',
-} as const;
-
 export const ERROR_CODES = {
   ACTION_REJECTED: 'ACTION_REJECTED',
   UNKNOWN_ACTION: 'UNKNOWN_ACTION',

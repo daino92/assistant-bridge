@@ -31,7 +31,7 @@ const EmbeddedChat = ({ bridge, onReady }: EmbeddedAssistantOptions) => (
 export default EmbeddedChat;
 ```
 
-A chat loaded in an iframe receives neither prop. The SDK connects through the iframe handshake instead (see [step 6](#6-iframe-chats)).
+A chat in a separate window receives an explicit client from application bootstrap code using the optional MessagePort adapter (see [step 6](#6-separate-window-chats)).
 
 ## 3. Connect
 
@@ -129,18 +129,9 @@ Render the approval request when one is pending:
 
 To use your own approval UI, pass `actions: { requestConfirmation: (request, signal) => … }` to the hook; it must resolve to `true` or `false` and respect `signal`.
 
-## 6. Iframe chats
+## 6. Separate-window chats
 
-Without `bridge`, the hook can connect to a parent window through the iframe handshake. The host's `AssistantEmbed` (iframe mode) adds `embedded=1` and `hostOrigin` to the chat URL. List the host origins the chat trusts:
-
-```ts
-useAssistantIntegration({
-  commands,
-  iframe: { allowedOrigins: ['https://app.example.com'] },
-});
-```
-
-The chat connects only when the `hostOrigin` in its URL is in that list, and then accepts messages only from that exact origin and the parent window. Without `allowedOrigins` (or an explicit `iframe.hostOrigin`) it does not connect: otherwise any page could frame the chat and act as its host. Set `iframe: { enabled: false }` for a standalone chat.
+Application integration code authenticates the host and transfers a private MessagePort. The optional `connectAssistantPort` adapter creates a client for that channel. Supply that client explicitly to the hook; there is no automatic iframe or query-parameter fallback. See [connections](connections.md#messageport-connections).
 
 ## Backend protocols
 
@@ -148,9 +139,9 @@ The SDK does not talk to your backend. Whatever the protocol (AG-UI, SSE, WebSoc
 
 ## Responsibilities
 
-| Chat supplies                       | SDK handles                                      |
-| ----------------------------------- | ------------------------------------------------ |
-| UI, messages, history and storage   | Host connection and command routing              |
-| Backend protocol and authentication | Host context snapshots                           |
-| Approval UI                         | Action availability, approval flow and lifecycle |
-| Which host origins it trusts        | Origin-checked iframe handshake                  |
+| Chat supplies                         | SDK handles                                      |
+| ------------------------------------- | ------------------------------------------------ |
+| UI, messages, history and storage     | Host connection and command routing              |
+| Backend protocol and authentication   | Host context snapshots                           |
+| Approval UI                           | Action availability, approval flow and lifecycle |
+| Authenticating the communication peer | Protocol validation on a supplied MessagePort    |

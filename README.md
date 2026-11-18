@@ -2,7 +2,7 @@
 
 A framework-agnostic integration layer between a host application and an AI assistant. The host defines which actions the assistant can request, publishes application context and sends commands back to the assistant.
 
-The SDK supplies the contracts and execution boundary. The host owns its routes, state, UI and action handlers; the assistant owns conversations and rendering; the backend owns model calls. This package does not include an assistant UI or backend.
+The SDK supplies the communication contracts and execution boundary. The host loads and mounts the chat, whether it is a local component, a remote module or a separate window. The host owns its routes, state, UI and action handlers; the assistant owns conversations and rendering; the backend owns model calls. This package does not include an assistant UI or backend.
 
 > **Beta:** the public API may change before the first stable release; see [API stability](docs/stability.md).
 
@@ -16,14 +16,13 @@ pnpm add assistant-bridge@beta
 
 Zod is installed with the package. Add `zod` to your own dependencies only when your code defines action schemas.
 
-| Entry point         | Additional peer dependencies          |
-| ------------------- | ------------------------------------- |
-| Core                | None                                  |
-| `/contracts`        | None (Zod only; no runtime)           |
-| `/testing`          | None                                  |
-| `/react`            | `react@^19.3.0`                       |
-| `/federation`       | `@module-federation/runtime@2.9.2`    |
-| `/react/federation` | Both React and the federation runtime |
+| Entry point                | Additional peer dependencies |
+| -------------------------- | ---------------------------- |
+| Core                       | None                         |
+| `/contracts`               | None (Zod only; no runtime)  |
+| `/testing`                 | None                         |
+| `/react`                   | `react@^19.3.0`              |
+| `/transports/message-port` | None                         |
 
 React applications also supply their renderer, such as React DOM.
 
@@ -99,7 +98,6 @@ Start with these. Most hosts and chats need nothing else.
 │  ├─ <a href="docs/core.md#define-page-catalog">definePageCatalog</a>
 │  ├─ <a href="docs/core.md#define-host-actions">defineAction</a>
 │  ├─ <a href="docs/react.md#ui-targets">useUiTarget, usePageEntities</a>              (/react)
-│  ├─ <a href="docs/react.md#unified-assistant-embedding">AssistantEmbed</a>                            (/react)
 │  └─ <a href="docs/core.md#integration-errors">createIntegrationError, ERROR_CODES</a>
 └─ Chat
    ├─ <a href="docs/chat-quick-start.md">useAssistantIntegration</a>                   (/react)
@@ -118,7 +116,7 @@ Use these only when `AssistantHost` or `useAssistantIntegration` does not fit, f
 │  ├─ <a href="docs/core.md#update-the-page">updatePage, mapHostEntities</a>
 │  ├─ <a href="docs/core.md#use-the-client-inside-the-assistant">AssistantBridgeClient</a>
 │  ├─ <a href="docs/core.md#send-commands-from-the-host">assistantCommands</a>
-│  ├─ <a href="docs/core.md#connect-an-iframe">connectHostIframe, connectAssistantIframe</a>
+│  ├─ <a href="docs/connections.md">connectHostPort, connectAssistantPort</a> (/transports/message-port)
 │  ├─ <a href="docs/core.md#connect-a-same-window-assistant">connectEmbeddedAssistant</a>
 │  ├─ <a href="docs/core.md#execute-actions-from-the-assistant">createAssistantActionExecutor</a>
 │  ├─ <a href="docs/core.md#action-confirmations">createActionConfirmationController</a>
@@ -128,12 +126,7 @@ Use these only when `AssistantHost` or `useAssistantIntegration` does not fit, f
 │  ├─ <a href="docs/react.md">IntegrationProvider, useIntegration, useOptionalIntegration</a>
 │  ├─ <a href="docs/react.md#managed-host-integration">useHostIntegration</a>
 │  ├─ <a href="docs/react.md#assistant-panel-behavior">useAssistantPanel</a>
-│  ├─ <a href="docs/react.md#ready-made-iframe-component">AssistantIframe</a>
-│  └─ <a href="docs/react.md#assistant-side-hooks">useAssistantIframeConnection, useAssistantContext, useAssistantCommandHandler</a>
-├─ assistant-bridge/react/federation
-│  └─ <a href="docs/react.md#ready-made-federated-react-component">FederatedAssistant</a>
-└─ assistant-bridge/federation
-   └─ <a href="docs/federation.md">connectFederatedAssistant</a>
+│  └─ <a href="docs/react.md#assistant-side-hooks">useAssistantContext, useAssistantCommandHandler</a>
 </pre>
 
 </details>
@@ -147,7 +140,7 @@ Use these only when `AssistantHost` or `useAssistantIntegration` does not fit, f
 - [API stability](docs/stability.md): what is public and what may change
 - [Core API](docs/core.md): actions, context, commands, connections and errors
 - [React](docs/react.md): provider, hooks and ready-made components
-- [Module Federation](docs/federation.md): framework-agnostic remote loading
+- [Connections and migration](docs/connections.md): host-owned loading, mounting and explicit connections
 - [Contributing](CONTRIBUTING.md): development, checks and releases
 
 ## License

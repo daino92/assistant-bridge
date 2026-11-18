@@ -94,12 +94,12 @@ await host?.ask('Summarize this entry');
 - **Router:** `pathname` selects the page through `pages.pageKeyFromRoute`; routes outside the catalog publish `fallbackPage`. `navigate` receives validated `params` only for pages that declare them. The latest `navigate`, `beforeNavigate` and `actions` are always used, so inline callbacks are fine.
 - **Actions:** the `actions` factory receives `targets`, `principal` and a stable `navigate`, and runs on every render. Handlers and `available` therefore always use current host state; there is nothing to memoize. Actions re-register only when what the assistant sees changes (names, descriptions, schemas, approval), for example after a permission change. Keep the factory pure: it returns definitions and must not cause side effects.
 - **Entities:** `entities` are shared by every page. `usePageEntities` adds a component's entities while it is mounted, merged in mount order and compared by content.
-- **Connection:** `connection="embedded"` connects a same-window assistant and exposes `bridge` and `onReady` as `useAssistantHost().embedded`. The default, `external`, leaves the connection to `AssistantEmbed` or `AssistantIframe`.
+- **Connection:** `connection="embedded"` connects a same-window assistant and exposes `bridge` and `onReady` as `useAssistantHost().embedded`. The default, `external`, leaves connection setup to the host application. Load a remote before creating its connection so remote loading and receiver readiness have separate timeouts.
 - **Asking:** `ask(prompt, { selection, metadata })` is `assistantCommands.askAbout`; it rejects when no assistant is ready.
 - **State-based pages:** a host that switches pages by state instead of URL passes `router={{ page, navigate }}`, with the current catalog key and a function that opens a key. `ui.navigate` still validates paths and parameters against the catalog, then calls `navigate(pageKey, params)`.
 - **Highlight:** `highlight` adds an outline for `[data-assistant-highlight]`, with a reduced-motion fallback.
 
-`AssistantHost` renders `IntegrationProvider`, so `useIntegration`, `useUiTarget` and `AssistantEmbed` work below it. Keep `principal` to permission names; it is not authorization. For full control, compose `useHostIntegration` and `useHostPageContext` as before.
+`AssistantHost` renders `IntegrationProvider`, so `useIntegration` and `useUiTarget` work below it. Keep `principal` to permission names; it is not authorization. For full control, compose `useHostIntegration` and `useHostPageContext` as before.
 
 ## Assistant panel behavior
 
@@ -115,134 +115,19 @@ Pass the stable `onStatus` callback to the chosen connection adapter. `reconnect
 
 The host keeps the panel/launcher markup, styling, loading/error messages and URLs. Closing the panel can keep the assistant mounted so it continues receiving commands and context.
 
-## Unified assistant embedding
+## Host-owned chat mounting
 
-```tsx
-import { AssistantEmbed, useAssistantPanel } from 'assistant-bridge/react';
+The SDK has no embedding component, remote loader or iframe initialization. The host loads and mounts the chat and passes `bridge` and `onReady` from `connectEmbeddedAssistant`, or uses `AssistantHost` with `connection="embedded"` for an already available same-window chat. Both local and remote components accept `EmbeddedAssistantOptions`. Chat code must not require the host's React context.
 
-const { onStatus, attempt } = useAssistantPanel();
-
-<AssistantEmbed
-  config={{ mode: 'iframe', iframe: { url: assistantUrl, title: 'Assistant' } }}
-  onStatus={onStatus}
-  attempt={attempt}
-/>;
-
-// Or use the same component with federation configuration:
-<AssistantEmbed
-  config={{
-    mode: 'federation',
-    federation: {
-      runtimeName: 'my-host',
-      remoteName: 'my-chat',
-      exposedModule: 'EmbeddedAssistant',
-      entry: remoteEntryUrl,
-    },
-    loadAdapter: () => import('assistant-bridge/react/federation'),
-  }}
-  onStatus={onStatus}
-  attempt={attempt}
-/>;
-```
-
-`AssistantEmbedConfig` is a discriminated union: each mode requires its own configuration. `AssistantEmbedProps`, `AssistantEmbedConfig` and `FederationAdapterModule` are exported from `/react`. Render beneath `IntegrationProvider`. The component adds no wrapper or visual styles; standard iframe props belong inside `iframe`.
-
-`attempt` defaults to zero. Increasing it remounts the selected adapter, so the host does not need a connection subtree key. Switching mode disposes the previous adapter. Ordinary status callback changes do not reconnect. Keep configuration values stable unless the connection should change.
-
-The host supplies `loadAdapter`, which `AssistantEmbed` calls only when federation is selected. `/react` contains no import of the federation adapter or runtime, so hosts that only use iframes do not install `@module-federation/runtime`, and bundlers do not need it. Its module load reports `loading`, then hands status reporting to the existing adapter. A rejected `loadAdapter` or a module-load timeout reports `error` with a `FEDERATION_ADAPTER_LOAD_FAILED` or `FEDERATION_ADAPTER_TIMEOUT` diagnostic; retry increments `attempt` and tries loading again. `timeoutMs` in the federation configuration bounds module loading (default 10 seconds) and separately bounds the adapter's remote/receiver connection phase. Late imports after timeout or unmount are ignored. No error UI is supplied.
-
-Iframe mode does not execute or download the federation adapter. Bundlers still resolve the dynamic import when building this unified entry, so consumers building it need the federation peer available; use a build that excludes that branch if the peer must be absent entirely. Federation still requires the host's build plugin/shared dependency configuration. The individual components remain available for explicit adapter selection.
-
-## Ready-made iframe component
-
-```tsx
-import { AssistantIframe, useAssistantPanel } from 'assistant-bridge/react';
-
-const { onStatus, attempt } = useAssistantPanel();
-// Within your panel's content container:
-<AssistantIframe
-  key={attempt}
-  url={assistantUrl}
-  title="Assistant"
-  onStatus={onStatus}
-  className="assistant-frame"
-/>;
-```
-
-Render inside `IntegrationProvider`. The SDK adds the embedding/host-origin query parameters and owns connection setup and cleanup. `url` and an accessible `title` are required. Standard iframe props such as `className`, `style`, `allow` and `sandbox` are forwarded; `src` and `srcDoc` are controlled by the SDK. The component adds no visual styles: the host sets frame size, border and background. `timeoutMs` defaults to 8 seconds and `assistantId` defaults to `assistant-iframe`. Change the key to reconnect the frame. Status callback changes do not reconnect it.
-
-## Ready-made federated React component
-
-```tsx
-import { FederatedAssistant } from 'assistant-bridge/react/federation';
-
-<FederatedAssistant
-  runtimeName="my-host"
-  remoteName="my-chat"
-  exposedModule="EmbeddedAssistant"
-  entry={remoteEntryUrl}
-  attempt={attempt}
-  onStatus={onStatus}
-/>;
-```
-
-This separate subpath requires both React and the federation runtime. Importing `/react` alone does not import federation. Configure shared dependencies in the host build and supply the runtime/remote names and entry URL.
-
-The component loads the remote, supplies only `EmbeddedAssistantOptions`, and owns command readiness registration, cleanup and a React error boundary. Render failures report `error` through `onStatus` and render no remote UI; the host displays its own failure message and reconnect control. A changed remote configuration or attempt remounts the rendering session and resets its error boundary. Late results from disposed connections are ignored. Callback changes do not reload the remote.
-
-`attempt` defaults to zero; increase it for retries. `timeoutMs` defaults to 10 seconds and includes loading/receiver readiness. `assistantId` defaults to `assistant-federation`. Unlike the generic `/federation` loader, this component specifically expects a default React component accepting `EmbeddedAssistantOptions`.
-
-The host `AssistantPanel` in `src/components/AssistantPanel.tsx` uses `AssistantEmbed` to select these adapters. It owns public URLs, mode selection, shared runtime configuration and panel/launcher visuals. The panel stays mounted while closed and offers reconnect on connection errors.
-
-## Existing chat integration
-
-`useAssistantIntegration` composes host connection, current context, fresh command callbacks, action execution and approval state. It supports directly supplied `bridge`/`onReady`, iframe initialization and standalone operation without a host provider. It does not own chat UI, messages or backend transport. Use it to adapt an existing chat; the lower-level hooks below remain available.
-
-```tsx
-const integration = useAssistantIntegration({
-  bridge,
-  onReady,
-  commands: {
-    onOpen: openChat,
-    onClose: closeChat,
-    onFocus: focusInput,
-    onPrefill: setDraft,
-    onSubmit: sendThroughExistingBackend,
-  },
-});
-```
-
-Use `integration.context` and `integration.isConnected` for host state. Use `integration.executeHostActionResult(name, payload)` for normalized outcomes, or await `integration.executeHostAction(name, payload)` when your adapter uses exceptions. Both handle backend-originated host requests. Render `integration.confirmation` (including its optional host-owned `preview`) with `approve`/`reject`, or supply `actions.requestConfirmation` for an existing approval UI. Backend adapters (AG-UI or other) can pass `integration.bridge` and `integration.requestConfirmation` to `createAssistantActionExecutor`. See the [existing chat integration guide](existing-chat.md) for lifecycle, backend protocol boundaries, and Commercebot/Tell-a-story adapter mappings.
+The host owns loading indicators, render error boundaries and load retry. SDK status describes protocol receiver readiness. See [connections and migration](connections.md).
 
 ## Assistant-side hooks
 
-These hooks run inside the chat, including a standalone chat without `IntegrationProvider`. They use only `AssistantBridgeClient` and the embedding callbacks; host registries and services are not exposed.
+Use `useAssistantIntegration({ bridge, onReady, commands })` with an explicitly supplied connection. Without `bridge`, the chat stays disconnected and may continue standalone using its own backend. The hook does not inspect parent windows or URL parameters.
 
-```tsx
-import {
-  useAssistantIframeConnection,
-  useAssistantContext,
-  useAssistantCommandHandler,
-} from 'assistant-bridge/react';
+`useAssistantContext(client)` reads the latest snapshot, subscribes to changes and releases subscriptions on replacement/unmount. `useAssistantCommandHandler(handler, onReady)` registers a fresh handler and the protocol version, and unregisters on replacement/unmount. Neither hook loads a chat or creates a host integration.
 
-// bridge and onReady are optional embedding props; onCommand belongs to the chat.
-const [iframeClient, setIframeClient] = useState<AssistantBridgeClient>();
-const client = bridge ?? iframeClient;
-const context = useAssistantContext(client);
-
-useAssistantIframeConnection({
-  enabled: !bridge,
-  onClient: setIframeClient,
-  onCommand,
-});
-useAssistantCommandHandler(onCommand, onReady);
-```
-
-`useAssistantIframeConnection` initializes the assistant end of the iframe connection. Supply `hostOrigin` explicitly, or `allowedOrigins` to accept the SDK's `hostOrigin` query parameter only for those origins. The query parameter alone is never trusted. With no trusted origin, or outside an iframe, no connection is established. Disable the hook when a same-window client is supplied. Cleanup removes the handshake listener and disposes the port; an established connection clears the client through `onClient(undefined)`. Changes to command/client callbacks use their latest implementations without reconnecting. The hook has no UI and does not create a host integration.
-
-`useAssistantContext(client)` reads the client's context snapshot, subscribes to changes, unsubscribes when the client changes or the component unmounts, and clears context when the client becomes undefined. It works identically for iframe and directly supplied clients.
-
-`useAssistantCommandHandler(onCommand, onReady)` registers the chat's latest command implementation through the supplied readiness callback. It skips registration without `onReady`, and invokes the registration's cleanup when it changes or the chat unmounts. The chat remains responsible for executing commands and producing their results. No extra refs or effect wiring are required in the chat.
+A separately built chat uses the same hooks and props as a local component. A MessagePort bootstrap lives in application integration code; see [connections](connections.md).
 
 ## Host page context and assistant commands
 

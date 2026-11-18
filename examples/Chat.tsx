@@ -65,7 +65,7 @@ const Chat = ({ bridge, onReady, sendMessage }: Props) => {
     [sendMessage],
   );
 
-  // Direct/federated hosts supply bridge + onReady. Iframes use the SDK handshake.
+  // The application supplies a connection explicitly; otherwise this chat stays standalone.
   const { context, isConnected } = useAssistantIntegration({
     bridge,
     onReady,
