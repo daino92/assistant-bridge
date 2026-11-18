@@ -41,9 +41,13 @@ jobs:
             echo "::error::Tag $TAG does not point at a commit on main"
             exit 1
           fi
-          # Prerelease versions (with a hyphen) publish to "beta"; stable versions to "latest".
+          # Stable versions publish to "latest". Prereleases also take "latest" until a
+          # stable version exists (trusted publishing cannot move a second tag), then "beta".
+          name="$(node -p "require('./package.json').name")"
+          stable="$(curl -fsS "https://registry.npmjs.org/$name" \
+            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));process.stdout.write(Object.keys(d.versions||{}).some(v=>!v.includes('-'))?'yes':'no')")"
           case "$version" in
-            *-*) echo "dist_tag=beta" >> "$GITHUB_OUTPUT" ;;
+            *-*) if [ "$stable" = "yes" ]; then echo "dist_tag=beta" >> "$GITHUB_OUTPUT"; else echo "dist_tag=latest" >> "$GITHUB_OUTPUT"; fi ;;
             *) echo "dist_tag=latest" >> "$GITHUB_OUTPUT" ;;
           esac
       - uses: pnpm/action-setup@v6
