@@ -13,6 +13,11 @@
 - Optional `/transports/message-port` connects a caller-authenticated private channel without inspecting windows or URLs. It validates versions/context and owns readiness and cleanup.
 - Same-window clients expose a connection-scoped cancellation signal, so ending a connection cancels pending actions and approvals without destroying the host integration.
 
+### Changed
+
+- Release workflow: until a stable version exists, prereleases publish to npm `latest`
+  (trusted publishing cannot move a second tag). From 1.0, prereleases publish to `beta`.
+
 ## 0.1.0-beta.10
 
 - `ui.navigate` with `routes` now publishes one flat object schema: `path` lists the
