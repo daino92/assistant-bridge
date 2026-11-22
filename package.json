@@ -1,6 +1,6 @@
 {
   "name": "assistant-bridge",
-  "version": "0.1.0-beta.11",
+  "version": "1.0.0-rc.1",
   "type": "module",
   "sideEffects": false,
   "exports": {
