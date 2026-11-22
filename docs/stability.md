@@ -1,6 +1,6 @@
 # API stability
 
-`assistant-bridge` is in beta (`0.1.0-beta.*`). This page says what counts as public API, and what may change.
+`assistant-bridge` is a 1.0 release candidate (`1.0.0-rc.*`); the public API below is the intended 1.0 surface. This page says what counts as public API, and what may change.
 
 ## Public API
 
@@ -34,7 +34,7 @@ They change independently. A package release can keep the protocol, and a host a
 ## Before 1.0
 
 - Any beta release may change the public API. Breaking changes are marked **Breaking** in the [CHANGELOG](../CHANGELOG.md), with what to use instead.
-- Pin an exact version (`assistant-bridge@0.1.0-beta.6`, not `^`), and read the CHANGELOG before upgrading.
+- Pin an exact version (`assistant-bridge@1.0.0-rc.1`, not `^`), and read the CHANGELOG before upgrading.
 - npm `latest` points at the newest beta until 1.0, so `npm install assistant-bridge` gets it. From 1.0, `latest` is the newest stable release and prereleases go to `beta`.
 - A protocol change that is breaking raises the protocol MAJOR in the same release, so mixed deployments fail at the handshake instead of misbehaving.
 
