@@ -4,7 +4,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { createIntegration } from '@/create-host-integration';
 import { attachAssistantCommandHandler } from '@/assistant-client';
-import { IntegrationProvider, useAssistantPanel } from '@/react';
+import { useAssistantPanel } from '@/react';
+import IntegrationProvider from '@/react/IntegrationProvider';
 import { answer } from '../../../test/command-answers';
 
 interface WrapperProps {

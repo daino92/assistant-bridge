@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+### Breaking
+
+The public API is reduced to its 1.0 surface. Removed exports have no deprecation period.
+
+- Contracts are exported only from `assistant-bridge/contracts`. Import `ERROR_CODES`,
+  `ASSISTANT_COMMAND_NAMES`, `PROTOCOL_VERSION`, `isCompatibleProtocolVersion`, every
+  `*Schema` and the contract types (`HostContext`, `ActionPreview`, `ActionLifecycleEvent`,
+  …) from there instead of the root.
+- New entries `assistant-bridge/chat` and `assistant-bridge/chat/react` hold the assistant
+  side. Move `createAssistantActionExecutor`, `createActionConfirmationController`,
+  `createAssistantCommandDispatcher`, `AssistantBridgeClient`, `EmbeddedAssistantOptions` and
+  the executor and confirmation types to `/chat`, and `useAssistantIntegration`,
+  `useAssistantContext`, `useAssistantCommandHandler` and `useActionConfirmation` to
+  `/chat/react`. The host keeps `connectEmbeddedAssistant` in the root.
+- Remove `IntegrationProvider`, `useIntegration`, `useOptionalIntegration`,
+  `useHostIntegration`, `useHostPageContext` and `HIGHLIGHT_ATTRIBUTE` from `/react`. Use
+  `AssistantHost` and `useAssistantHost()` (which returns `null` outside a host); without
+  React, use `createHostIntegration`.
+- Remove the individual action factories `navigateAction`, `focusAction`, `highlightAction`,
+  `scrollToAction`, `selectAction`, `setValueAction`, `setCheckedAction`, `setExpandedAction`,
+  `activateTabAction` and `clearHighlightAction`. Use `createUiActions({ navigation, targets })`.
+- Remove `isIntegrationErrorCode`; compare `error.code` with `ERROR_CODES`.
+
 ## 0.1.0-beta.11
 
 ### Breaking

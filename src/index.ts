@@ -1,36 +1,23 @@
+/**
+ * `assistant-bridge`: the host side without a framework. Chats import from
+ * `assistant-bridge/chat`; the wire contract lives in `assistant-bridge/contracts`.
+ */
 export { type ActionExecutionContext, type RegisteredAction } from './action-registry';
 
 export {
   defineAction,
   UI_TARGET_ACTIONS,
   createUiActions,
-  focusAction,
-  highlightAction,
-  navigateAction,
+  type HostActionInput,
   type NavigateActionOptions,
   type NavigateParams,
   type NavigatePayload,
   type NavigateRoute,
-  scrollToAction,
-  selectAction,
-  clearHighlightAction,
-  activateTabAction,
-  setExpandedAction,
-  setCheckedAction,
-  setValueAction,
-  type HostActionInput,
   type CreateUiActionsOptions,
   type UiTargetActionName,
 } from './actions';
 
-export {
-  type AskOptions,
-  type AssistantReadyInfo,
-  type AssistantCommandHandler,
-  type AssistantBridgeClient,
-  type EmbeddedAssistantOptions,
-  type HostAssistantCommands,
-} from './assistant-client';
+export { type AskOptions, type HostAssistantCommands } from './assistant-client';
 
 export {
   UiTargetRegistry,
@@ -39,51 +26,12 @@ export {
   type UiTarget,
 } from './capabilities';
 
-export { queryNavigate } from './connections';
-
 export {
-  ASSISTANT_COMMAND_NAMES,
-  ERROR_CODES,
-  HOST_ACTION_NAMES,
-  PROTOCOL_VERSION,
-  isCompatibleProtocolVersion,
-  assistantCommandRequestSchema,
-  assistantCommandResultSchema,
-  assistantPrefillPayloadSchema,
-  assistantSubmitPromptPayloadSchema,
-  hostActionRequestSchema,
-  hostActionResultSchema,
-  actionPreviewSchema,
-  type ActionPreview,
-  hostCapabilitySchema,
-  hostContextSchema,
-  hostPrincipalSchema,
-  uiFocusPayloadSchema,
-  uiHighlightPayloadSchema,
-  uiNavigatePayloadSchema,
-  uiScrollToPayloadSchema,
-  uiSelectPayloadSchema,
-  uiClearHighlightPayloadSchema,
-  uiActivateTabPayloadSchema,
-  uiSetExpandedPayloadSchema,
-  uiSetCheckedPayloadSchema,
-  uiSetValuePayloadSchema,
-  type AssistantCommandRequest,
-  type AssistantCommandResult,
-  type ErrorCode,
-  type HostActionRequest,
-  type HostActionResult,
-  type HostCapability,
-  type HostContext,
-  type HostPrincipal,
-  type IntegrationEventMap,
-  type IntegrationEventName,
-  type IntegrationTimelineEntry,
-  type IntegrationDiagnostic,
-  type StructuredError,
-  type BusinessReason,
-  businessReasonSchema,
-} from './contracts';
+  queryNavigate,
+  connectEmbeddedAssistant,
+  type AssistantConnectionOptions,
+  type AssistantConnectionStatus,
+} from './connections';
 
 export {
   createHostIntegration,
@@ -106,45 +54,4 @@ export {
   type PageCatalogEntry,
 } from './host-context';
 
-export {
-  connectEmbeddedAssistant,
-  type AssistantConnectionOptions,
-  type AssistantConnectionStatus,
-} from './connections';
-
-export {
-  createAssistantActionExecutor,
-  type ActionConfirmation,
-  type AssistantActionExecutorOptions,
-  type ActionExecutionOptions,
-  type ActionExecutionResult,
-} from './assistant-client';
-
-export { type ActionReadiness, type ActionReadinessContext } from './assistant-client';
-
-export { type WaitForHostContextOptions } from './assistant-client';
-
-export {
-  createIntegrationError,
-  isIntegrationErrorCode,
-  normalizeIntegrationError,
-} from './errors';
-
-export {
-  createActionConfirmationController,
-  type ActionConfirmationController,
-  type PendingActionConfirmation,
-} from './assistant-client';
-
-export {
-  actionLifecycleEventSchema,
-  actionLifecycleStatusSchema,
-  type ActionLifecycleEvent,
-  type ActionLifecycleStatus,
-  type ActionLifecycleListener,
-} from './contracts';
-
-export {
-  createAssistantCommandDispatcher,
-  type AssistantCommandCallbacks,
-} from './assistant-client';
+export { createIntegrationError, normalizeIntegrationError } from './errors';

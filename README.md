@@ -98,34 +98,33 @@ Start with these. Most hosts and chats need nothing else.
 │  ├─ <a href="docs/core.md#define-page-catalog">definePageCatalog</a>
 │  ├─ <a href="docs/core.md#define-host-actions">defineAction</a>
 │  ├─ <a href="docs/react.md#ui-targets">useUiTarget, usePageEntities</a>              (/react)
-│  └─ <a href="docs/core.md#integration-errors">createIntegrationError, ERROR_CODES</a>
+│  └─ <a href="docs/core.md#integration-errors">createIntegrationError, ERROR_CODES</a>        (ERROR_CODES: /contracts)
 └─ Chat
-   ├─ <a href="docs/chat-quick-start.md">useAssistantIntegration</a>                   (/react)
-   └─ <a href="docs/react.md#action-confirmation-ui">useActionConfirmation</a>                     (/react)
+   ├─ <a href="docs/chat-quick-start.md">useAssistantIntegration</a>                   (/chat/react)
+   └─ <a href="docs/react.md#action-confirmation-ui">useActionConfirmation</a>                     (/chat/react)
 </pre>
 
 <details>
 <summary>Advanced: lower-level building blocks</summary>
 
-Use these only when `AssistantHost` or `useAssistantIntegration` does not fit, for example in a host without React. They are the parts those two are built from, and they are more likely to change before 1.0.
+Use these only when `AssistantHost` or `useAssistantIntegration` does not fit, for example in a host without React. They are the parts those two are built from, and they are public API with the same stability guarantees.
 
 <pre>
 ├─ assistant-bridge (core)
 │  ├─ <a href="docs/core.md#create-the-host-integration">createHostIntegration</a>
 │  ├─ <a href="docs/core.md#compose-common-ui-actions">createUiActions</a>
 │  ├─ <a href="docs/core.md#update-the-page">updatePage, mapHostEntities</a>
-│  ├─ <a href="docs/core.md#use-the-client-inside-the-assistant">AssistantBridgeClient</a>
+│  ├─ <a href="docs/core.md#use-the-client-inside-the-assistant">AssistantBridgeClient</a>      (/chat)
 │  ├─ <a href="docs/core.md#send-commands-from-the-host">assistantCommands</a>
 │  ├─ <a href="docs/connections.md">connectHostPort, connectAssistantPort</a> (/transports/message-port)
 │  ├─ <a href="docs/core.md#connect-a-same-window-assistant">connectEmbeddedAssistant</a>
-│  ├─ <a href="docs/core.md#execute-actions-from-the-assistant">createAssistantActionExecutor</a>
-│  ├─ <a href="docs/core.md#action-confirmations">createActionConfirmationController</a>
+│  ├─ <a href="docs/core.md#execute-actions-from-the-assistant">createAssistantActionExecutor</a>      (/chat)
+│  ├─ <a href="docs/core.md#action-confirmations">createActionConfirmationController</a> (/chat)
 │  ├─ <a href="docs/core.md#action-lifecycle">subscribeActionLifecycle</a>
 │  └─ <a href="docs/core.md#dispose-the-integration">integration.dispose</a>
 ├─ assistant-bridge/react
-│  ├─ <a href="docs/react.md">IntegrationProvider, useIntegration, useOptionalIntegration</a>
-│  ├─ <a href="docs/react.md#managed-host-integration">useHostIntegration</a>
-│  ├─ <a href="docs/react.md#assistant-panel-behavior">useAssistantPanel</a>
+│  └─ <a href="docs/react.md#assistant-panel-behavior">useAssistantPanel</a>
+├─ assistant-bridge/chat/react
 │  └─ <a href="docs/react.md#assistant-side-hooks">useAssistantContext, useAssistantCommandHandler</a>
 </pre>
 

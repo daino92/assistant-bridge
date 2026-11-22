@@ -12,6 +12,14 @@
       "types": "./dist/contracts/public.d.ts",
       "default": "./dist/contracts/public.js"
     },
+    "./chat": {
+      "types": "./dist/chat/index.d.ts",
+      "default": "./dist/chat/index.js"
+    },
+    "./chat/react": {
+      "types": "./dist/chat/react.d.ts",
+      "default": "./dist/chat/react.js"
+    },
     "./testing": {
       "types": "./dist/testing/index.d.ts",
       "default": "./dist/testing/index.js"

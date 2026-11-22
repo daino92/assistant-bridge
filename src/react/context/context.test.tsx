@@ -3,7 +3,8 @@ import { renderHook } from '@testing-library/react';
 import { expect, it } from 'vitest';
 
 import { createIntegration } from '@/create-host-integration';
-import { IntegrationProvider, useIntegration, useOptionalIntegration } from '@/react';
+import IntegrationProvider from '@/react/IntegrationProvider';
+import { useIntegration, useOptionalIntegration } from '@/react/context';
 
 it('returns null outside IntegrationProvider while useIntegration still throws', () => {
   expect(renderHook(() => useOptionalIntegration()).result.current).toBeNull();

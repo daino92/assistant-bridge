@@ -1,51 +1,15 @@
 # assistant-bridge/react
 
-> **New host?** Start with [`AssistantHost`](#assistanthost) and the [host quick start](quick-start.md). **New chat?** Start with the [chat quick start](chat-quick-start.md). The provider and hooks below are the lower-level parts those are built from.
+> **New host?** Start with [`AssistantHost`](#assistanthost) and the [host quick start](quick-start.md). **New chat?** Start with the [chat quick start](chat-quick-start.md).
 
-Optional React context from the single `assistant-bridge` package. Import this entry point only in React consumers and supply the optional `react` peer dependency. The root entry remains framework agnostic.
+Two React entry points of the single `assistant-bridge` package. Import them only in React consumers and supply the optional `react` peer dependency. The root entry remains framework agnostic.
 
-```tsx
-import {
-  IntegrationProvider,
-  useIntegration,
-  useOptionalIntegration,
-} from 'assistant-bridge/react';
+| Entry                         | Side | Exports                                                                                                 |
+| ----------------------------- | ---- | ------------------------------------------------------------------------------------------------------- |
+| `assistant-bridge/react`      | Host | `AssistantHost`, `useAssistantHost`, `useUiTarget`, `usePageEntities`, `useAssistantPanel`              |
+| `assistant-bridge/chat/react` | Chat | `useAssistantIntegration`, `useAssistantContext`, `useAssistantCommandHandler`, `useActionConfirmation` |
 
-// integration is the host-owned, stable result of createHostIntegration().
-<IntegrationProvider integration={integration}>{children}</IntegrationProvider>;
-
-// In a descendant component:
-const { assistantCommands } = useIntegration();
-
-// In a component that may render without a host (before sign-in, standalone):
-const integration = useOptionalIntegration(); // HostIntegration | null
-```
-
-`useIntegration()` throws outside `IntegrationProvider`. `useOptionalIntegration()` returns `null` there, so a component can render with or without a host and ask the question explicitly.
-
-The provider only shares the supplied integration; it does not create or destroy it. Use `useHostIntegration` for SDK-managed instance lifecycle, or manage a core `createHostIntegration` instance yourself. The host owns routing and action handlers. Hosts typically wrap it to publish route changes via `updatePage` with their own selection policy.
-
-## Managed host integration
-
-```tsx
-import { IntegrationProvider, useHostIntegration } from 'assistant-bridge/react';
-
-const integration = useHostIntegration({
-  onTimeline,
-  actions: ({ targets }) => createHostActions({ navigate, targets }),
-});
-// <IntegrationProvider integration={integration}>{children}</IntegrationProvider>
-```
-
-`useHostIntegration` owns one stable integration per mounted hook. It buffers bootstrap timeline entries until commit, forwards later entries to the latest `onTimeline` callback, and manages final teardown. This avoids notifying application stores during render. Action factories must be pure: return action definitions without performing application side effects.
-
-New `actions` arrays/factories are applied after commit, so handlers and availability checks use current router/application callbacks. Treat action arrays as immutable. The hook replaces only actions it owns and preserves unrelated registrations. Published capabilities are refreshed only when their descriptions change; changing handler closures alone does not bump the context revision. An action name must be unique and cannot collide with an unrelated registration.
-
-When the `actions` factory closes over changing host state, pass a memoized `actionDeps` value (for example `{ host: actionHost }`). While `actionDeps` is set, action registration follows that reference instead of the factory reference, so inline `actions: ({ targets }) => …` factories do not re-register on every render.
-
-Initial route/page, initial destinations and request timeout options are bootstrap settings for the instance. Destinations that depend on the user or environment do not need a remount: pass the current list to `useHostPageContext` (or `integration.updatePage`) and it replaces the published list. Remount only to change the timeouts. Continue publishing current page changes with `integration.updatePage`; route metadata, allowed actions and selection policy remain host-owned.
-
-On final unmount, the hook clears active highlights, marks the assistant unavailable, rejects pending requests and destroys the bridge. Disposal waits one microtask, allowing immediate React Strict Mode effect replay to reuse the live instance. Child target and transport components still perform their own cleanup. Do not manually destroy an integration owned by this hook. The context-only `IntegrationProvider` still accepts manually created instances for consumers that want to manage their own lifecycle.
+`AssistantHost` creates, publishes and disposes the integration. Components below it reach it with `useAssistantHost()`, which returns `null` outside a host, so shared components can render with or without one.
 
 ## UI targets
 
@@ -60,7 +24,7 @@ const { ref, highlighted } = useUiTarget<HTMLInputElement>('catalog-search', {
 
 The hook registers the target with the current integration and unregisters it on ID change or unmount. It provides highlighting state, focus, scrolling and selection callbacks. An optional `focusRef` directs focus and scrolling to a nested element; `scrollIntoView(element, behavior)` replaces the default `scrollIntoView({ block: 'center' })`, for example to scroll only the nearest container. The host owns IDs, selection callbacks and highlight styles.
 
-Outside `IntegrationProvider` the hook does nothing, so shared components can register targets whether or not a host is mounted. While highlighted, the element carries `data-assistant-highlight` (`HIGHLIGHT_ATTRIBUTE`); style it, or pass `highlight` to `AssistantHost`.
+Outside `AssistantHost` the hook does nothing, so shared components can register targets whether or not a host is mounted. While highlighted, the element carries `data-assistant-highlight`; style it, or pass `highlight` to `AssistantHost`.
 
 ## AssistantHost
 
@@ -99,7 +63,7 @@ await host?.ask('Summarize this entry');
 - **State-based pages:** a host that switches pages by state instead of URL passes `router={{ page, navigate }}`, with the current catalog key and a function that opens a key. `ui.navigate` still validates paths and parameters against the catalog, then calls `navigate(pageKey, params)`.
 - **Highlight:** `highlight` adds an outline for `[data-assistant-highlight]`, with a reduced-motion fallback.
 
-`AssistantHost` renders `IntegrationProvider`, so `useIntegration` and `useUiTarget` work below it. Keep `principal` to permission names; it is not authorization. For full control, compose `useHostIntegration` and `useHostPageContext` as before.
+`useAssistantHost` and `useUiTarget` work below `AssistantHost`. Keep `principal` to permission names; it is not authorization. Hosts without React use `createHostIntegration`; see the [Core API](core.md).
 
 ## Assistant panel behavior
 
@@ -123,7 +87,7 @@ The host owns loading indicators, render error boundaries and load retry. SDK st
 
 ## Assistant-side hooks
 
-Use `useAssistantIntegration({ bridge, onReady, commands })` with an explicitly supplied connection. Without `bridge`, the chat stays disconnected and may continue standalone using its own backend. The hook does not inspect parent windows or URL parameters.
+Import these from `assistant-bridge/chat/react`. Use `useAssistantIntegration({ bridge, onReady, commands })` with an explicitly supplied connection. Without `bridge`, the chat stays disconnected and may continue standalone using its own backend. The hook does not inspect parent windows or URL parameters.
 
 `useAssistantContext(client)` reads the latest snapshot, subscribes to changes and releases subscriptions on replacement/unmount. `useAssistantCommandHandler(handler, onReady)` registers a fresh handler and the protocol version, and unregisters on replacement/unmount. Neither hook loads a chat or creates a host integration.
 
@@ -131,26 +95,13 @@ A separately built chat uses the same hooks and props as a local component. A Me
 
 ## Host page context and assistant commands
 
-`useHostPageContext(integration, { route, page, selection, entities })` synchronizes host-supplied page context. The integration is explicit so this hook can run in the component creating the provider. The host owns router integration, entity mapping and selection policy. `selection` defaults to `clear`; omitted `entities` clears old summaries. The hook forwards one `updatePage` call; the core manager compares values and commits route, selection, entities and derived capabilities atomically. Equivalent values do not republish context or bump the revision. Entity-only changes do not clear selection/highlights; route, page metadata or selection-policy changes apply the selection policy.
-
-```tsx
-useHostPageContext(integration, {
-  route: location.pathname,
-  page: { title: 'Records', type: 'records' },
-  selection: 'clear',
-  entities: recordSummaries,
-});
-```
-
-With a page catalog, `AssistantHost` publishes the page for you. To ask the assistant from a component, use `useAssistantHost()?.ask(prompt, { selection, metadata })`.
-
-`useHostIntegration` now delegates permanent cleanup to `integration.dispose()`. When creating an integration outside this hook, call `dispose()` from the owning application lifecycle. A shared `IntegrationProvider` does not own disposal. The method is idempotent; a disposed instance must not be reused.
+`AssistantHost` publishes the route, page, selection policy and entities from its page catalog and `entities` prop. The core manager commits them atomically; equivalent values do not republish context or bump the revision. To ask the assistant from a component, use `useAssistantHost()?.ask(prompt, { selection, metadata })`.
 
 ## Action confirmation UI
 
 ```tsx
-import { createAssistantActionExecutor } from 'assistant-bridge';
-import { useActionConfirmation } from 'assistant-bridge/react';
+import { createAssistantActionExecutor } from 'assistant-bridge/chat';
+import { useActionConfirmation } from 'assistant-bridge/chat/react';
 
 const { confirmation, requestConfirmation, approve, reject } = useActionConfirmation();
 
@@ -160,7 +111,7 @@ const executor = createAssistantActionExecutor(bridge, { signal, requestConfirma
 // Render your own card with confirmation, approve and reject.
 ```
 
-This hook does not need `IntegrationProvider` and works in the independent chat app. Pending state and promise orchestration live in the core `createActionConfirmationController`; React subscribes using `useSyncExternalStore`. Stop/disconnect cancels via the executor-supplied signal. Unmount cancels pending work and permanently disposes the controller after the Strict Mode replay window. Stale handlers cannot approve a newer confirmation. Existing single-argument confirmation callbacks remain supported.
+This hook needs nothing from the host's React tree and works in the independent chat app. Pending state and promise orchestration live in the core `createActionConfirmationController`; React subscribes using `useSyncExternalStore`. Stop/disconnect cancels via the executor-supplied signal. Unmount cancels pending work and permanently disposes the controller after the Strict Mode replay window. Stale handlers cannot approve a newer confirmation. Existing single-argument confirmation callbacks remain supported.
 
 ### Form controls, sections and tabs
 
