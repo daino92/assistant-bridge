@@ -210,4 +210,4 @@ const AskButton = () => {
 
 ## Without React, or with full control
 
-`AssistantHost` is built from `createHostIntegration`, `useHostIntegration` and `useHostPageContext`. Use them directly only when you need behavior `AssistantHost` does not offer; see the [Core API](core.md) and [React reference](react.md#managed-host-integration).
+`AssistantHost` is built on `createHostIntegration`. Hosts without React use it directly; see the [Core API](core.md).

@@ -20,7 +20,7 @@ const props = { bridge: connection.bridge, onReady: connection.onReady };
 
 React hosts with an already available component can use `AssistantHost connection="embedded"` and pass `useAssistantHost().embedded` to the chat. This connection starts with the host effect, so a host that downloads a remote later should manage `connectEmbeddedAssistant` explicitly after loading it.
 
-Chat code uses `useAssistantIntegration({ bridge, onReady, commands })` or lower-level client APIs. It must not need the host's provider, internal services or federation runtime. Commands unsupported by the chat return `UNKNOWN_COMMAND`. Connection disposal aborts the supplied client's signal; hook-owned approvals and executions are cancelled. The integration remains reusable for a replacement connection.
+Chat code uses `useAssistantIntegration({ bridge, onReady, commands })` from `assistant-bridge/chat/react` or lower-level client APIs. It must not need the host's provider, internal services or federation runtime. Commands unsupported by the chat return `UNKNOWN_COMMAND`. Connection disposal aborts the supplied client's signal; hook-owned approvals and executions are cancelled. The integration remains reusable for a replacement connection.
 
 ## MessagePort connections
 
@@ -41,7 +41,7 @@ const connection = connectHostPort(integration, {
 
 ```ts
 // Chat application bootstrap
-import { createAssistantCommandDispatcher } from 'assistant-bridge';
+import { createAssistantCommandDispatcher } from 'assistant-bridge/chat';
 import { connectAssistantPort } from 'assistant-bridge/transports/message-port';
 
 const connection = connectAssistantPort({

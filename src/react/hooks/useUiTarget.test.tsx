@@ -3,7 +3,8 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createIntegration } from '@/create-host-integration';
-import { IntegrationProvider, useUiTarget } from '@/react';
+import { useUiTarget } from '@/react';
+import IntegrationProvider from '@/react/IntegrationProvider';
 
 interface WrapperProps {
   children: ReactNode;
