@@ -2,13 +2,13 @@
 
 Use `useAssistantIntegration` from `assistant-bridge/react` to connect an existing React 19.3+ chat to a host. Keep the chat's UI, history, authentication, backend connection and message format.
 
-The hook accepts the same `bridge` and `onReady` embedding props as the demo chat. Without a supplied bridge it stays disconnected. It requires no host `IntegrationProvider` inside the chat.
+The hook accepts the same `bridge` and `onReady` embedding props as the demo chat. Without a supplied bridge it stays disconnected. It needs nothing from the host's React tree.
 
 ## Connect the chat's existing functions
 
 ```tsx
-import type { EmbeddedAssistantOptions } from 'assistant-bridge';
-import { useAssistantIntegration } from 'assistant-bridge/react';
+import type { EmbeddedAssistantOptions } from 'assistant-bridge/chat';
+import { useAssistantIntegration } from 'assistant-bridge/chat/react';
 
 interface ExistingChatAdapterProps extends Partial<EmbeddedAssistantOptions> {
   openChat: () => void;

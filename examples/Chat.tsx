@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState, type ChangeEvent, type SubmitEvent } from 'react';
-import type { EmbeddedAssistantOptions } from 'assistant-bridge';
-import { useAssistantIntegration } from 'assistant-bridge/react';
+import type { EmbeddedAssistantOptions } from 'assistant-bridge/chat';
+import { useAssistantIntegration } from 'assistant-bridge/chat/react';
 
 interface Props extends Partial<EmbeddedAssistantOptions> {
   // Connect this to the chat app's existing backend, regardless of its protocol.

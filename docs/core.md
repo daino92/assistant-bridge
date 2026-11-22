@@ -10,7 +10,6 @@ The framework-independent API of `assistant-bridge`. It has no React or federati
 ├─ Host setup
 │  ├─ <a href="#create-the-host-integration">createHostIntegration</a>
 │  ├─ <a href="#define-host-actions">defineAction</a>
-│  ├─ <a href="#define-host-actions">navigateAction, highlightAction, scrollToAction, focusAction, selectAction</a>
 │  └─ <a href="#compose-common-ui-actions">createUiActions</a>
 ├─ Host context
 │  ├─ <a href="#update-the-page">integration.updatePage</a>
@@ -24,18 +23,18 @@ The framework-independent API of `assistant-bridge`. It has no React or federati
 │  ├─ <a href="#use-the-client-inside-the-assistant">AssistantBridgeClient</a>
 │  ├─ <a href="#send-commands-from-the-host">assistantCommands, connectEmbeddedAssistant</a>
 │  ├─ <a href="#send-commands-from-the-host">askAbout, prefillAndOpen</a>
-│  └─ <a href="#dispatch-assistant-commands">createAssistantCommandDispatcher</a>
+│  └─ <a href="#dispatch-assistant-commands">createAssistantCommandDispatcher</a> (/chat)
 ├─ Connections
 │  ├─ <a href="connections.md#messageport-connections">connectHostPort, connectAssistantPort</a> (/transports/message-port)
 │  └─ <a href="#connect-a-same-window-assistant">connectEmbeddedAssistant</a>
 ├─ Action execution
-│  ├─ <a href="#execute-actions-from-the-assistant">createAssistantActionExecutor</a>
+│  ├─ <a href="#execute-actions-from-the-assistant">createAssistantActionExecutor</a> (/chat)
 │  ├─ <a href="#action-readiness">Action readiness</a>
-│  ├─ <a href="#action-confirmations">createActionConfirmationController</a>
+│  ├─ <a href="#action-confirmations">createActionConfirmationController</a> (/chat)
 │  ├─ <a href="#action-lifecycle">subscribeActionLifecycle</a>
 │  └─ <a href="#action-schemas">Zod to JSON Schema capabilities</a>
 └─ Errors and lifecycle
-   ├─ <a href="#integration-errors">createIntegrationError, normalizeIntegrationError, isIntegrationErrorCode</a>
+   ├─ <a href="#integration-errors">createIntegrationError, normalizeIntegrationError</a>
    ├─ <a href="#public-rejection-reasons">Public rejection reasons</a>
    ├─ <a href="#diagnostics-timeouts-and-failures">onTimeline, IntegrationDiagnostic</a>
    └─ <a href="#dispose-the-integration">integration.dispose</a>
@@ -61,39 +60,41 @@ The SDK does not provide a chat interface, model provider, backend, conversation
 Create one integration for the lifetime of the host application. Register only the actions that application intends to expose.
 
 ```ts
-import { createHostIntegration, navigateAction } from 'assistant-bridge';
+import { createHostIntegration, createUiActions } from 'assistant-bridge';
 
 const integration = createHostIntegration({
   initialRoute: '/',
   initialPage: { title: 'Dashboard', type: 'dashboard' },
-  actions: [
-    navigateAction({
+  actions: createUiActions({
+    navigation: {
       navigate: (path) => window.history.pushState(null, '', path),
       allowedRoutes: ['/', '/catalog', '/records'],
-    }),
-  ],
+    },
+  }),
   onTimeline: (entry) => console.debug(entry),
 });
 ```
 
 The navigation callback is illustrative. In a routed application, supply its router's navigation function so route rendering and context updates stay coordinated. The callback may return a promise: the action result waits for it, and a rejection fails the action, so hosts can apply route preconditions or wait for page data.
 
-After the built-in allowlist (and optional detail pattern) accepts a path, `navigateAction` runs an optional **`beforeNavigate(path)`** hook, then `navigate`. Use it for host business rules without wrapping `navigate`; throw `createIntegrationError(ACTION_NOT_AVAILABLE, reason)` for stable assistant-facing guidance (see _Business reasons on ACTION_NOT_AVAILABLE_).
+After the built-in allowlist (and optional detail pattern) accepts a path, the `ui.navigate` action runs an optional **`beforeNavigate(path)`** hook, then `navigate`. Use it for host business rules without wrapping `navigate`; throw `createIntegrationError(ACTION_NOT_AVAILABLE, reason)` for stable assistant-facing guidance (see _Business reasons on ACTION_NOT_AVAILABLE_).
 
 ### Routes with parameters
 
 Pages that keep state in the query string declare `routes`, each with a parameter schema. The assistant then sends `{ path, params }`; the SDK validates `params` against that route's schema before calling `navigate(path, params)`, and the host builds the final URL.
 
 ```ts
-navigateAction({
-  allowedRoutes: ['/settings'],
-  routes: {
-    '/content': {
-      description: 'Entries of one model, optionally with one entry open',
-      params: z.object({ model: z.uuid(), entry: z.uuid().optional() }).strict(),
+createUiActions({
+  navigation: {
+    allowedRoutes: ['/settings'],
+    routes: {
+      '/content': {
+        description: 'Entries of one model, optionally with one entry open',
+        params: z.object({ model: z.uuid(), entry: z.uuid().optional() }).strict(),
+      },
     },
+    navigate: (path, params) => router.navigate({ pathname: path, search: toSearch(params) }),
   },
-  navigate: (path, params) => router.navigate({ pathname: path, search: toSearch(params) }),
 });
 ```
 
@@ -145,13 +146,14 @@ const createRecordsFilterAction = (
 
 An action name or exported schema does not register a handler automatically. The host must supply the action explicitly.
 
-Built-in action factories are `navigateAction`, `highlightAction`, `scrollToAction`, `focusAction` and `selectAction`, plus the other UI-target actions listed in `UI_TARGET_ACTIONS`. UI-target actions operate on targets registered by the host. The action factory callback provides the shared registry:
+Built-in actions are `ui.navigate` and the UI-target actions listed in `UI_TARGET_ACTIONS`; `createUiActions` creates them. UI-target actions operate on targets registered by the host. The action factory callback provides the shared registry:
 
 ```ts
-import { createHostIntegration, focusAction, highlightAction } from 'assistant-bridge';
+import { createHostIntegration, createUiActions } from 'assistant-bridge';
 
 const integration = createHostIntegration({
-  actions: ({ targets }) => [highlightAction(targets), focusAction(targets)],
+  actions: ({ targets }) =>
+    createUiActions({ targets: { registry: targets, enable: ['highlight', 'focus'] } }),
 });
 ```
 
@@ -171,7 +173,7 @@ const actions = [
 ];
 ```
 
-`createUiActions` returns `HostActionInput[]` without registering or executing anything. Pass the result to `createHostIntegration` or `useHostIntegration`. Omitted groups enable no actions; `{}` returns an empty list. Target action names are explicitly selected and duplicate selections are included once, in their first-occurrence order. **`UI_TARGET_ACTIONS`** lists every built-in UI-target tool so hosts can enable the full set without repeating names; slice or replace it for a tighter surface. Navigation is emitted first, then selected target actions. Pass **`beforeNavigate`** inside `navigation` for the same guard hook as `navigateAction`.
+`createUiActions` returns `HostActionInput[]` without registering or executing anything. Pass the result to `createHostIntegration`, or return it from the `actions` factory of `AssistantHost`. Omitted groups enable no actions; `{}` returns an empty list. Target action names are explicitly selected and duplicate selections are included once, in their first-occurrence order. **`UI_TARGET_ACTIONS`** lists every built-in UI-target tool so hosts can enable the full set without repeating names; slice or replace it for a tighter surface. Navigation is emitted first, then selected target actions. Pass **`beforeNavigate`** inside `navigation` to guard navigation.
 
 `CreateUiActionsOptions` and `UiTargetActionName` are exported for typed configuration. The helper delegates to the individual action factories, preserving their schemas, route checks and errors. Those factories remain available separately. Hosts still own allowed routes, target IDs and business handlers; the helper adds no catalog/records store access or implicit permissions.
 
@@ -202,7 +204,7 @@ integration.setSelection(null);
 
 Context includes `route`, `page`, optional `selection`, registered `capabilities`, and an incrementing `revision`. Publish route and selection changes from the host; the SDK does not observe the router or DOM itself.
 
-`createHostIntegration` registers its actions once. To change actions while the host runs (for example after a permission change), use `AssistantHost` or `useHostIntegration` in React; they re-register and republish capabilities. Context-specific `available` checks still run during execution.
+`createHostIntegration` registers its actions once. To change actions while the host runs (for example after a permission change), use `AssistantHost` in React; it re-registers and republishes capabilities. Context-specific `available` checks still run during execution.
 
 ## Context commits
 
@@ -212,7 +214,7 @@ The core `HostContextManager` owns value equality and revision generation for al
 
 Inputs, snapshots and each subscriber notification are deeply cloned, including page, selection, destinations, targets, entities and nested capability schemas. Mutating a returned snapshot or an input after assignment cannot alter stored state or another subscriber's notification. Reentrant updates are queued so subscribers observe revisions in order.
 
-Repeated identical `updatePage` calls preserve current selection/highlights. Selection policy applies when route, page metadata or policy changes. Use `setSelection(null)` for an explicit same-page selection reset. Core `updatePage` preserves entities and destinations when omitted; pass `destinations: []` to remove all destinations. Destinations describe where the assistant may navigate, so update them when permissions change, and keep the `ui.navigate` allowlist in sync (`AssistantHost` derives both from the page catalog). the React `useHostPageContext` hook supplies an empty array by default to clear old page summaries. Hosts still own routing policy, entity mapping and action availability rules.
+Repeated identical `updatePage` calls preserve current selection/highlights. Selection policy applies when route, page metadata or policy changes. Use `setSelection(null)` for an explicit same-page selection reset. Core `updatePage` preserves entities and destinations when omitted; pass `destinations: []` to remove all destinations. Destinations describe where the assistant may navigate, so update them when permissions change, and keep the `ui.navigate` allowlist in sync (`AssistantHost` derives both from the page catalog). `AssistantHost` clears old page summaries when `entities` is omitted. Hosts still own routing policy, entity mapping and action availability rules.
 
 ## Define page catalog
 
@@ -229,7 +231,7 @@ const catalog = definePageCatalog({
 createHostIntegration({
   destinations: catalog.destinations,
   actions: [
-    navigateAction({ navigate, allowedRoutes: catalog.paths }),
+    ...createUiActions({ navigation: { navigate, allowedRoutes: catalog.paths } }),
     // ...
   ],
 });
@@ -261,12 +263,12 @@ const pages = definePageCatalog({
 
 pages.allowed(principal); // ['dashboard', 'content', ...]
 pages.destinationsFor(principal); // for updatePage({ destinations })
-navigateAction(pages.navigation(principal, { navigate })); // allowedRoutes + routes
+createUiActions({ navigation: pages.navigation(principal, { navigate }) }); // allowedRoutes + routes
 ```
 
 - `path` overrides the default `/<key>`. `match: 'prefix'` also maps sub-routes (`/models/<id>`) to the page; exact paths win over prefixes.
 - `needs` hides a page from principals without that permission. Pages without `needs` are always allowed. It is not authorization.
-- `params` makes the page a `navigateAction` route with that schema. Use `.optional()` when the page also opens without parameters.
+- `params` makes the page a `ui.navigate` route with that schema. Use `.optional()` when the page also opens without parameters.
 - `destinations` and `paths` still list every page, for hosts without permissions.
 
 `AssistantHost` in `/react` uses these methods; see [AssistantHost](react.md#assistanthost).
@@ -342,7 +344,7 @@ defineAction({
 });
 ```
 
-- `principal` is optional. `updatePage` (and `useHostPageContext`) preserve it when omitted; pass `null` to remove it, for example on sign-out.
+- `principal` is optional. `updatePage` (and `AssistantHost`) preserve it when omitted; pass `null` to remove it, for example on sign-out.
 - Changing permissions recomputes action availability in the same context revision.
 - **It is not authorization.** The principal is published to the assistant as data. Every handler and backend must still enforce permissions; `whenPermitted` only hides unavailable actions.
 - Publish operation names, not roles or personal data. `label` is optional; omit it when the assistant does not need a display name. Limits: 500 permissions of up to 100 characters each.
@@ -378,7 +380,8 @@ Prefer the on-demand pattern when shapes include components, dynamic zones or re
 ## Use the client inside the assistant
 
 ```ts
-import type { AssistantBridgeClient, HostContext } from 'assistant-bridge';
+import type { AssistantBridgeClient } from 'assistant-bridge/chat';
+import type { HostContext } from 'assistant-bridge/contracts';
 
 const connectAssistant = (
   client: AssistantBridgeClient,
@@ -455,6 +458,8 @@ Suggested questions are host data. Filter them in host code by page and by what 
 `createAssistantCommandDispatcher` validates the standard command envelope and prefill/submit payloads, then invokes supplied callbacks:
 
 ```ts
+import { createAssistantCommandDispatcher } from 'assistant-bridge/chat';
+
 const onCommand = createAssistantCommandDispatcher({
   onOpen: () => ({ opened: true }),
   onClose: closeConversation,
@@ -493,7 +498,7 @@ A Module Federation remote must expose a component that accepts EmbeddedAssistan
 Any trusted chat can use the core SDK action executor without importing AG-UI, React, STOMP or a model SDK:
 
 ```ts
-import { createAssistantActionExecutor } from 'assistant-bridge';
+import { createAssistantActionExecutor } from 'assistant-bridge/chat';
 
 const { executeAction } = createAssistantActionExecutor(bridge, {
   signal: controller.signal,
@@ -627,7 +632,7 @@ No separate hand-maintained JSON Schema is required. Custom types that Zod canno
 
 ## Integration errors
 
-`normalizeIntegrationError(error)` returns only `{ code, message }`: recognized SDK codes are preserved and messages come from a shared safe catalog. Unknown codes, untyped exceptions, string rejections and misleading code names embedded in message text fall back to `EXECUTION_FAILED`. Raw handler messages, stacks and extra fields are not forwarded. `createIntegrationError(ERROR_CODES.TIMEOUT)` creates a standard `Error` carrying the same safe code/message; `isIntegrationErrorCode(value)` checks supported codes.
+`normalizeIntegrationError(error)` returns only `{ code, message }`: recognized SDK codes are preserved and messages come from a shared safe catalog. Unknown codes, untyped exceptions, string rejections and misleading code names embedded in message text fall back to `EXECUTION_FAILED`. Raw handler messages, stacks and extra fields are not forwarded. `createIntegrationError(ERROR_CODES.TIMEOUT)` creates a standard `Error` carrying the same safe code/message; compare `error.code` with `ERROR_CODES` from `/contracts`.
 
 Requests that fail (`requestHostAction`, `executeAction`, host commands) reject with an `Error` that also carries `code`, `message` and, where allowed, `reason`. Both `error instanceof Error` and `error.code` work; the message is the safe one described here.
 
@@ -718,7 +723,7 @@ integration.dispose();
 
 `dispose()` is synchronous and idempotent. It closes SDK-managed same-window/MessagePort connections, cancels their loading timers, rejects pending action/command requests with `RECEIVER_UNAVAILABLE`, clears active highlights and timers, and releases target/context subscriptions and registered action handlers. The instance is terminal: do not reuse it; create a new integration to reconnect. Calls to `updatePage` or new connection setup after disposal fail; later action/command requests reject immediately without new timers.
 
-`useHostIntegration` calls `dispose()` automatically on final unmount while preserving Strict Mode replay behavior. `IntegrationProvider` only shares the instance and does not dispose an externally supplied integration. Component-level connection cleanup remains safe to call before or after the integration is disposed.
+`AssistantHost` calls `dispose()` automatically on final unmount while preserving Strict Mode replay behavior. An integration you create with `createHostIntegration` is yours to dispose. Component-level connection cleanup remains safe to call before or after the integration is disposed.
 
 `AssistantBridgeClient.signal` (optional on custom clients) indicates that the client connection or integration ended. Built-in clients provide the signal; custom clients can omit it for compatibility. Readiness waits listen to both caller cancellation and client lifetime. The MessagePort transport sends an internal `disconnect` notification so the chat-side client can reject pending requests and abort its lifetime signal. This is part of the host/chat bridge, not the chat's backend protocol.
 

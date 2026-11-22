@@ -157,7 +157,7 @@ try {
     'adapters',
     Object.entries(MANIFEST.peerDependencies).map(([name, range]) => `${name}@${range}`),
     `
-    for (const entry of ['react', 'transports/message-port']) {
+    for (const entry of ['react', 'chat', 'chat/react', 'transports/message-port']) {
       await import(${packageName} + '/' + entry);
       console.log(entry + ' import OK');
     }
@@ -169,8 +169,9 @@ try {
     'react-without-federation',
     [`react@${MANIFEST.peerDependencies.react}`],
     `
-    import { useAssistantIntegration, IntegrationProvider, useIntegration } from ${JSON.stringify(`${MANIFEST.name}/react`)};
-    console.log(useAssistantIntegration, IntegrationProvider, useIntegration);
+    import { AssistantHost, useAssistantHost } from ${JSON.stringify(`${MANIFEST.name}/react`)};
+    import { useAssistantIntegration } from ${JSON.stringify(`${MANIFEST.name}/chat/react`)};
+    console.log(AssistantHost, useAssistantHost, useAssistantIntegration);
   `,
   );
 

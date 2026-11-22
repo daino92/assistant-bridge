@@ -21,7 +21,7 @@ pnpm add assistant-bridge@beta
 A chat embedded in the same window or through Module Federation receives two props from the host: `bridge` and `onReady`. Their type is `EmbeddedAssistantOptions`.
 
 ```tsx
-import type { EmbeddedAssistantOptions } from 'assistant-bridge';
+import type { EmbeddedAssistantOptions } from 'assistant-bridge/chat';
 
 // The module a federation host loads, or the component a same-window host renders.
 const EmbeddedChat = ({ bridge, onReady }: EmbeddedAssistantOptions) => (
@@ -36,8 +36,8 @@ A chat in a separate window receives an explicit client from application bootstr
 ## 3. Connect
 
 ```tsx
-import type { EmbeddedAssistantOptions } from 'assistant-bridge';
-import { useAssistantIntegration } from 'assistant-bridge/react';
+import type { EmbeddedAssistantOptions } from 'assistant-bridge/chat';
+import { useAssistantIntegration } from 'assistant-bridge/chat/react';
 
 const Chat = ({ bridge, onReady }: Partial<EmbeddedAssistantOptions>) => {
   const [draft, setDraft] = useState('');

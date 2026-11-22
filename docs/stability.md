@@ -8,8 +8,10 @@ Only what the package entry points export is public:
 
 | Entry                                      | For                                                     |
 | ------------------------------------------ | ------------------------------------------------------- |
-| `assistant-bridge`                         | Hosts and chats without a framework                     |
-| `assistant-bridge/react`                   | React hosts (`AssistantHost`) and chats (hooks)         |
+| `assistant-bridge`                         | Hosts without a framework                               |
+| `assistant-bridge/react`                   | React hosts (`AssistantHost`)                           |
+| `assistant-bridge/chat`                    | Chats without a framework                               |
+| `assistant-bridge/chat/react`              | React chats (hooks)                                     |
 | `assistant-bridge/contracts`               | The wire contract: schemas, names, error codes          |
 | `assistant-bridge/testing`                 | Host tests (`connectTestAssistant`)                     |
 | `assistant-bridge/transports/message-port` | Communication over an application-supplied private port |

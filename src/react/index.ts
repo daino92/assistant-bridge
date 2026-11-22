@@ -1,11 +1,5 @@
-export { default as IntegrationProvider } from './IntegrationProvider';
-
-export {
-  useIntegration,
-  useOptionalIntegration,
-  useAssistantHost,
-  type AssistantHostValue,
-} from './context';
+/** `assistant-bridge/react`: the React host. Chat hooks are in `assistant-bridge/chat/react`. */
+export { useAssistantHost, type AssistantHostValue } from './context';
 
 export {
   default as AssistantHost,
@@ -17,19 +11,4 @@ export {
   type AssistantHostRouter,
 } from './AssistantHost';
 
-export {
-  HIGHLIGHT_ATTRIBUTE,
-  useUiTarget,
-  usePageEntities,
-  useAssistantPanel,
-  useAssistantContext,
-  useAssistantIntegration,
-  type UseAssistantIntegrationOptions,
-  useAssistantCommandHandler,
-  useHostIntegration,
-  type UseHostIntegrationOptions,
-  useHostPageContext,
-  useActionConfirmation,
-  type HostPageContextOptions,
-  type UiTargetOptions,
-} from './hooks';
+export { useUiTarget, usePageEntities, useAssistantPanel, type UiTargetOptions } from './hooks';

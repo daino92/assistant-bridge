@@ -7,12 +7,12 @@ import { HOST_ACTION_NAMES, type HostContext } from '@/contracts';
 import { definePageCatalog } from '@/host-context';
 import {
   AssistantHost,
-  HIGHLIGHT_ATTRIBUTE,
   useAssistantHost,
   usePageEntities,
   useUiTarget,
   type AssistantHostValue,
 } from '@/react';
+import { HIGHLIGHT_ATTRIBUTE } from '@/react/hooks/useUiTarget';
 import { answer, READY } from '../../test/command-answers';
 
 afterEach(cleanup);
