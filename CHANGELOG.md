@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.0-rc.2] - 2026-11-25
+
+### Changed
+
+- Migrated the development toolchain to pnpm 12.23.0.
+- Moved dependency overrides to pnpm-workspace.yaml.
+- Updated the pnpm lockfile for compatibility with pnpm 12.
+
+### Validation
+
+- All 187 tests passed.
+- Build and isolated package consumer validation passed.
+
 ## 1.0.0-rc.1
 
 ### Breaking
